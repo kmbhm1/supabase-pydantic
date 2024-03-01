@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "supabase-pydantic"
+version = "0.1.0"
+description = "A project to migrate Supabase schemas into Pydantic classes"
+authors = ["Kevin Boehm <kmbhm1@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "supabase_pydantic" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

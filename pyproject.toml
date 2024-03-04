@@ -9,7 +9,11 @@ packages = [{ include = "supabase_pydantic" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+psycopg2-binary = "^2.9.9"
 
+
+[tool.poetry.group.dev.dependencies]
+python-dotenv = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core"]

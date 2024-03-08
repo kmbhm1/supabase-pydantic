@@ -10,6 +10,7 @@ packages = [{ include = "supabase_pydantic" }]
 [tool.poetry.dependencies]
 python = "^3.10"
 psycopg2-binary = "^2.9.9"
+pydantic = "^2.6.3"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -33,7 +33,9 @@ def generate_pydantic_parent_name(table_name: str) -> str:
 
 
 def generate_pydantic_model(
-    table_info: TableInfo, model_generation_type: ModelGenerationType = ModelGenerationType.PARENT
+    table_info: TableInfo,
+    all_tables: list[TableInfo],
+    model_generation_type: ModelGenerationType = ModelGenerationType.PARENT,
 ) -> str:
     """Generate Pydantic model class definitions from TableInfo."""
     table_name: str
@@ -56,15 +58,27 @@ def generate_pydantic_model(
             pydantic_type = postgres_to_pydantic_type(column)
         lines.append(f'    {column.name}: {pydantic_type}')
 
+    # Generate related model fields based on ForeignKeyInfo
+    if model_generation_type == ModelGenerationType.MAIN:
+        if len(table_info.foreign_keys) > 0:
+            lines.append('\n    # Foreign key fields')
+        for fk in table_info.foreign_keys:
+            related_table = next((t for t in all_tables if t.name == fk.foreign_table_name), None)
+            if related_table:
+                related_field = f'{fk.column_name}_{related_table.name.lower()}'
+                # relation_type = 'List' if fk.relation_type == RelationType.ONE_TO_MANY else related_table.name.capitalize()
+                relation_type = f'list[{generate_pydantic_parent_name(related_table.name)}] | {generate_pydantic_parent_name(related_table.name)}'  # noqa: E501
+                lines.append(f'    {related_field}: {relation_type} | None = []')
+
     return '\n'.join(lines)
 
 
 def generate_all_pydantic_models(tables: list[TableInfo]):
-    parent_models = [generate_pydantic_model(table, ModelGenerationType.PARENT) for table in tables]
+    parent_models = [generate_pydantic_model(table, tables, ModelGenerationType.PARENT) for table in tables]
     parent_imports = generate_imports_for_pydantic_models(tables, ModelGenerationType.PARENT, None)
     parent_model_str = parent_imports + '\n' + '\n\n\n'.join(parent_models)
 
-    main_models = [generate_pydantic_model(table, ModelGenerationType.MAIN) for table in tables]
+    main_models = [generate_pydantic_model(table, tables, ModelGenerationType.MAIN) for table in tables]
     parent_model_names = [generate_pydantic_parent_name(table.name) for table in tables]
     main_imports = generate_imports_for_pydantic_models(tables, ModelGenerationType.MAIN, parent_model_names)
     main_model_str = main_imports + '\n' + '\n\n\n'.join(main_models)

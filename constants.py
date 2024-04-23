@@ -1,34 +1,30 @@
-from dataclasses import dataclass, field, asdict
 import json
-from random import random
-from typing import List, Optional
+from dataclasses import asdict, dataclass, field
 from enum import Enum
+from random import random
 
 from faker import Faker
-
 
 # Dataclasses
 
 
 class RelationType(str, Enum):
-    ONE_TO_ONE = "One-to-One"
-    ONE_TO_MANY = "One-to-Many"
-    MANY_TO_MANY = "Many-to-Many"
+    ONE_TO_ONE = 'One-to-One'
+    ONE_TO_MANY = 'One-to-Many'
+    MANY_TO_MANY = 'Many-to-Many'
 
 
-def generate_fake_data(
-    datatype: str, max_length: Optional[int] = None, fake: Faker = Faker()
-):
+def generate_fake_data(datatype: str, max_length: int | None = None, fake: Faker = Faker()):
     """Generate fake data based on the datatype."""
-    if datatype == "integer":
+    if datatype == 'integer':
         return fake.random_int(min=1, max=1000)
-    elif datatype == "varchar" or datatype == "text":
+    elif datatype == 'varchar' or datatype == 'text':
         return fake.text(max_nb_chars=max_length) if max_length else fake.text()
-    elif datatype == "boolean":
+    elif datatype == 'boolean':
         return fake.boolean()
-    elif datatype == "datetime":
+    elif datatype == 'datetime':
         return fake.date_time()
-    elif datatype == "uuid":
+    elif datatype == 'uuid':
         return str(fake.uuid4())
     # Add more datatypes as needed
     else:
@@ -46,9 +42,9 @@ class ColumnInfo(AsDictParent):
     name: str
     post_gres_datatype: str
     datatype: str
-    default: Optional[str] = None
-    is_nullable: Optional[bool] = True
-    max_length: Optional[int] = None
+    default: str | None = None
+    is_nullable: bool | None = True
+    max_length: int | None = None
 
     def __str__(self) -> str:
         return json.dumps(asdict(self), indent=4)
@@ -61,28 +57,29 @@ class ForeignKeyInfo(AsDictParent):
     foreign_table_name: str
     foreign_column_name: str
     relation_type: RelationType  # E.g., "One-to-One", "One-to-Many"
-    foreign_table_schema: str = "public"
+    foreign_table_schema: str = 'public'
 
 
 @dataclass
 class TableInfo(AsDictParent):
     name: str
-    schema: str = "public"
-    columns: List[ColumnInfo] = field(default_factory=list)
-    foreign_keys: List[ForeignKeyInfo] = field(default_factory=list)
+    schema: str = 'public'
+    columns: list[ColumnInfo] = field(default_factory=list)
+    foreign_keys: list[ForeignKeyInfo] = field(default_factory=list)
 
     def add_column(self, column: ColumnInfo):
+        """Add a column to the table."""
         self.columns.append(column)
 
     def add_foreign_key(self, fk: ForeignKeyInfo):
+        """Add a foreign key to the table."""
         self.foreign_keys.append(fk)
 
     def sort_and_combine_columns_for_pydantic_model(self):
+        """Sort and combine columns based on is_nullable attribute."""
         # Split the columns based on is_nullable attribute
         nullable_columns = [column for column in self.columns if column.is_nullable]
-        non_nullable_columns = [
-            column for column in self.columns if not column.is_nullable
-        ]
+        non_nullable_columns = [column for column in self.columns if not column.is_nullable]
 
         # Sort each list alphabetically by column name
         nullable_columns.sort(key=lambda x: x.name)
@@ -100,32 +97,27 @@ class TableInfo(AsDictParent):
             if column.is_nullable and random.random() < 0.1:
                 row[column.name] = None
             else:
-                row[column.name] = generate_fake_data(
-                    column.datatype, column.max_length, fake
-                )
+                row[column.name] = generate_fake_data(column.datatype, column.max_length, fake)
         return row
 
 
 pydantic_type_map = {
-    "integer": ("int", None),
-    "bigint": ("int", None),
-    "smallint": ("int", None),
-    "numeric": ("float", None),
-    "text": ("str", None),
-    "varchar": ("str", None),
-    "boolean": ("bool", None),
-    "timestamp": ("datetime.datetime", "from datetime import datetime"),
-    "timestamp with time zone": ("datetime.datetime", "from datetime import datetime"),
-    "timestamp without time zone": (
-        "datetime.datetime",
-        "from datetime import datetime",
-    ),
-    "date": ("datetime.date", "from datetime import date"),
-    "uuid": ("UUID4", "from uuid import UUID4"),
-    "json": ("dict", None),
-    "jsonb": ("dict", None),
-    "character varying": ("str", None),
-    "ARRAY": ("List", "from typing import List"),
+    'integer': ('int', None),
+    'bigint': ('int', None),
+    'smallint': ('int', None),
+    'numeric': ('float', None),
+    'text': ('str', None),
+    'varchar': ('str', None),
+    'boolean': ('bool', None),
+    'timestamp': ('datetime', 'from datetime import datetime'),
+    'timestamp with time zone': ('datetime', 'from datetime import datetime'),
+    'timestamp without time zone': ('datetime', 'from datetime import datetime'),
+    'date': ('datetime.date', 'from datetime import date'),
+    'uuid': ('UUID4', 'from uuid import UUID4'),
+    'json': ('dict', None),
+    'jsonb': ('dict', None),
+    'character varying': ('str', None),
+    'ARRAY': ('list', None),
     # Add more data types and their imports as necessary.
 }
 

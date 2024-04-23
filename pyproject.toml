@@ -13,6 +13,7 @@ psycopg2-binary = "^2.9.9"
 pydantic = "^2.6.3"
 types-psycopg2 = "^2.9.21.20240417"
 faker = "^24.11.0"
+ruff = "^0.4.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -21,3 +22,101 @@ python-dotenv = "^1.0.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+# linting and formatting
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # Pyflakes
+    "UP", # pyupgrade
+    "D",  # pydocstyle
+    "I",  # isort
+    "Q",  # flake8-quotes
+    "W",  # pycodestyle
+]
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "docs",
+    # "notebooks",
+    "**/*tests*",
+    "scripts",
+    "setup.py",
+    "setup.cfg",
+    "pyproject.toml",
+    "poetry.lock",
+    "pyrightconfig.json",
+    ".*.yml",
+    ".*.yaml",
+    ".*.toml",
+    ".*.md",
+    ".*.txt",
+    ".*.rst",
+    ".*.json",
+    ".*.html",
+    ".*.css",
+    ".*.js",
+    ".*.png",
+    ".*.jpg",
+    ".*.jpeg",
+    ".*.gif",
+    ".*.svg",
+    ".*.ico",
+    ".*.eot",
+    ".*.ttf",
+    ".*.woff",
+    ".*.woff2",
+    ".*.map",
+    # ".*.ipynb",
+    ".*.pyi",
+    ".*.pyc",
+    ".*.pyd",
+    ".*.pyo",
+    ".*.pyw",
+    ".*.pyz",
+    ".*.pyzw",
+    ".*.DS_Store",
+    ".*.gitignore",
+    ".*.gitkeep",
+    ".*.gitmodules",
+    ".*.gitattributes",
+    ".*.git",
+    ".*.hgignore",
+    ".*.hgkeep",
+    ".*.",
+]
+ignore = [
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in __init__
+    "D202", # No blank lines allowed after function docstring
+    "D206", # Docstring should be indented with spaces, not tabs
+    "E101", # indentation contains mixed spaces and tabs
+    "F403", # 'from module import *' used; unable to detect undefined names
+    "Q000", # Remove bad quotes
+    "Q002", # Remove bad quotes
+    "Q003", # Unnecessary single quotes
+    "W191", # Indentation contains tabs
+]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "single"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = true
+line-ending = "auto"

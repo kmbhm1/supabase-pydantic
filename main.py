@@ -9,9 +9,7 @@ from util import (
     create_connection,
     fetch_foreign_key_details,
     fetch_table_column_details,
-    generate_imports_for_pydantic_models,
-    generate_pydantic_model,
-    generate_pydantic_parent_name,
+    generate_all_pydantic_models,
 )
 
 # Pretty print for testing
@@ -56,8 +54,7 @@ def main():
     load_dotenv(find_dotenv())
     assert check_readiness()
 
-    default_directory = 'supabase_types'
-    default_parent_filename = 'supabase_pydantic_parent_models.py'
+    default_directory = 'entities'
 
     try:
         # Create a connection to the database & check if connection is successful
@@ -79,21 +76,17 @@ def main():
             print('Connection closed.')
 
     # Create Pydantic models file
-    parent_models_string = generate_imports_for_pydantic_models(tables) + '\n\n'
-    parent_models_string += ''.join(
-        [generate_pydantic_model(table, generate_pydantic_parent_name) + '\n\n' for table in tables]
-    )
+    models_strings = generate_all_pydantic_models(tables)
 
     # Check if the directory exists, if not, create it
     if not os.path.exists(default_directory):
         os.makedirs(default_directory)
 
     # Define the full path to the file
-    file_path = os.path.join(default_directory, default_parent_filename)
-
-    # Write the imports and model string to the file, overwriting if it exists
-    with open(file_path, 'w') as file:
-        file.write(parent_models_string)
+    for fname, model_str in models_strings.items():
+        file_path = os.path.join(default_directory, fname)
+        with open(file_path, 'w') as file:
+            file.write(model_str + '\n')
 
 
 if __name__ == '__main__':

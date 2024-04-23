@@ -14,6 +14,11 @@ class RelationType(str, Enum):
     MANY_TO_MANY = 'Many-to-Many'
 
 
+class ModelGenerationType(str, Enum):
+    PARENT = 'PARENT'
+    MAIN = 'MAIN'
+
+
 def generate_fake_data(datatype: str, max_length: int | None = None, fake: Faker = Faker()):
     """Generate fake data based on the datatype."""
     if datatype == 'integer':
@@ -75,19 +80,25 @@ class TableInfo(AsDictParent):
         """Add a foreign key to the table."""
         self.foreign_keys.append(fk)
 
-    def sort_and_combine_columns_for_pydantic_model(self):
+    def sort_and_combine_columns_for_pydantic_model(self, return_parent_models: bool = True):
         """Sort and combine columns based on is_nullable attribute."""
-        # Split the columns based on is_nullable attribute
-        nullable_columns = [column for column in self.columns if column.is_nullable]
-        non_nullable_columns = [column for column in self.columns if not column.is_nullable]
+        result_columns = self.columns
 
-        # Sort each list alphabetically by column name
-        nullable_columns.sort(key=lambda x: x.name)
-        non_nullable_columns.sort(key=lambda x: x.name)
+        if return_parent_models:
+            result_columns.sort(key=lambda x: x.name)
+        else:
+            # Split the columns based on is_nullable attribute
+            nullable_columns = [column for column in self.columns if column.is_nullable]
+            non_nullable_columns = [column for column in self.columns if not column.is_nullable]
 
-        # Combine them with non-nullable first
-        combined_columns = non_nullable_columns + nullable_columns
-        return combined_columns
+            # Sort each list alphabetically by column name
+            nullable_columns.sort(key=lambda x: x.name)
+            non_nullable_columns.sort(key=lambda x: x.name)
+
+            # Combine them with non-nullable first
+            result_columns = non_nullable_columns + nullable_columns
+
+        return result_columns
 
     def generate_fake_row(self):
         """Generate a dictionary with column names as keys and fake data as values."""
@@ -113,7 +124,7 @@ pydantic_type_map = {
     'timestamp with time zone': ('datetime', 'from datetime import datetime'),
     'timestamp without time zone': ('datetime', 'from datetime import datetime'),
     'date': ('datetime.date', 'from datetime import date'),
-    'uuid': ('UUID4', 'from uuid import UUID4'),
+    'uuid': ('UUID4', 'from pydantic import UUID4'),
     'json': ('dict', None),
     'jsonb': ('dict', None),
     'character varying': ('str', None),

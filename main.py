@@ -7,6 +7,7 @@ from dotenv import find_dotenv, load_dotenv
 from util import (
     construct_table_info,
     create_connection,
+    create_insert_statements,
     fetch_foreign_key_details,
     fetch_table_column_details,
     generate_all_pydantic_models,
@@ -75,8 +76,10 @@ def main():
             conn.close()
             print('Connection closed.')
 
-    # Create Pydantic models file
+    # Create Pydantic models file and sql insert statements
     models_strings = generate_all_pydantic_models(tables)
+    sql_statements = create_insert_statements(tables)
+    models_strings['seed.sql'] = '\n'.join(sql_statements)
 
     # Check if the directory exists, if not, create it
     if not os.path.exists(default_directory):

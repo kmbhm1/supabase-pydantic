@@ -47,6 +47,7 @@ class ColumnInfo(AsDictParent):
     name: str
     post_gres_datatype: str
     datatype: str
+    alias: str | None = None
     default: str | None = None
     is_nullable: bool | None = True
     max_length: int | None = None
@@ -70,6 +71,7 @@ class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
     columns: list[ColumnInfo] = field(default_factory=list)
+    generated_data: list[dict] = field(default_factory=list)  # Stores rows of generated data
     foreign_keys: list[ForeignKeyInfo] = field(default_factory=list)
 
     def add_column(self, column: ColumnInfo):
@@ -119,6 +121,7 @@ pydantic_type_map = {
     'numeric': ('float', None),
     'text': ('str', None),
     'varchar': ('str', None),
+    'character varying': ('str', None),
     'boolean': ('bool', None),
     'timestamp': ('datetime', 'from datetime import datetime'),
     'timestamp with time zone': ('datetime', 'from datetime import datetime'),
@@ -127,7 +130,6 @@ pydantic_type_map = {
     'uuid': ('UUID4', 'from pydantic import UUID4'),
     'json': ('dict', None),
     'jsonb': ('dict', None),
-    'character varying': ('str', None),
     'ARRAY': ('list', None),
     # Add more data types and their imports as necessary.
 }

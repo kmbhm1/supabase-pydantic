@@ -5,7 +5,6 @@ description = "A project to migrate Supabase schemas into Pydantic classes"
 authors = ["Kevin Boehm <kmbhm1@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "supabase_pydantic" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -14,6 +13,8 @@ pydantic = "^2.6.3"
 types-psycopg2 = "^2.9.21.20240417"
 faker = "^24.11.0"
 ruff = "^0.4.1"
+isort = "^5.13.2"
+sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
 
 
 [tool.poetry.group.dev.dependencies]
@@ -120,3 +121,6 @@ quote-style = "single"
 indent-style = "space"
 skip-magic-trailing-comma = true
 line-ending = "auto"
+
+[tool.mypy]
+plugins = ["sqlalchemy.ext.mypy.plugin"]

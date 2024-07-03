@@ -4,13 +4,16 @@ import pprint
 
 from dotenv import find_dotenv, load_dotenv
 
-from util import (
+from supabase_pydantic.util import (
     construct_table_info,
     create_connection,
-    create_insert_statements,
-    fetch_foreign_key_details,
-    fetch_table_column_details,
-    generate_all_pydantic_models,
+    query_database,
+    check_connection,
+    GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
+    GET_TABLE_COLUMN_DETAILS,
+    write_pydantic_model_string,
+    run_isort,
+    write_sqlalchemy_model_string,
 )
 
 # Pretty print for testing
@@ -25,15 +28,6 @@ user = os.environ.get('DB_USER')
 password = os.environ.get('DB_PASS')
 host = os.environ.get('DB_HOST')
 port = os.environ.get('DB_PORT')
-
-
-def check_connection(conn):
-    if conn.closed:
-        print('Connection is closed.')
-        return False
-    else:
-        print('Connection is open.')
-        return True
 
 
 def check_readiness():
@@ -63,12 +57,9 @@ def main():
         assert check_connection(conn)
 
         # Fetch table column details & foreign key details
-        column_details = fetch_table_column_details(conn)
-        fk_details = fetch_foreign_key_details(conn)
+        column_details = query_database(conn, GET_ALL_PUBLIC_TABLES_AND_COLUMNS)
+        fk_details = query_database(conn, GET_TABLE_COLUMN_DETAILS)
         tables = construct_table_info(column_details, fk_details)
-        # for t in tables:
-        #     print(t)
-
     except Exception as e:
         raise e
     finally:
@@ -76,20 +67,28 @@ def main():
             conn.close()
             print('Connection closed.')
 
-    # Create Pydantic models file and sql insert statements
-    models_strings = generate_all_pydantic_models(tables)
-    sql_statements = create_insert_statements(tables)
-    models_strings['seed.sql'] = '\n'.join(sql_statements)
+    # Create Pydantic models
+    pydantic_models_string = write_pydantic_model_string(tables)
+    sql_alchemy_models_string = write_sqlalchemy_model_string(tables)
 
     # Check if the directory exists, if not, create it
     if not os.path.exists(default_directory):
         os.makedirs(default_directory)
 
     # Define the full path to the file
-    for fname, model_str in models_strings.items():
-        file_path = os.path.join(default_directory, fname)
-        with open(file_path, 'w') as file:
-            file.write(model_str + '\n')
+    pydantic_schemas_path = os.path.join(default_directory, 'schemas.py')
+    sql_alchemy_models_path = os.path.join(default_directory, 'database.py')
+    for s, fp in zip(
+        [pydantic_models_string, sql_alchemy_models_string], [pydantic_schemas_path, sql_alchemy_models_path]
+    ):
+        with open(fp, 'w') as file:
+            file.write(s)
+
+        try:
+            run_isort(fp)
+        except Exception as e:
+            print('An error occurred while running isort.')
+            print(e)
 
 
 if __name__ == '__main__':

@@ -11,7 +11,12 @@ from .dataclasses import AsDictParent, ColumnInfo, ForeignKeyInfo, TableInfo
 from .db import create_connection, query_database, check_connection
 from .marshalers import construct_table_info
 from .string import to_pascal_case
-from .generator_helpers import write_pydantic_model_string, run_isort, write_sqlalchemy_model_string
+from .generator_helpers import (
+    write_pydantic_model_string,
+    run_isort,
+    write_sqlalchemy_model_string,
+    write_jsonapi_pydantic_model_string,
+)
 
 __all__ = [
     'to_pascal_case',
@@ -34,4 +39,5 @@ __all__ = [
     'write_pydantic_model_string',
     'run_isort',
     'write_sqlalchemy_model_string',
+    'write_jsonapi_pydantic_model_string',
 ]

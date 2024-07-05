@@ -13,6 +13,10 @@ class ModelGenerationType(str, Enum):
 
 
 CUSTOM_MODEL_NAME = 'CustomModel'
+CUSTOM_JSONAPI_META_MODEL_NAME = 'PydanticBaseModel'
+BASE_CLASS_POSTFIX = 'BaseSchema'
+
+CONSTRAINT_TYPE_MAP = {'p': 'PRIMARY KEY', 'f': 'FOREIGN KEY', 'u': 'UNIQUE', 'c': 'CHECK', 'x': 'EXCLUDE'}
 
 
 PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
@@ -46,7 +50,7 @@ SQLALCHEMY_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'character varying': ('String', 'from sqlalchemy import String'),
     'boolean': ('Boolean', 'from sqlalchemy import Boolean'),
     'timestamp': ('DateTime', 'from sqlalchemy import DateTime'),
-    'timestamp with time zone': ('DateTime', 'from sqlalchemy import DateTime'),
+    'timestamp with time zone': ('DateTime', 'from sqlalchemy.dialects.postgresql import TIMESTAMP'),
     'timestamp without time zone': ('DateTime', 'from sqlalchemy import DateTime'),
     'date': ('Date', 'from sqlalchemy import Date'),
     'uuid': ('UUID', 'from sqlalchemy.dialects.postgresql import UUID'),
@@ -101,4 +105,59 @@ WHERE
     AND t.table_type = 'BASE TABLE'
 ORDER BY
     c.table_schema, c.table_name, c.ordinal_position;
+"""
+
+GET_ALL_PUBLIC_TABLES_AND_COLUMNS_2 = """
+SELECT
+    c.table_schema,
+    c.table_name,
+    c.column_name,
+    c.column_default,
+    c.is_nullable,
+    c.data_type,
+    c.character_maximum_length,
+    CASE
+        WHEN tc.constraint_type = 'PRIMARY KEY' THEN 'YES'
+        ELSE 'NO'
+    END AS is_primary_key
+FROM
+    information_schema.columns AS c
+JOIN
+    information_schema.tables AS t 
+    ON c.table_name = t.table_name 
+    AND c.table_schema = t.table_schema
+LEFT JOIN
+    information_schema.key_column_usage AS kcu 
+    ON c.table_name = kcu.table_name 
+    AND c.column_name = kcu.column_name 
+    AND c.table_schema = kcu.table_schema
+LEFT JOIN
+    information_schema.table_constraints AS tc 
+    ON kcu.constraint_name = tc.constraint_name 
+    AND kcu.table_schema = tc.table_schema 
+    AND tc.constraint_type = 'PRIMARY KEY'
+WHERE
+    c.table_schema = 'public'
+    AND t.table_type = 'BASE TABLE'
+ORDER BY
+    c.table_schema, c.table_name, c.ordinal_position;
+"""
+
+GET_CONSTRAINTS = """
+SELECT
+    conname AS constraint_name,
+    conrelid::regclass AS table_name,
+    array_agg(a.attname) AS columns,
+    contype AS constraint_type,
+    pg_get_constraintdef(oid) AS constraint_definition
+FROM
+    pg_constraint
+JOIN
+    pg_attribute AS a ON a.attnum = ANY (conkey) AND a.attrelid = conrelid
+WHERE
+    connamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+GROUP BY
+    conname, conrelid, contype, oid
+ORDER BY
+    conrelid::regclass::text, contype DESC;
 """

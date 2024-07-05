@@ -14,7 +14,9 @@ from supabase_pydantic.util import (
     write_pydantic_model_string,
     run_isort,
     write_sqlalchemy_model_string,
+    write_jsonapi_pydantic_model_string,
 )
+from supabase_pydantic.util.constants import GET_CONSTRAINTS
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)
@@ -50,6 +52,8 @@ def main():
     assert check_readiness()
 
     default_directory = 'entities'
+    jsonapi_directory = os.path.join(default_directory, 'fastapi_jsonapi')
+    fastapi_directory = os.path.join(default_directory, 'fastapi')
 
     try:
         # Create a connection to the database & check if connection is successful
@@ -59,7 +63,8 @@ def main():
         # Fetch table column details & foreign key details
         column_details = query_database(conn, GET_ALL_PUBLIC_TABLES_AND_COLUMNS)
         fk_details = query_database(conn, GET_TABLE_COLUMN_DETAILS)
-        tables = construct_table_info(column_details, fk_details)
+        constraints = query_database(conn, GET_CONSTRAINTS)
+        tables = construct_table_info(column_details, fk_details, constraints)
     except Exception as e:
         raise e
     finally:
@@ -69,18 +74,24 @@ def main():
 
     # Create Pydantic models
     pydantic_models_string = write_pydantic_model_string(tables)
+    pydantic_schemas_path = os.path.join(fastapi_directory, 'schemas.py')
+
     sql_alchemy_models_string = write_sqlalchemy_model_string(tables)
+    sql_alchemy_models_path = os.path.join(jsonapi_directory, 'database.py')
+
+    pydantic_jsonapi_models_string = write_jsonapi_pydantic_model_string(tables)
+    pydantic_jsonapi_schemas_path = os.path.join(jsonapi_directory, 'schemas.py')
+
+    content = [pydantic_models_string, sql_alchemy_models_string, pydantic_jsonapi_models_string]
+    path = [pydantic_schemas_path, sql_alchemy_models_path, pydantic_jsonapi_schemas_path]
 
     # Check if the directory exists, if not, create it
-    if not os.path.exists(default_directory):
-        os.makedirs(default_directory)
+    for d in [default_directory, jsonapi_directory, fastapi_directory]:
+        if not os.path.exists(d):
+            os.makedirs(d)
 
     # Define the full path to the file
-    pydantic_schemas_path = os.path.join(default_directory, 'schemas.py')
-    sql_alchemy_models_path = os.path.join(default_directory, 'database.py')
-    for s, fp in zip(
-        [pydantic_models_string, sql_alchemy_models_string], [pydantic_schemas_path, sql_alchemy_models_path]
-    ):
+    for s, fp in zip(content, path):
         with open(fp, 'w') as file:
             file.write(s)
 

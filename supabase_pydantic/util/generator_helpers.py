@@ -1,6 +1,6 @@
 import subprocess
 from collections import defaultdict, deque
-from supabase_pydantic.util.constants import CUSTOM_MODEL_NAME
+from supabase_pydantic.util.constants import CUSTOM_MODEL_NAME, CUSTOM_JSONAPI_META_MODEL_NAME
 from supabase_pydantic.util.dataclasses import TableInfo
 
 
@@ -116,11 +116,18 @@ def write_pydantic_model_string(tables: list[TableInfo]) -> str:
     working_string = '\n\n\n'.join([table.write_pydantic_working_class() for table in tables])
 
     return (
-        f'{imports_string}\n\n\n'
-        # f'{forward_refs_section_comment}\n\n{forward_refs_string}\n\n\n'
-        f'{custom_model_section_comment}\n\n\n{custom_model_string}\n\n\n'
-        f'{base_section_comment}\n\n\n{base_string}\n\n\n'
-        f'{working_section_comment}\n\n\n{working_string}\n\n\n'
+        '\n\n\n'.join(
+            [
+                imports_string,
+                custom_model_section_comment,
+                custom_model_string,
+                base_section_comment,
+                base_string,
+                working_section_comment,
+                working_string,
+            ]
+        )
+        + '\n\n\n'
     )
 
 
@@ -156,7 +163,71 @@ def write_sqlalchemy_model_string(tables: list[TableInfo]) -> str:
     classes_string = '\n\n\n'.join([table.write_sqlalchemy_class() for table in tables])
 
     return (
-        f'{imports_string}\n\n\n'
-        f'{declarative_base_section_comment}\n\n\n{declarative_base_string}\n\n\n'
-        f'{classes_section_comment}\n\n\n{classes_string}\n\n\n'
+        '\n\n\n'.join(
+            [
+                imports_string,
+                declarative_base_section_comment,
+                declarative_base_string,
+                classes_section_comment,
+                classes_string,
+            ]
+        )
+        + '\n\n\n'
+    )
+
+
+# FastAPI-JSONAPI
+
+
+def write_jsonapi_pydantic_meta_model_string() -> str:
+    """Generate a custom Pydantic model."""
+    return '\n'.join([f'class {CUSTOM_MODEL_NAME}({CUSTOM_JSONAPI_META_MODEL_NAME}):', '\tpass'])
+
+
+def write_jsonapi_pydantic_imports_string(tables: list[TableInfo]) -> str:
+    """Generate the import statements for the Pydantic models."""
+    imports_set = set()
+    for t in tables:
+        _, i = t.get_fastapi_jsonapi_pydantic_imports()
+        imports_set.update(i)
+
+    return '\n'.join(sorted(imports_set))
+
+
+def write_jsonapi_pydantic_model_string(tables: list[TableInfo]) -> str:
+    """Generate the Pydantic model strings for all tables."""
+    # imports
+    imports_string = write_jsonapi_pydantic_imports_string(tables)
+
+    # custom model
+    custom_model_section_comment = (
+        '#' * 30
+        + ' Custom Model Class'
+        + '\n# Note: This is a custom model class for defining common features amongst Base Schema.'
+    )
+    custom_model_string = write_jsonapi_pydantic_meta_model_string()
+
+    # base classes
+    base_section_comment = '#' * 30 + ' Base Classes'
+    base_string = '\n\n'.join([table.write_jsonapi_pydantic_base_class('BaseModel') for table in tables])
+
+    # working classes
+    working_section_comment = '#' * 30 + ' Working Classes'
+    working_string = '\n\n\n'.join(
+        [f'# {table.name}' + table.write_jsonapi_pydantic_working_class() for table in tables]
+    )
+
+    return (
+        '\n\n\n'.join(
+            [
+                imports_string,
+                custom_model_section_comment,
+                custom_model_string,
+                base_section_comment,
+                base_string,
+                working_section_comment,
+                working_string,
+            ]
+        )
+        + '\n\n\n'
     )

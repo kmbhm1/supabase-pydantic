@@ -155,6 +155,14 @@ class ForeignKeyInfo(AsDictParent):
 
         return f'{self.foreign_table_name}: {data_type} = {field_string}'
 
+    def write_jsonapi_sqlalchemy_column_string(self, is_base: bool = False) -> str:
+        """Obtain the SQLAlchemy column string for a foreign key."""
+        # generate type
+        foreign_table = self.get_foreign_table_name(is_base)
+        data_type = f'list[{foreign_table}]'
+
+        return f'{self.foreign_table_name} = relationship("{foreign_table}")'
+
     def write_pydantic_forward_ref(self, is_base: bool = False) -> str:
         """Obtain the Pydantic forward reference string for a foreign key."""
         foreign_table = (
@@ -243,6 +251,16 @@ class TableInfo(AsDictParent):
             dtypes.add(dtype)
 
         return dtypes, imports
+
+    def get_jsonapi_sqlalchemy_relationships(self, is_base: bool = False) -> list[dict]:
+        """Get the JSONAPI relationship information for a table."""
+        relationships = []
+        for fk in self.foreign_keys:
+            r = {}
+            r['name'] = fk.foreign_table_name
+            r['relationship_name'] = fk.get_foreign_table_name(is_base)
+            r['back_populates'] = fk.foreign_table_name
+        return relationships
 
     def _write_base_class_name(self) -> str:
         """Generate the name of the Pydantic parent class."""
@@ -382,6 +400,26 @@ class TableInfo(AsDictParent):
 
         return dtypes, imports
 
+    def get_fastapi_jsonapi_sqlalchemy_imports(self) -> tuple[set[str], set[str]]:
+        """Get the unique datatypes & import statements for a table."""
+        dtypes, imports = set(), set()
+
+        # standards
+        imports.add('from sqlalchemy.ext.declarative import declarative_base')
+        imports.add('from sqlalchemy import Column, ForeignKey')
+        imports.add('from sqlalchemy.orm import relationship')
+
+        if len(self.primary_key()) > 0:
+            imports.add('from sqlalchemy import PrimaryKeyConstraint')
+
+        for c in self.columns:
+            dtype, import_str = c.get_sqlalchemy_import_information()
+            if import_str is not None:
+                imports.add(import_str)
+            dtypes.add(dtype)
+
+        return dtypes, imports
+
     def write_jsonapi_pydantic_base_class(self, metaclass: str | list[str] = CUSTOM_MODEL_NAME) -> str:
         """Generate the Base Pydantic model for a table."""
         primary_columns, columns, _, foreign_table_columns = self._get_columns_for_model()
@@ -418,6 +456,9 @@ class TableInfo(AsDictParent):
             )
 
         return working_class_string
+
+    def write_jsonapi_sqlalchemy_class(self) -> str:
+        pass
 
     def generate_fake_row(self):
         """Generate a dictionary with column names as keys and fake data as values."""

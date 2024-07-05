@@ -209,7 +209,7 @@ def write_jsonapi_pydantic_model_string(tables: list[TableInfo]) -> str:
 
     # base classes
     base_section_comment = '#' * 30 + ' Base Classes'
-    base_string = '\n\n'.join([table.write_jsonapi_pydantic_base_class('BaseModel') for table in tables])
+    base_string = '\n\n'.join([table.write_jsonapi_pydantic_base_class(CUSTOM_MODEL_NAME) for table in tables])
 
     # working classes
     working_section_comment = '#' * 30 + ' Working Classes'

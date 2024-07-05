@@ -107,42 +107,6 @@ ORDER BY
     c.table_schema, c.table_name, c.ordinal_position;
 """
 
-GET_ALL_PUBLIC_TABLES_AND_COLUMNS_2 = """
-SELECT
-    c.table_schema,
-    c.table_name,
-    c.column_name,
-    c.column_default,
-    c.is_nullable,
-    c.data_type,
-    c.character_maximum_length,
-    CASE
-        WHEN tc.constraint_type = 'PRIMARY KEY' THEN 'YES'
-        ELSE 'NO'
-    END AS is_primary_key
-FROM
-    information_schema.columns AS c
-JOIN
-    information_schema.tables AS t 
-    ON c.table_name = t.table_name 
-    AND c.table_schema = t.table_schema
-LEFT JOIN
-    information_schema.key_column_usage AS kcu 
-    ON c.table_name = kcu.table_name 
-    AND c.column_name = kcu.column_name 
-    AND c.table_schema = kcu.table_schema
-LEFT JOIN
-    information_schema.table_constraints AS tc 
-    ON kcu.constraint_name = tc.constraint_name 
-    AND kcu.table_schema = tc.table_schema 
-    AND tc.constraint_type = 'PRIMARY KEY'
-WHERE
-    c.table_schema = 'public'
-    AND t.table_type = 'BASE TABLE'
-ORDER BY
-    c.table_schema, c.table_name, c.ordinal_position;
-"""
-
 GET_CONSTRAINTS = """
 SELECT
     conname AS constraint_name,

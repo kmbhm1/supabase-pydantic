@@ -2,6 +2,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from random import random
 import pprint
+from typing import Literal
 
 from faker import Faker
 
@@ -108,13 +109,10 @@ class ForeignKeyInfo(AsDictParent):
     relation_type: RelationType  # E.g., "One-to-One", "One-to-Many"
     foreign_table_schema: str = 'public'
 
-    def get_foreign_table_name(self, is_base: bool = False) -> str:
+    def get_foreign_table_name(self, is_base: bool = False, is_view: bool = False) -> str:
         """Get the foreign table name."""
-        return (
-            f'{to_pascal_case(self.foreign_table_name)}{BASE_CLASS_POSTFIX}'
-            if is_base
-            else to_pascal_case(self.foreign_table_name)
-        )
+        post = ('View' if is_view else '') + (BASE_CLASS_POSTFIX if is_base else '')
+        return f'{to_pascal_case(self.foreign_table_name)}{post}'
 
     def get_jsonapi_relationship_info(self) -> dict[str, str]:
         """Get the JSONAPI relationship information for a foreign key."""
@@ -123,21 +121,17 @@ class ForeignKeyInfo(AsDictParent):
             rel_info['many'] = 'True'
         return rel_info
 
-    def write_pydantic_column_string(self, is_base: bool = False) -> str:
+    def write_pydantic_column_string(self, is_base: bool = False, is_view: bool = False) -> str:
         """Obtain the Pydantic field string for a foreign key."""
         # generate type
-        foreign_table = self.get_foreign_table_name(is_base)
+        foreign_table = self.get_foreign_table_name(is_base, is_view)
         data_type = f'list[{foreign_table}] | None'
         return f'{self.foreign_table_name}: {data_type} = None'
 
-    def write_jsonapi_pydantic_column_string(self, is_base: bool = False) -> str:
+    def write_jsonapi_pydantic_column_string(self, is_base: bool = False, is_view: bool = False) -> str:
         """Obtain the Pydantic field string for a foreign key."""
         # generate type
-        foreign_table = (
-            f'{to_pascal_case(self.foreign_table_name)}{BASE_CLASS_POSTFIX}'
-            if is_base
-            else to_pascal_case(self.foreign_table_name)
-        )
+        foreign_table = self.get_foreign_table_name(is_base, is_view)
         data_type = f'list[{foreign_table}] | None'
 
         relationship_info = self.get_jsonapi_relationship_info()
@@ -155,28 +149,20 @@ class ForeignKeyInfo(AsDictParent):
 
         return f'{self.foreign_table_name}: {data_type} = {field_string}'
 
-    def write_jsonapi_sqlalchemy_column_string(self, is_base: bool = False) -> str:
+    def write_jsonapi_sqlalchemy_column_string(self, is_base: bool = False, is_view: bool = False) -> str:
         """Obtain the SQLAlchemy column string for a foreign key."""
         # generate type
-        foreign_table = self.get_foreign_table_name(is_base)
-        data_type = f'list[{foreign_table}]'
+        foreign_table = self.get_foreign_table_name(is_base, is_view)
+        # data_type = f'list[{foreign_table}]'
 
         return f'{self.foreign_table_name} = relationship("{foreign_table}")'
-
-    def write_pydantic_forward_ref(self, is_base: bool = False) -> str:
-        """Obtain the Pydantic forward reference string for a foreign key."""
-        foreign_table = (
-            f'{to_pascal_case(self.foreign_table_name)}{BASE_CLASS_POSTFIX}'
-            if is_base
-            else to_pascal_case(self.foreign_table_name)
-        )
-        return f"{foreign_table} = ForwardRef('{foreign_table}')"
 
 
 @dataclass
 class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
+    table_type: str = Literal['BASE TABLE', 'VIEW']
     columns: list[ColumnInfo] = field(default_factory=list)
     foreign_keys: list[ForeignKeyInfo] = field(default_factory=list)
     constraints: list[ConstraintInfo] = field(default_factory=list)
@@ -202,13 +188,13 @@ class TableInfo(AsDictParent):
         """Get the table dependencies (foreign tables) for a table."""
         return set([fk.foreign_table_name for fk in self.foreign_keys])
 
-    def table_forward_refs(self, is_base: bool = False) -> set[str]:
-        """Get the table forward references for a table."""
-        return set([fk.write_pydantic_forward_ref(is_base) for fk in self.foreign_keys])
-
     def primary_key(self) -> list[str]:
         """Get the primary key for a table."""
-        return next(c.columns for c in self.constraints if c.constraint_type() == 'PRIMARY KEY')
+        return (
+            next(c.columns for c in self.constraints if c.constraint_type() == 'PRIMARY KEY')
+            if self.table_type == 'BASE TABLE'
+            else []
+        )
 
     def primary_is_composite(self) -> bool:
         """Check if the primary key is composite."""
@@ -264,7 +250,8 @@ class TableInfo(AsDictParent):
 
     def _write_base_class_name(self) -> str:
         """Generate the name of the Pydantic parent class."""
-        return f'{to_pascal_case(self.name)}{BASE_CLASS_POSTFIX}'
+        post = 'View' + BASE_CLASS_POSTFIX if self.table_type == 'VIEW' else BASE_CLASS_POSTFIX
+        return f'{to_pascal_case(self.name)}{post}'
 
     def _write_pydantic_base_class_string(self, metaclass: str | list[str] = CUSTOM_MODEL_NAME) -> str:
         """Generate the parent Pydantic model string for a table."""
@@ -317,10 +304,6 @@ class TableInfo(AsDictParent):
             '\tpass',
         ]
         return '\n'.join(to_join)
-
-    def write_pydantic_forward_refs(self) -> str:
-        """Generate the Pydantic forward reference string for a table."""
-        return '\n'.join(self.table_forward_refs())
 
     def _write_sqlalchemy_parent_class(self) -> str:
         """Generate the parent SQLAlchemy model string for a table."""
@@ -458,6 +441,7 @@ class TableInfo(AsDictParent):
         return working_class_string
 
     def write_jsonapi_sqlalchemy_class(self) -> str:
+        """Generate the SQLAlchemy model string for a table."""
         pass
 
     def generate_fake_row(self):

@@ -1,4 +1,3 @@
-# Example usage to generate Pydantic models and save them
 import os
 import pprint
 
@@ -13,10 +12,11 @@ from supabase_pydantic.util import (
     GET_TABLE_COLUMN_DETAILS,
     write_pydantic_model_string,
     run_isort,
-    write_sqlalchemy_model_string,
-    write_jsonapi_pydantic_model_string,
+    # write_sqlalchemy_model_string,
+    # write_jsonapi_pydantic_model_string,
 )
 from supabase_pydantic.util.constants import GET_CONSTRAINTS
+import click
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)
@@ -32,8 +32,23 @@ host = os.environ.get('DB_HOST')
 port = os.environ.get('DB_PORT')
 
 
+def reload_env() -> tuple:
+    # Load environment variables from .env file
+    load_dotenv(find_dotenv())
+
+    # Replace these variables with your database connection details
+    db_name = os.environ.get('DB_NAME')
+    user = os.environ.get('DB_USER')
+    password = os.environ.get('DB_PASS')
+    host = os.environ.get('DB_HOST')
+    port = os.environ.get('DB_PORT')
+
+    return db_name, user, password, host, port
+
+
 def check_readiness():
     """Check if environment variables are set correctly."""
+    # db_name, user, password, host, port = reload_env()
     check = {'DB_NAME': db_name, 'DB_USER': user, 'DB_PASS': password, 'DB_HOST': host, 'DB_PORT': port}
     for k, v in check.items():
         # print(k, v)
@@ -45,14 +60,17 @@ def check_readiness():
     return True
 
 
-# Main function to execute the whole process
-def main():
+@click.command()
+@click.option('--directory', default='entities', help='The directory .')
+def main(directory: str):
+    """A CLI tool to generate Pydantic models from a PostgreSQL database."""
+
     # Load environment variables from .env file & check if they are set correctly
     load_dotenv(find_dotenv())
     assert check_readiness()
 
-    default_directory = 'entities'
-    jsonapi_directory = os.path.join(default_directory, 'fastapi_jsonapi')
+    default_directory = directory
+    # jsonapi_directory = os.path.join(default_directory, 'fastapi_jsonapi')
     fastapi_directory = os.path.join(default_directory, 'fastapi')
 
     try:
@@ -76,17 +94,17 @@ def main():
     pydantic_models_string = write_pydantic_model_string(tables)
     pydantic_schemas_path = os.path.join(fastapi_directory, 'schemas.py')
 
-    sql_alchemy_models_string = write_sqlalchemy_model_string(tables)
-    sql_alchemy_models_path = os.path.join(jsonapi_directory, 'database.py')
+    # sql_alchemy_models_string = write_sqlalchemy_model_string(tables)
+    # sql_alchemy_models_path = os.path.join(jsonapi_directory, 'database.py')
 
-    pydantic_jsonapi_models_string = write_jsonapi_pydantic_model_string(tables)
-    pydantic_jsonapi_schemas_path = os.path.join(jsonapi_directory, 'schemas.py')
+    # pydantic_jsonapi_models_string = write_jsonapi_pydantic_model_string(tables)
+    # pydantic_jsonapi_schemas_path = os.path.join(jsonapi_directory, 'schemas.py')
 
-    content = [pydantic_models_string, sql_alchemy_models_string, pydantic_jsonapi_models_string]
-    path = [pydantic_schemas_path, sql_alchemy_models_path, pydantic_jsonapi_schemas_path]
+    content = [pydantic_models_string]  # , sql_alchemy_models_string, pydantic_jsonapi_models_string]
+    path = [pydantic_schemas_path]  # , sql_alchemy_models_path, pydantic_jsonapi_schemas_path]
 
     # Check if the directory exists, if not, create it
-    for d in [default_directory, jsonapi_directory, fastapi_directory]:
+    for d in [default_directory, fastapi_directory]:  # , jsonapi_directory]:
         if not os.path.exists(d):
             os.makedirs(d)
 

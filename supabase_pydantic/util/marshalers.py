@@ -37,10 +37,10 @@ def get_table_details_from_columns(column_details: list) -> dict[str, TableInfo]
     """Get the table details from the column details."""
     tables = {}
     for row in column_details:
-        (schema, table_name, column_name, default, is_nullable, data_type, max_length) = row
+        (schema, table_name, column_name, default, is_nullable, data_type, max_length, table_type) = row
         table_key = (schema, table_name)
         if table_key not in tables:
-            tables[table_key] = TableInfo(name=table_name, schema=schema)
+            tables[table_key] = TableInfo(name=table_name, schema=schema, table_type=table_type)
         column_info = ColumnInfo(
             name=standardize_column_name(column_name),
             alias=get_alias(column_name),

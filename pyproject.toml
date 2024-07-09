@@ -159,7 +159,6 @@ no_git_verify = false
 tag_format = "v{version}"
 version_variable = "pyproject.toml:version" # version location
 changelog_file = "CHANGELOG.md"             # changelog location
-build_command = "poetry build"              # build dists
 dist_path = "dist/"                         # where to put dists
 upload_to_release = true                    # auto-create GitHub release
 upload_to_pypi = false                      # don't auto-upload to PyPI

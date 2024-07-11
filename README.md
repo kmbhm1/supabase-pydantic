@@ -17,10 +17,5 @@ $ echo "DB_PORT=<your_db_port>" >> .env         # add your postgres db port
 ## Usage
 
 ```bash
-$ sbpyd  # generate default schemas.py to ./entities/fastapi
+$ sb-pydantic  # generate default schemas.py to ./entities/fastapi
 ```
-
-## References
-
-- [Inspiration](https://github.com/yngvem/python-project-structure) for the project structure.
-- Github Actions [inspiration](https://endjin.com/blog/2023/02/how-to-implement-continuous-deployment-of-python-packages-with-github-actions) for CI/CD.

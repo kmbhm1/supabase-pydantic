@@ -24,6 +24,8 @@ jobs:
           cache: "poetry"
       - name: Install dependencies
         run: poetry install
+      - name: Build package
+        run: poetry build
 
   release:
     needs: build
@@ -47,24 +49,17 @@ jobs:
           cache: "poetry"
       - name: Install dependencies
         run: poetry install
-      - name: Build package
-        run: poetry build
-      - name: Prepare package for release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          poetry run semantic-release publish
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Python Semantic (Version &) Release
+        id: release
+        uses: python-semantic-release/python-semantic-release@v9.8.5
         with:
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
-      - name: Publish to PyPI
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # <other options here>
+      - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish package to GitHub Release
+        uses: python-semantic-release/upload-to-gh-release@v9.8.5
+        if: steps.release.outputs.released == 'true'
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          repository_url: https://pypi.org/project/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release.outputs.tag }}

@@ -22,7 +22,6 @@ classifiers = [
 ]
 
 [tool.poetry.scripts]
-sbpyd = 'supabase_pydantic.cli:main'
 sb-pydantic = 'supabase_pydantic.cli:main'
 supabase-pydantic = 'supabase_pydantic.cli:main'
 

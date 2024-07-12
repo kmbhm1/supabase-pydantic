@@ -38,25 +38,40 @@ jobs:
       matrix:
         python-version: ["3.10"]
     steps:
-      - uses: actions/checkout@v3
+      - name: Create GitHub App Token
+        uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          fetch-depth: 0
+          app-id: ${{ vars.VERSION_BUMPER_APPID }}
+          private-key: ${{ secrets.VERSION_BUMPER_SECRET }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # pulls all history and tags for Lerna to detect which packages changed
+          token: ${{ steps.app-token.outputs.token }}
+
       - name: Install Poetry
         run: pipx install poetry
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           cache: "poetry"
+
       - name: Install dependencies
         run: poetry install
-      - name: Python Semantic (Version &) Release
+
+      - name: Python Semantic Increase Version & Release
         id: release
         uses: python-semantic-release/python-semantic-release@v9.8.5
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
       - name: Publish package to GitHub Release
         uses: python-semantic-release/upload-to-gh-release@v9.8.5
         if: steps.release.outputs.released == 'true'

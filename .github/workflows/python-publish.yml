@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+      contents: write
     strategy:
       matrix:
         python-version: ["3.10"]
@@ -54,7 +55,6 @@ jobs:
         uses: python-semantic-release/python-semantic-release@v9.8.5
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # <other options here>
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Publish package to GitHub Release

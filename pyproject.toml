@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "supabase-pydantic"
-version = "0.2.0"
+version = "0.2.1"
 description = "A project to translate Supabase schemas into Pydantic models"
 authors = ["K Boehm <kmbhm1@gmail.com>"]
 license = "MIT"

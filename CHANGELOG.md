@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v0.2.1 (2024-07-12)
+
+### Fix
+
+* fix(cicd): change strategy for poetry install (#12) ([`825c4e2`](https://github.com/kmbhm1/supabase-pydantic/commit/825c4e2551d8d5f5d51e83e0e1e9c977b50f5219))
+
+* fix(cicd): change version of python semantic release (#11) ([`1a0ef1c`](https://github.com/kmbhm1/supabase-pydantic/commit/1a0ef1c075e9d6c3a393a079c03682828e821ee1))
+
+* fix(cicd): fix wrong version pointer and add build command (#10) ([`ded4864`](https://github.com/kmbhm1/supabase-pydantic/commit/ded486454834ca0811c03dae3c9333e1e4713a6d))
+
 ## v0.2.0 (2024-07-12)
 
 ### Feature
@@ -28,7 +38,7 @@
 
 ## v0.1.0 (2024-07-09)
 
-### Feature
+### Unknown
 
 * Initialize project (#1)
 

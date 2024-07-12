@@ -62,7 +62,8 @@ def check_readiness():
 
 @click.command()
 @click.option('--directory', default='entities', help='The directory .')
-def main(directory: str):
+@click.option('--verbose', is_flag=True, help='Print verbose output.')
+def main(directory: str, verbose: bool = False):
     """A CLI tool to generate Pydantic models from a PostgreSQL database."""
 
     # Load environment variables from .env file & check if they are set correctly

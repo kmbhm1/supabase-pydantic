@@ -51,21 +51,21 @@ jobs:
           fetch-depth: 0 # pulls all history and tags for Lerna to detect which packages changed
           token: ${{ steps.app-token.outputs.token }}  # https://python-semantic-release.readthedocs.io/en/latest/automatic-releases/github-actions.html; necessary to set from previous step
 
-      - name: Install Poetry
-        run: pipx install poetry
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           cache: "poetry"
 
+      - name: Install Poetry
+        run: pipx install poetry
+
       - name: Install dependencies
         run: poetry install
 
-      - name: Python Semantic Increase Version & Release
+      - name: Python Semantic Release (Version)
         id: release
-        uses: python-semantic-release/python-semantic-release@v9.8.5
+        uses: python-semantic-release/python-semantic-release@v8.3.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 

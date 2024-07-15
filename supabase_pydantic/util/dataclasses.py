@@ -162,7 +162,7 @@ class ForeignKeyInfo(AsDictParent):
 class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
-    table_type: str = Literal['BASE TABLE', 'VIEW']
+    table_type: Literal['BASE TABLE', 'VIEW'] = 'BASE TABLE'
     columns: list[ColumnInfo] = field(default_factory=list)
     foreign_keys: list[ForeignKeyInfo] = field(default_factory=list)
     constraints: list[ConstraintInfo] = field(default_factory=list)
@@ -248,19 +248,17 @@ class TableInfo(AsDictParent):
             r['back_populates'] = fk.foreign_table_name
         return relationships
 
-    def _write_base_class_name(self) -> str:
-        """Generate the name of the Pydantic parent class."""
-        post = 'View' + BASE_CLASS_POSTFIX if self.table_type == 'VIEW' else BASE_CLASS_POSTFIX
-        return f'{to_pascal_case(self.name)}{post}'
+    def get_primary_columns(self) -> list[ColumnInfo]:
+        """Get the primary columns for a table."""
+        return [c for c in self.columns if c.name in self.primary_key()]
 
-    def _write_pydantic_base_class_string(self, metaclass: str | list[str] = CUSTOM_MODEL_NAME) -> str:
-        """Generate the parent Pydantic model string for a table."""
-        if isinstance(metaclass, list):
-            metaclass = ', '.join(metaclass)
-        return (
-            f'class {self._write_base_class_name()}({metaclass}):'
-            f'\n\t"""{to_pascal_case(self.name)} Base Schema."""\n'
-        )
+    def get_secondary_columns(self) -> list[ColumnInfo]:
+        """Get the secondary columns for a table."""
+        return [c for c in self.columns if c.name not in self.primary_key()]
+
+    def get_foreign_table_columns(self) -> list[str]:
+        """Get the foreign table columns for a table."""
+        return [fk.write_pydantic_column_string() for fk in self.foreign_keys]
 
     def _get_columns_for_model(
         self, as_parent: bool = True
@@ -304,10 +302,6 @@ class TableInfo(AsDictParent):
             '\tpass',
         ]
         return '\n'.join(to_join)
-
-    def _write_sqlalchemy_parent_class(self) -> str:
-        """Generate the parent SQLAlchemy model string for a table."""
-        return f'class {to_pascal_case(self.name)}(Base):'
 
     def _write_sql_alchemy_table_args(self) -> list[str]:
         """Generate the SQLAlchemy table arguments for a table."""

@@ -10,10 +10,11 @@ from supabase_pydantic.util import (
     check_connection,
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_TABLE_COLUMN_DETAILS,
-    write_pydantic_model_string,
+    # write_pydantic_model_string,
     run_isort,
     # write_sqlalchemy_model_string,
     # write_jsonapi_pydantic_model_string,
+    FileWriter,
 )
 from supabase_pydantic.util.constants import GET_CONSTRAINTS
 import click
@@ -62,7 +63,7 @@ def check_readiness():
 
 @click.command()
 @click.option('--directory', default='entities', help='The directory .')
-@click.option('--verbose', is_flag=True, help='Print verbose output.')
+# @click.option('--verbose', is_flag=True, help='Print verbose output.')
 def main(directory: str, verbose: bool = False):
     """A CLI tool to generate Pydantic models from a PostgreSQL database."""
 
@@ -92,8 +93,10 @@ def main(directory: str, verbose: bool = False):
             print('Connection closed.')
 
     # Create Pydantic models
-    pydantic_models_string = write_pydantic_model_string(tables)
-    pydantic_schemas_path = os.path.join(fastapi_directory, 'schemas.py')
+    pydantic_fastapi_writer = FileWriter(tables, file_type='pydantic', framework_type='fastapi')
+    pydantic_fastapi_path = os.path.join(fastapi_directory, 'schemas.py')
+    # pydantic_models_string = write_pydantic_model_string(tables)
+    # pydantic_schemas_path = os.path.join(fastapi_directory, 'schemas.py')
 
     # sql_alchemy_models_string = write_sqlalchemy_model_string(tables)
     # sql_alchemy_models_path = os.path.join(jsonapi_directory, 'database.py')
@@ -101,8 +104,8 @@ def main(directory: str, verbose: bool = False):
     # pydantic_jsonapi_models_string = write_jsonapi_pydantic_model_string(tables)
     # pydantic_jsonapi_schemas_path = os.path.join(jsonapi_directory, 'schemas.py')
 
-    content = [pydantic_models_string]  # , sql_alchemy_models_string, pydantic_jsonapi_models_string]
-    path = [pydantic_schemas_path]  # , sql_alchemy_models_path, pydantic_jsonapi_schemas_path]
+    # content = [pydantic_models_string]  # , sql_alchemy_models_string, pydantic_jsonapi_models_string]
+    # path = [pydantic_schemas_path]  # , sql_alchemy_models_path, pydantic_jsonapi_schemas_path]
 
     # Check if the directory exists, if not, create it
     for d in [default_directory, fastapi_directory]:  # , jsonapi_directory]:
@@ -110,15 +113,18 @@ def main(directory: str, verbose: bool = False):
             os.makedirs(d)
 
     # Define the full path to the file
-    for s, fp in zip(content, path):
-        with open(fp, 'w') as file:
-            file.write(s)
+    # for s, fp in zip(content, path):
+    #     with open(fp, 'w') as file:
+    #         file.write(s)
 
-        try:
-            run_isort(fp)
-        except Exception as e:
-            print('An error occurred while running isort.')
-            print(e)
+    # Write the Pydantic models to the file
+    pydantic_fastapi_writer.write(pydantic_fastapi_path, True)
+
+    try:
+        run_isort(pydantic_fastapi_path)
+    except Exception as e:
+        print('An error occurred while running isort.')
+        print(e)
 
 
 if __name__ == '__main__':

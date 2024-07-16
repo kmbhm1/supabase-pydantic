@@ -1,43 +1,11 @@
-from enum import Enum
-from typing import Any
 from supabase_pydantic.util.constants import (
     BASE_CLASS_POSTFIX,
     CUSTOM_MODEL_NAME,
     PYDANTIC_TYPE_MAP,
     SQLALCHEMY_TYPE_MAP,
 )
-from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, TableInfo
-from supabase_pydantic.util.generator_helpers import write_custom_model_string
+from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, FrameworkType, OrmType, TableInfo
 from supabase_pydantic.util.string import to_pascal_case
-
-
-def add_from_string(cls: Any) -> Any:
-    @classmethod
-    def from_string(cls, value: str):
-        value_lower = value.lower()
-        for member in cls:
-            if member.value == value_lower:
-                return member
-        raise ValueError(f"'{value}' is not a valid {cls.__name__}")
-
-    cls.from_string = from_string
-    return cls
-
-
-@add_from_string
-class OrmType(Enum):
-    """Enum for file types."""
-
-    PYDANTIC = 'pydantic'
-    SQLALCHEMY = 'sqlalchemy'
-
-
-@add_from_string
-class FrameworkType(Enum):
-    """Enum for framework types."""
-
-    FASTAPI = 'fastapi'
-    FASTAPI_JSONAPI = 'fastapi-jsonapi'
 
 
 class ClassWriter:
@@ -46,19 +14,43 @@ class ClassWriter:
         table: TableInfo,
         file_type: OrmType | str = OrmType.PYDANTIC,
         framework_type: FrameworkType | str = FrameworkType.FASTAPI,
+        nullify_base_schema_class: bool = False,
     ):
         self.table = table
         self.file_type = OrmType.from_string(file_type) if isinstance(file_type, str) else file_type
         self.framework_type = (
             FrameworkType.from_string(framework_type) if isinstance(framework_type, str) else framework_type
         )
+        self.nullify_base_schema_class = nullify_base_schema_class
 
-        self.base_class_name = self.write_base_class_name()
-
-    # Write entire class string
+    # Write class string
     def write(self) -> str:
         """Write the class string."""
         return self.write_base_class_header_string() + self.write_columns()
+
+    def write_working_class(self) -> str | None:
+        """Generate the working class string for a table."""
+
+        if self.framework_type == FrameworkType.FASTAPI and self.file_type == OrmType.PYDANTIC:
+            to_join = [
+                f'class {to_pascal_case(self.table.name)}({self.write_base_class_name()}):',
+                f'\t"""{to_pascal_case(self.table.name)} Schema for Pydantic.',
+                f'\n\tInherits from {self.write_base_class_name()}. Add any customization here.',
+                '\t"""',
+            ]
+
+            # add foreign keys
+            foreign_columns = [
+                self.write_foreign_table_column(fk, False, False, True)  # need to feed is_base, here, etc.
+                for fk in self.table.foreign_keys
+            ]
+            if len(foreign_columns) > 0:
+                to_join.append('\n\t# Foreign Keys\n' + '\n'.join([f'\t{c}' for c in foreign_columns]))
+            else:
+                to_join.append('\tpass')
+
+            return '\n'.join(to_join)
+        return None
 
     # Base class headers
     def write_base_class_name(self) -> str:
@@ -67,7 +59,8 @@ class ClassWriter:
             return to_pascal_case(self.table.name)
 
         post = 'View' + BASE_CLASS_POSTFIX if self.table.table_type == 'VIEW' else BASE_CLASS_POSTFIX
-        return f'{to_pascal_case(self.table.name)}{post}'
+        nullable_post = 'Nullable' if self.nullify_base_schema_class else ''
+        return f'{to_pascal_case(self.table.name)}{post}{nullable_post}'
 
     def write_base_class_docstring(self) -> str:
         """Generate the docstring for the base class.
@@ -75,8 +68,9 @@ class ClassWriter:
         Newlines and tabs are added for better readability.
         """
         if self.file_type == OrmType.SQLALCHEMY:
-            return f'\n\t"""{to_pascal_case(self.table.name)} Base."""\n\n\t__tablename__ = "{self.table.name}"\n'
-        return f'\n\t"""{to_pascal_case(self.table.name)} Base Schema."""\n'
+            return f'\n\t"""{to_pascal_case(self.table.name)} Base."""\n\n\t__tablename__ = "{self.table.name}"\n\n'
+        base_description = 'Nullable Base' if self.nullify_base_schema_class else 'Base'
+        return f'\n\t"""{to_pascal_case(self.table.name)} {base_description} Schema."""\n\n'
 
     def write_base_class_meta_string(self, metaclass: str | list[str] = CUSTOM_MODEL_NAME) -> str | None:
         """Generate the meta string for the base class."""
@@ -100,6 +94,9 @@ class ClassWriter:
     # Class Columns
     def write_column_base_type(self, c: ColumnInfo) -> str:
         """Generate the base type for a column."""
+
+        # Developer's Note: self.nullify_base_schema_class only affects Pydantic models for now
+
         if self.file_type == OrmType.SQLALCHEMY:
             base_type = SQLALCHEMY_TYPE_MAP.get(c.post_gres_datatype, ('String', None))[0]
             if base_type.lower() == 'uuid':
@@ -111,11 +108,13 @@ class ClassWriter:
 
         else:
             base_type = PYDANTIC_TYPE_MAP.get(c.post_gres_datatype, ('str', None))[0]
-            return f'{base_type} | None' if c.is_nullable else base_type
+            return f'{base_type} | None' if (c.is_nullable or self.nullify_base_schema_class) else base_type
 
     def write_column_field_values(self, c: ColumnInfo) -> str | None:
         """Generate the field values for a column."""
         field_values = dict()
+
+        # Developer's Note: self.nullify_base_schema_class only affects Pydantic models for now
 
         if self.file_type == OrmType.SQLALCHEMY:
             field_values['nullable'] = 'True' if c.is_nullable else 'False'
@@ -123,7 +122,7 @@ class ClassWriter:
                 field_values['primary_key'] = 'True'
 
         else:
-            if c.is_nullable is not None and c.is_nullable:
+            if (c.is_nullable is not None and c.is_nullable) or self.nullify_base_schema_class:
                 field_values['default'] = 'None'
             if c.alias is not None:
                 field_values['alias'] = f'"{c.alias}"'
@@ -147,15 +146,23 @@ class ClassWriter:
     # 1. need a solution for is_base and is_view feeding into this fn
     # 2. need ability to add None as default value
     # 3. need ability check one to many, etc. relationships and adjust this line accordingly
-    def write_foreign_table_column(self, fk: ForeignKeyInfo, is_base: bool = False, is_view: bool = False) -> str:
+    def write_foreign_table_column(
+        self, fk: ForeignKeyInfo, is_base: bool = False, is_view: bool = False, is_nullable: bool = True
+    ) -> str:
         """Generate the column string for a foreign table."""
         post = ('View' if is_view else '') + (BASE_CLASS_POSTFIX if is_base else '')
         foreign_table_name = f'{to_pascal_case(fk.foreign_table_name)}{post}'
+        column_name = fk.foreign_table_name.lower()
         base_type = f'list[{foreign_table_name}]'
-        if is_base:
+        if is_nullable:
             base_type += ' | None'
 
-        return f'{fk.foreign_table_name.lower()}: {base_type} = None'
+        # Add annotated for base schema mypy translations
+        # if not is_base:
+        #     base_schema_name = f'{to_pascal_case(fk.foreign_table_name)}{BASE_CLASS_POSTFIX}'
+        #     base_type = f'Annotated[{base_type}, {base_schema_name}.{column_name}]'
+
+        return f'{column_name}: {base_type}' + (' = Field(default=None)' if is_nullable else '')
 
     def write_table_args(self) -> list[str]:
         """Generate the table args for a table."""
@@ -176,10 +183,14 @@ class ClassWriter:
         primary_columns = [self.write_column(c) for c in self.table.get_primary_columns()]
         sorted_columns = sorted(self.table.get_secondary_columns(), key=lambda x: x.name)
         columns = [self.write_column(c) for c in sorted_columns]
-        foreign_columns = [
-            self.write_foreign_table_column(fk, True, False)  # need to feed is_base, here, etc.
-            for fk in self.table.foreign_keys
-        ]
+        foreign_columns = (
+            [
+                self.write_foreign_table_column(fk, True, False, True)  # need to feed is_base, here, etc.
+                for fk in self.table.foreign_keys
+            ]
+            if self.file_type == OrmType.SQLALCHEMY  # only add foreign tables to working classes in pydantic
+            else []
+        )
         table_args = self.write_table_args()
 
         class_string = ''
@@ -211,47 +222,48 @@ class FileWriter:
         tables: list[TableInfo],
         file_type: OrmType | str = OrmType.PYDANTIC,
         framework_type: FrameworkType | str = FrameworkType.FASTAPI,
+        nullify_base_schema_class: bool = False,
     ):
         self.tables = tables
         self.file_type = OrmType.from_string(file_type) if isinstance(file_type, str) else file_type
         self.framework_type = (
             FrameworkType.from_string(framework_type) if isinstance(framework_type, str) else framework_type
         )
+        self.nullify_base_schema_class = nullify_base_schema_class
 
     def write(self, path: str, overwrite: bool = True):
         """Write the file to the given path."""
         # imports
         imports_string = self.write_imports()
 
-        # custom models
+        # custom
         custom_model_section, custom_model_string = '', ''
         if self.file_type == OrmType.PYDANTIC:
             custom_model_section = self.write_custom_model_section_comment()
-            custom_model_string = write_custom_model_string()
+            custom_model_string = self.write_custom_model_string()
+        if self.file_type == OrmType.SQLALCHEMY:
+            custom_model_section = self.write_declarative_base_section_comment()
+            custom_model_string = self.write_declarative_base_string()
 
         # base classes
         base_section = self.write_base_section_comment()
         base_string = '\n\n\n'.join([self.write_table_class(t) for t in self.tables])
 
-        # TODO: add working classes
-        # working_section = self.write_working_section_comment()
-        # working_string = ''  # TODO: implement writer
+        # working classes
+        working_string = self.write_working_classes()
+        working_section = ''
+        if bool(working_string):
+            working_section = self.write_working_section_comment()
 
         # final file string
-        file_string = (
-            '\n\n\n'.join(
-                [
-                    imports_string,
-                    custom_model_section,
-                    custom_model_string,
-                    base_section,
-                    base_string,
-                    # working_section,
-                    # working_string,
-                ]
-            )
-            + '\n\n\n'
-        )
+        final_sections = [imports_string, base_section, base_string]
+        if bool(custom_model_string):
+            final_sections.insert(1, custom_model_section)
+            final_sections.insert(2, custom_model_string)
+        if bool(working_string):
+            final_sections.append(working_section)
+            final_sections.append(working_string)
+        file_string = '\n\n\n'.join(final_sections) + '\n\n\n'
 
         # write to file
         with open(path, 'w' if overwrite else 'a') as f:
@@ -282,6 +294,9 @@ class FileWriter:
                 else:
                     imports.add('from pydantic import BaseModel')
                     imports.add('from pydantic import Field')
+
+                # if len(table.foreign_keys) > 0:
+                #     imports.add('from typing import Annotated')
 
                 # both
                 if len(table.table_dependencies()) > 0:
@@ -317,8 +332,42 @@ class FileWriter:
     # Classes
     def write_table_class(self, table: TableInfo) -> str:
         """Generate the class string for a table."""
-        class_writer = ClassWriter(table, self.file_type, self.framework_type)
+        class_writer = ClassWriter(table, self.file_type, self.framework_type, self.nullify_base_schema_class)
         return class_writer.write()
+
+    def write_working_class(self, table: TableInfo) -> str:
+        """Generate the working class string for a table."""
+        class_writer = ClassWriter(table, self.file_type, self.framework_type, self.nullify_base_schema_class)
+        return class_writer.write_working_class()
+
+    def write_working_classes(self) -> str:
+        """Generate the working class strings for all tables.
+
+        This function contains the logic to handle when and how working classes
+        should be written.
+        """
+        if self.file_type == OrmType.PYDANTIC and self.framework_type == FrameworkType.FASTAPI:
+            return '\n\n\n'.join([self.write_working_class(t) for t in self.tables])
+        return ''
+
+    def write_all_classes(self, table: TableInfo) -> tuple[str, str]:
+        """Generate the working class string for a table.
+
+        Helper method to generate both the working class and the base class.
+
+        Returns:
+            tuple[str, str]: The base class string and the working class string
+        """
+        class_writer = ClassWriter(table, self.file_type, self.framework_type, self.nullify_base_schema_class)
+        return class_writer.write(), class_writer.write_working_class()
+
+    def write_custom_model_string(self) -> str:
+        """Generate a custom Pydantic model."""
+        return '\n'.join([f'class {CUSTOM_MODEL_NAME}(BaseModel):', '\tpass'])
+
+    def write_declarative_base_string(self) -> str:
+        """Generate the declarative base string for SQLAlchemy."""
+        return 'Base = declarative_base()'
 
     # Comments
     def write_base_section_comment(self) -> str:
@@ -336,3 +385,149 @@ class FileWriter:
     def write_working_section_comment(self) -> str:
         """Generate the working section comment."""
         return '#' * 30 + ' Working Classes'
+
+    def write_declarative_base_section_comment(self) -> str:
+        """Generate the declarative base section comment."""
+        return '#' * 30 + ' Declarative Base'
+
+
+# TODO: add these methods back in for jsonapi transformations
+
+# def get_fastapi_jsonapi_pydantic_imports(self) -> tuple[set[str], set[str]]:
+#     """Get the unique datatypes & import statements for a table."""
+#     dtypes, imports = set(), set()
+
+#     # standards
+#     imports.add('from pydantic import BaseModel as PydanticBaseModel')
+#     imports.add('from fastapi_jsonapi.schema_base import BaseModel, Field, RelationshipInfo')
+#     if len(self.table_dependencies()) > 0:
+#         imports.add('from __future__ import annotations')
+
+#     for c in self.columns:
+#         dtype, import_str = c.get_pydantic_import_information()
+#         if import_str is not None:
+#             imports.add(import_str)
+#         dtypes.add(dtype)
+
+#     return dtypes, imports
+
+# def get_fastapi_jsonapi_sqlalchemy_imports(self) -> tuple[set[str], set[str]]:
+#     """Get the unique datatypes & import statements for a table."""
+#     dtypes, imports = set(), set()
+
+#     # standards
+#     imports.add('from sqlalchemy.ext.declarative import declarative_base')
+#     imports.add('from sqlalchemy import Column, ForeignKey')
+#     imports.add('from sqlalchemy.orm import relationship')
+
+#     if len(self.primary_key()) > 0:
+#         imports.add('from sqlalchemy import PrimaryKeyConstraint')
+
+#     for c in self.columns:
+#         dtype, import_str = c.get_sqlalchemy_import_information()
+#         if import_str is not None:
+#             imports.add(import_str)
+#         dtypes.add(dtype)
+
+#     return dtypes, imports
+
+# def write_jsonapi_pydantic_base_class(self, metaclass: str | list[str] = CUSTOM_MODEL_NAME) -> str:
+#     """Generate the Base Pydantic model for a table."""
+#     primary_columns, columns, _, foreign_table_columns = self._get_columns_for_model()
+
+#     class_string = self._write_pydantic_base_class_string(metaclass) + '\n'
+#     if len(primary_columns) > 0:
+#         class_string += '\t# Primary Keys\n'
+#         class_string += '\n'.join([f'\t{c.write_pydantic_column_string()}' for c in primary_columns])
+#     if len(columns) > 0:
+#         if len(primary_columns) > 0:
+#             class_string += '\n\n'
+#         class_string += '\t# Columns\n'
+#         class_string += '\n'.join([f'\t{c.write_pydantic_column_string()}' for c in columns])
+#     if len(foreign_table_columns) > 0:
+#         if len(primary_columns) > 0 or len(columns) > 0:
+#             class_string += '\n\n'
+#         class_string += '\t# Relationships\n' + '\n'.join([f'\t{c}' for c in foreign_table_columns])
+
+#     return class_string
+
+# def write_jsonapi_pydantic_working_class(self) -> str:
+#     """Generate the Pydantic model string for a table based on the parent class."""
+#     b = self._write_base_class_name()
+#     working_class_types = ['Patch', 'Input', 'Item']
+
+#     working_class_string = ''
+#     for t in working_class_types:
+#         working_class_string += '\n\n' + '\n'.join(
+#             [
+#                 f'class {to_pascal_case(self.name)}{t}Schema({b}):',
+#                 f'\t"""{to_pascal_case(self.name)} {t} Schema."""',
+#                 '\tpass',
+#             ]
+#         )
+
+#     return working_class_string
+
+# def write_jsonapi_pydantic_meta_model_string() -> str:
+#     """Generate a custom Pydantic model."""
+#     return '\n'.join([f'class {CUSTOM_MODEL_NAME}({CUSTOM_JSONAPI_META_MODEL_NAME}):', '\tpass'])
+
+
+# def write_jsonapi_pydantic_imports_string(tables: list[TableInfo]) -> str:
+#     """Generate the import statements for the Pydantic models."""
+#     imports_set = set()
+#     for t in tables:
+#         _, i = t.get_fastapi_jsonapi_pydantic_imports()
+#         imports_set.update(i)
+
+#     return '\n'.join(sorted(imports_set))
+
+
+# def write_jsonapi_pydantic_model_string(tables: list[TableInfo]) -> str:
+#     """Generate the Pydantic model strings for all tables."""
+#     # imports
+#     imports_string = write_jsonapi_pydantic_imports_string(tables)
+
+#     # custom model
+#     custom_model_section_comment = (
+#         '#' * 30
+#         + ' Custom Model Class'
+#         + '\n# Note: This is a custom model class for defining common features amongst Base Schema.'
+#     )
+#     custom_model_string = write_jsonapi_pydantic_meta_model_string()
+
+#     # base classes
+#     base_section_comment = '#' * 30 + ' Base Classes'
+#     base_string = '\n\n'.join([table.write_jsonapi_pydantic_base_class(CUSTOM_MODEL_NAME) for table in tables])
+
+#     # working classes
+#     working_section_comment = '#' * 30 + ' Working Classes'
+#     working_string = '\n\n\n'.join(
+#         [f'# {table.name}' + table.write_jsonapi_pydantic_working_class() for table in tables]
+#     )
+
+#     return (
+#         '\n\n\n'.join(
+#             [
+#                 imports_string,
+#                 custom_model_section_comment,
+#                 custom_model_string,
+#                 base_section_comment,
+#                 base_string,
+#                 working_section_comment,
+#                 working_string,
+#             ]
+#         )
+#         + '\n\n\n'
+#     )
+
+
+# def get_jsonapi_sqlalchemy_relationships(self, is_base: bool = False) -> list[dict]:
+#     """Get the JSONAPI relationship information for a table."""
+#     relationships = []
+#     for fk in self.foreign_keys:
+#         r = {}
+#         r['name'] = fk.foreign_table_name
+#         r['relationship_name'] = fk.get_foreign_table_name(is_base)
+#         r['back_populates'] = fk.foreign_table_name
+#     return relationships

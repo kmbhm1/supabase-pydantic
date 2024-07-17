@@ -1,5 +1,6 @@
 from supabase_pydantic.util.constants import (
     BASE_CLASS_POSTFIX,
+    CUSTOM_JSONAPI_META_MODEL_NAME,
     CUSTOM_MODEL_NAME,
     PYDANTIC_TYPE_MAP,
     SQLALCHEMY_TYPE_MAP,
@@ -31,25 +32,42 @@ class ClassWriter:
     def write_working_class(self) -> str | None:
         """Generate the working class string for a table."""
 
-        if self.framework_type == FrameworkType.FASTAPI and self.file_type == OrmType.PYDANTIC:
-            to_join = [
-                f'class {to_pascal_case(self.table.name)}({self.write_base_class_name()}):',
-                f'\t"""{to_pascal_case(self.table.name)} Schema for Pydantic.',
-                f'\n\tInherits from {self.write_base_class_name()}. Add any customization here.',
-                '\t"""',
-            ]
+        if self.file_type == OrmType.PYDANTIC:
+            if self.framework_type == FrameworkType.FASTAPI:
+                to_join = [
+                    f'class {to_pascal_case(self.table.name)}({self.write_base_class_name()}):',
+                    f'\t"""{to_pascal_case(self.table.name)} Schema for Pydantic.',
+                    f'\n\tInherits from {self.write_base_class_name()}. Add any customization here.',
+                    '\t"""',
+                ]
 
-            # add foreign keys
-            foreign_columns = [
-                self.write_foreign_table_column(fk, False, False, True)  # need to feed is_base, here, etc.
-                for fk in self.table.foreign_keys
-            ]
-            if len(foreign_columns) > 0:
-                to_join.append('\n\t# Foreign Keys\n' + '\n'.join([f'\t{c}' for c in foreign_columns]))
-            else:
-                to_join.append('\tpass')
+                # add foreign keys
+                foreign_columns = [
+                    self.write_foreign_table_column(fk, False, False, True)  # need to feed is_base, here, etc.
+                    for fk in self.table.foreign_keys
+                ]
+                if len(foreign_columns) > 0:
+                    to_join.append('\n\t# Foreign Keys\n' + '\n'.join([f'\t{c}' for c in foreign_columns]))
+                else:
+                    to_join.append('\tpass')
 
-            return '\n'.join(to_join)
+                return '\n'.join(to_join)
+
+            else:  # FrameworkType.FASTAPI_JSONAPI
+                jsonapi_class_types = ['Patch', 'Input', 'Item']
+                working_classes = [
+                    '\n'.join(
+                        [
+                            f'class {to_pascal_case(self.table.name)}{t}Schema({self.write_base_class_name()}):',
+                            f'\t"""{to_pascal_case(self.table.name)} {t.upper()} Schema."""',
+                            '\tpass',
+                        ]
+                    )
+                    for t in jsonapi_class_types
+                ]
+
+                # return working_class_string
+                return '\n\n'.join(working_classes)
         return None
 
     # Base class headers
@@ -182,7 +200,15 @@ class ClassWriter:
         """Generate the column strings for a table."""
         primary_columns = [self.write_column(c) for c in self.table.get_primary_columns()]
         sorted_columns = sorted(self.table.get_secondary_columns(), key=lambda x: x.name)
-        columns = [self.write_column(c) for c in sorted_columns]
+
+        # TODO: implement table sorting method here
+        if self.file_type == OrmType.SQLALCHEMY:
+            nullable_columns = [self.write_column(c) for c in sorted_columns if c.is_nullable]
+            non_nullable_columns = [self.write_column(c) for c in sorted_columns if not c.is_nullable]
+            columns = non_nullable_columns + nullable_columns
+        else:
+            columns = [self.write_column(c) for c in sorted_columns]
+
         foreign_columns = (
             [
                 self.write_foreign_table_column(fk, True, False, True)  # need to feed is_base, here, etc.
@@ -195,23 +221,21 @@ class ClassWriter:
 
         class_string = ''
         if len(primary_columns) > 0:
-            class_string += '\t# Primary Keys\n'
-            class_string += '\n'.join([f'\t{c}' for c in primary_columns])
+            class_string += '\t# Primary Keys\n' + '\n'.join([f'\t{c}' for c in primary_columns])
         if len(columns) > 0:
             if len(primary_columns) > 0:
                 class_string += '\n\n'
-            class_string += '\t# Columns\n'
-            class_string += '\n'.join([f'\t{c}' for c in columns])
+            class_string += '\t# Columns\n' + '\n'.join([f'\t{c}' for c in columns])
         if len(foreign_columns) > 0 and self.file_type == OrmType.PYDANTIC:
             if len(primary_columns) > 0 or len(columns) > 0:
                 class_string += '\n\n'
-            class_string += '\t# Foreign Keys\n' + '\n'.join([f'\t{c}' for c in foreign_columns])
+            comment = 'Foreign Keys' if self.framework_type == FrameworkType.FASTAPI else 'Relationships'
+            class_string += f'\t# {comment}\n' + '\n'.join([f'\t{c}' for c in foreign_columns])
         if len(table_args) > 0 and self.file_type == OrmType.SQLALCHEMY:
-            class_string += '\n\n'
-            class_string += '\t# Table Args\n'
-            class_string += '\t__table_args__ = (\n'
-            class_string += '\n'.join([f'\t\t{arg}' for arg in table_args])
-            class_string += '\n\t)\n'
+            if len(primary_columns) > 0 or len(columns) > 0:
+                class_string += '\n\n'
+            class_string += '\t# Table Args\n\t__table_args__ = (\n'
+            class_string += '\n'.join([f'\t\t{arg}' for arg in table_args]) + '\n\t)\n'
 
         return class_string
 
@@ -232,7 +256,8 @@ class FileWriter:
         self.nullify_base_schema_class = nullify_base_schema_class
 
     def write(self, path: str, overwrite: bool = True):
-        """Write the file to the given path."""
+        """Write the models file to a provided path."""
+
         # imports
         imports_string = self.write_imports()
 
@@ -277,7 +302,6 @@ class FileWriter:
         for table in self.tables:
             if self.file_type == OrmType.SQLALCHEMY:
                 if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
-                    imports.add('from sqlalchemy.ext.declarative import declarative_base')
                     imports.add('from sqlalchemy import ForeignKey')
                     imports.add('from sqlalchemy.orm import relationship')
 
@@ -346,8 +370,11 @@ class FileWriter:
         This function contains the logic to handle when and how working classes
         should be written.
         """
-        if self.file_type == OrmType.PYDANTIC and self.framework_type == FrameworkType.FASTAPI:
-            return '\n\n\n'.join([self.write_working_class(t) for t in self.tables])
+        if self.file_type == OrmType.PYDANTIC:
+            if self.framework_type == FrameworkType.FASTAPI:
+                return '\n\n\n'.join([self.write_working_class(t) for t in self.tables])
+            else:  # FrameworkType.FASTAPI_JSONAPI
+                return '\n\n\n'.join([f'# {t.name}\n' + self.write_working_class(t) for t in self.tables])
         return ''
 
     def write_all_classes(self, table: TableInfo) -> tuple[str, str]:
@@ -363,7 +390,8 @@ class FileWriter:
 
     def write_custom_model_string(self) -> str:
         """Generate a custom Pydantic model."""
-        return '\n'.join([f'class {CUSTOM_MODEL_NAME}(BaseModel):', '\tpass'])
+        b = 'BaseModel' if self.framework_type == FrameworkType.FASTAPI else CUSTOM_JSONAPI_META_MODEL_NAME
+        return f'class {CUSTOM_MODEL_NAME}({b}):\n\tpass'
 
     def write_declarative_base_string(self) -> str:
         """Generate the declarative base string for SQLAlchemy."""
@@ -379,7 +407,7 @@ class FileWriter:
         return (
             '#' * 30
             + ' Custom Models'
-            + '\n# Note: This is a custom model class for defining common features amongst Base Schema.'
+            + '\n# Note: This is a custom model class for defining common features among Pydantic Base Schema.'
         )
 
     def write_working_section_comment(self) -> str:
@@ -389,145 +417,3 @@ class FileWriter:
     def write_declarative_base_section_comment(self) -> str:
         """Generate the declarative base section comment."""
         return '#' * 30 + ' Declarative Base'
-
-
-# TODO: add these methods back in for jsonapi transformations
-
-# def get_fastapi_jsonapi_pydantic_imports(self) -> tuple[set[str], set[str]]:
-#     """Get the unique datatypes & import statements for a table."""
-#     dtypes, imports = set(), set()
-
-#     # standards
-#     imports.add('from pydantic import BaseModel as PydanticBaseModel')
-#     imports.add('from fastapi_jsonapi.schema_base import BaseModel, Field, RelationshipInfo')
-#     if len(self.table_dependencies()) > 0:
-#         imports.add('from __future__ import annotations')
-
-#     for c in self.columns:
-#         dtype, import_str = c.get_pydantic_import_information()
-#         if import_str is not None:
-#             imports.add(import_str)
-#         dtypes.add(dtype)
-
-#     return dtypes, imports
-
-# def get_fastapi_jsonapi_sqlalchemy_imports(self) -> tuple[set[str], set[str]]:
-#     """Get the unique datatypes & import statements for a table."""
-#     dtypes, imports = set(), set()
-
-#     # standards
-#     imports.add('from sqlalchemy.ext.declarative import declarative_base')
-#     imports.add('from sqlalchemy import Column, ForeignKey')
-#     imports.add('from sqlalchemy.orm import relationship')
-
-#     if len(self.primary_key()) > 0:
-#         imports.add('from sqlalchemy import PrimaryKeyConstraint')
-
-#     for c in self.columns:
-#         dtype, import_str = c.get_sqlalchemy_import_information()
-#         if import_str is not None:
-#             imports.add(import_str)
-#         dtypes.add(dtype)
-
-#     return dtypes, imports
-
-# def write_jsonapi_pydantic_base_class(self, metaclass: str | list[str] = CUSTOM_MODEL_NAME) -> str:
-#     """Generate the Base Pydantic model for a table."""
-#     primary_columns, columns, _, foreign_table_columns = self._get_columns_for_model()
-
-#     class_string = self._write_pydantic_base_class_string(metaclass) + '\n'
-#     if len(primary_columns) > 0:
-#         class_string += '\t# Primary Keys\n'
-#         class_string += '\n'.join([f'\t{c.write_pydantic_column_string()}' for c in primary_columns])
-#     if len(columns) > 0:
-#         if len(primary_columns) > 0:
-#             class_string += '\n\n'
-#         class_string += '\t# Columns\n'
-#         class_string += '\n'.join([f'\t{c.write_pydantic_column_string()}' for c in columns])
-#     if len(foreign_table_columns) > 0:
-#         if len(primary_columns) > 0 or len(columns) > 0:
-#             class_string += '\n\n'
-#         class_string += '\t# Relationships\n' + '\n'.join([f'\t{c}' for c in foreign_table_columns])
-
-#     return class_string
-
-# def write_jsonapi_pydantic_working_class(self) -> str:
-#     """Generate the Pydantic model string for a table based on the parent class."""
-#     b = self._write_base_class_name()
-#     working_class_types = ['Patch', 'Input', 'Item']
-
-#     working_class_string = ''
-#     for t in working_class_types:
-#         working_class_string += '\n\n' + '\n'.join(
-#             [
-#                 f'class {to_pascal_case(self.name)}{t}Schema({b}):',
-#                 f'\t"""{to_pascal_case(self.name)} {t} Schema."""',
-#                 '\tpass',
-#             ]
-#         )
-
-#     return working_class_string
-
-# def write_jsonapi_pydantic_meta_model_string() -> str:
-#     """Generate a custom Pydantic model."""
-#     return '\n'.join([f'class {CUSTOM_MODEL_NAME}({CUSTOM_JSONAPI_META_MODEL_NAME}):', '\tpass'])
-
-
-# def write_jsonapi_pydantic_imports_string(tables: list[TableInfo]) -> str:
-#     """Generate the import statements for the Pydantic models."""
-#     imports_set = set()
-#     for t in tables:
-#         _, i = t.get_fastapi_jsonapi_pydantic_imports()
-#         imports_set.update(i)
-
-#     return '\n'.join(sorted(imports_set))
-
-
-# def write_jsonapi_pydantic_model_string(tables: list[TableInfo]) -> str:
-#     """Generate the Pydantic model strings for all tables."""
-#     # imports
-#     imports_string = write_jsonapi_pydantic_imports_string(tables)
-
-#     # custom model
-#     custom_model_section_comment = (
-#         '#' * 30
-#         + ' Custom Model Class'
-#         + '\n# Note: This is a custom model class for defining common features amongst Base Schema.'
-#     )
-#     custom_model_string = write_jsonapi_pydantic_meta_model_string()
-
-#     # base classes
-#     base_section_comment = '#' * 30 + ' Base Classes'
-#     base_string = '\n\n'.join([table.write_jsonapi_pydantic_base_class(CUSTOM_MODEL_NAME) for table in tables])
-
-#     # working classes
-#     working_section_comment = '#' * 30 + ' Working Classes'
-#     working_string = '\n\n\n'.join(
-#         [f'# {table.name}' + table.write_jsonapi_pydantic_working_class() for table in tables]
-#     )
-
-#     return (
-#         '\n\n\n'.join(
-#             [
-#                 imports_string,
-#                 custom_model_section_comment,
-#                 custom_model_string,
-#                 base_section_comment,
-#                 base_string,
-#                 working_section_comment,
-#                 working_string,
-#             ]
-#         )
-#         + '\n\n\n'
-#     )
-
-
-# def get_jsonapi_sqlalchemy_relationships(self, is_base: bool = False) -> list[dict]:
-#     """Get the JSONAPI relationship information for a table."""
-#     relationships = []
-#     for fk in self.foreign_keys:
-#         r = {}
-#         r['name'] = fk.foreign_table_name
-#         r['relationship_name'] = fk.get_foreign_table_name(is_base)
-#         r['back_populates'] = fk.foreign_table_name
-#     return relationships

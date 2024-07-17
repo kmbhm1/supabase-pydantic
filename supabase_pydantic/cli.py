@@ -1,5 +1,6 @@
 import os
 import pprint
+import shutil
 
 from dotenv import find_dotenv, load_dotenv
 
@@ -9,11 +10,14 @@ from supabase_pydantic.util import (
     query_database,
     check_connection,
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
+    GET_CONSTRAINTS,
     GET_TABLE_COLUMN_DETAILS,
     run_isort,
+    FrameworkType,
     FileWriter,
+    OrmType,
+    WriterConfig,
 )
-from supabase_pydantic.util.constants import GET_CONSTRAINTS
 import click
 
 # Pretty print for testing
@@ -69,10 +73,22 @@ def clean_directory(directory: str):
                 if os.path.isfile(file_path):
                     os.unlink(file_path)
                 elif os.path.isdir(file_path):
-                    os.rmdir(file_path)
+                    shutil.rmtree(file_path)
             except Exception as e:
                 print(f'An error occurred while deleting {file_path}.')
                 print(e)
+
+
+def clean_directories(directories: list):
+    """Remove all files & directories in the specified directories."""
+    for d in directories:
+        print(f'Checking for directory: {d}')
+        if not os.path.isdir(d):
+            print(f'Directory {d} does not exist.')
+            return
+
+        print(f'Cleaning directory: {d}')
+        clean_directory(d)
 
 
 def generate_unique_filename(base_name: str, extension: str, directory: str = '.') -> str:
@@ -130,26 +146,19 @@ def main(
     # Check if _all is set to True, if so, set generate_sqlalchemy & generate_jsonapi to True
     if _all:
         generate_sqlalchemy = True
-        # generate_jsonapi = True
+        generate_jsonapi = True
 
     # Set the default directory & create the directories
     fastapi_directory = os.path.join(default_directory, 'fastapi')
-    print(fastapi_directory)
-    # jsonapi_directory = os.path.join(default_directory, 'fastapi_jsonapi')  # TODO: add later
+    jsonapi_directory = os.path.join(default_directory, 'fastapi_jsonapi')  # TODO: add later
 
     directories = [default_directory, fastapi_directory]
-    # if generate_jsonapi or cleanup:
-    #     directories.append(jsonapi_directory)
+    if generate_jsonapi or cleanup:
+        directories.append(jsonapi_directory)
 
     # Clean the directories if the cleanup flag is set
     if cleanup:
-        for d in directories:
-            print(f'Checking directory: {d}')
-            if not os.path.isdir(d):
-                print(f'Directory {d} does not exist. Skipping...')
-                return
-            print(f'Cleaning directory: {d}')
-            clean_directory(d)
+        clean_directories(directories)
         return
 
     # Get Table & Column details from the database
@@ -175,29 +184,48 @@ def main(
         if not os.path.exists(d):
             os.makedirs(d)
 
-    # Write the Pydantic models to the file
+    # Configure the writer jobs
+    pydantic_fname, sqlalchemy_fname = 'schemas.py', 'database.py'
+    jobs: dict[str, WriterConfig] = {
+        'FastAPI Pydantic': WriterConfig(
+            file_type=OrmType.PYDANTIC,
+            framework_type=FrameworkType.FASTAPI,
+            filename=pydantic_fname,
+            directory=fastapi_directory,
+            enabled=True,
+        ),
+        'FastAPI SQLAlchemy': WriterConfig(
+            file_type=OrmType.SQLALCHEMY,
+            framework_type=FrameworkType.FASTAPI,
+            filename=sqlalchemy_fname,
+            directory=fastapi_directory,
+            enabled=generate_sqlalchemy,
+        ),
+        'FastAPI-JSONAPI Pydantic': WriterConfig(
+            file_type=OrmType.PYDANTIC,
+            framework_type=FrameworkType.FASTAPI_JSONAPI,
+            filename=pydantic_fname,
+            directory=jsonapi_directory,
+            enabled=generate_jsonapi,
+        ),
+    }
+
     paths = []
+    for job, c in jobs.items():  # c = config
+        if not c.enabled:
+            continue
 
-    pydantic_fastapi_writer = FileWriter(
-        tables, file_type='pydantic', framework_type='fastapi', nullify_base_schema_class=nullify_base_schema
-    )
-    pydantic_fastapi_path = (
-        generate_unique_filename('schemas', 'py', fastapi_directory)
-        if not overwrite
-        else os.path.join(fastapi_directory, 'schemas.py')
-    )
-    pydantic_fastapi_writer.write(pydantic_fastapi_path)
-    paths.append(pydantic_fastapi_path)
-
-    if generate_sqlalchemy:
-        sqlalchemy_writer = FileWriter(tables, file_type='sqlalchemy', framework_type='fastapi')
-        sqlalchemy_path = (
-            generate_unique_filename('database', 'py', fastapi_directory)
-            if not overwrite
-            else os.path.join(fastapi_directory, 'database.py')
+        print(f'Generating {job} models...')
+        writer = FileWriter(
+            tables,
+            file_type=c.file_type,
+            framework_type=c.framework_type,
+            nullify_base_schema_class=nullify_base_schema,
         )
-        sqlalchemy_writer.write(sqlalchemy_path)
-        paths.append(sqlalchemy_path)
+        fpath = generate_unique_filename(c.name(), c.ext(), c.directory) if not overwrite else c.fpath()
+        writer.write(fpath)
+        paths.append(fpath)
+        print(f'{job} models generated successfully: {fpath}')
 
     try:
         for p in paths:

@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 from dataclasses import asdict, dataclass, field
+import os
 from random import random
 from typing import Any, Literal
 
@@ -10,7 +11,7 @@ from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, PYDANTIC_TYPE_
 from supabase_pydantic.util.fake import generate_fake_data
 
 
-def add_from_string(cls: Any) -> Any:
+def add_string_methods(cls: Any) -> Any:
     """Decorator to add a from_string method to an Enum class."""
 
     @classmethod
@@ -21,11 +22,20 @@ def add_from_string(cls: Any) -> Any:
                 return member
         raise ValueError(f"'{value}' is not a valid {cls.__name__}")
 
+    @classmethod
+    def to_string(cls, value: str):
+        value_lower = value.lower()
+        for member in cls:
+            if member.value == value_lower:
+                return member
+        raise ValueError(f"'{value}' is not a valid {cls.__name__}")
+
     cls.from_string = from_string
+    cls.to_string = to_string
     return cls
 
 
-@add_from_string
+@add_string_methods
 class OrmType(Enum):
     """Enum for file types."""
 
@@ -33,12 +43,42 @@ class OrmType(Enum):
     SQLALCHEMY = 'sqlalchemy'
 
 
-@add_from_string
+@add_string_methods
 class FrameworkType(Enum):
     """Enum for framework types."""
 
     FASTAPI = 'fastapi'
     FASTAPI_JSONAPI = 'fastapi-jsonapi'
+
+
+@dataclass
+class WriterConfig:
+    file_type: OrmType
+    framework_type: FrameworkType
+    filename: str
+    directory: str
+    enabled: bool
+
+    def ext(self) -> str:
+        """Get the file extension based on the file name."""
+        return self.filename.split('.')[-1]
+
+    def name(self) -> str:
+        """Get the file name without the extension."""
+        return self.filename.split('.')[0]
+
+    def fpath(self) -> str:
+        """Get the full file path."""
+        return os.path.join(self.directory, self.filename)
+
+    def __dict__(self) -> dict[str, str]:
+        return {
+            'file_type': self.file_type,
+            'framework_type': self.framework_type,
+            'filename': self.filename,
+            'directory': self.directory,
+            'enabled': self.enabled,
+        }
 
 
 @dataclass

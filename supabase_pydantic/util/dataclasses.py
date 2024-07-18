@@ -109,6 +109,7 @@ class ColumnInfo(AsDictParent):
     is_nullable: bool | None = True
     max_length: int | None = None
     primary: bool = False
+    is_unique: bool = False
 
     def orm_imports(self, orm_type: OrmType = OrmType.PYDANTIC) -> set[str]:
         """Get the unique import statements for a column."""

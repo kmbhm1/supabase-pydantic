@@ -4,6 +4,7 @@ from supabase_pydantic.util.constants import (
     CUSTOM_MODEL_NAME,
     PYDANTIC_TYPE_MAP,
     SQLALCHEMY_TYPE_MAP,
+    RelationType,
 )
 from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, FrameworkType, OrmType, TableInfo
 from supabase_pydantic.util.string import to_pascal_case
@@ -131,21 +132,34 @@ class ClassWriter:
     def write_column_field_values(self, c: ColumnInfo) -> str | None:
         """Generate the field values for a column."""
         field_values = dict()
+        field_values_list_first = list()
 
         # Developer's Note: self.nullify_base_schema_class only affects Pydantic models for now
 
         if self.file_type == OrmType.SQLALCHEMY:
-            field_values['nullable'] = 'True' if c.is_nullable else 'False'
+            if c.is_nullable:
+                field_values['nullable'] = 'True'
             if c.primary:
                 field_values['primary_key'] = 'True'
+            if c.is_unique:
+                field_values['unique'] = 'True'
+            for fk in self.table.foreign_keys:
+                if c.name == fk.column_name:
+                    field_values_list_first.append(f'ForeignKey("{fk.foreign_table_name}.{fk.foreign_column_name}")')
 
-        else:
+        else:  # OrmType.PYDANTIC
             if (c.is_nullable is not None and c.is_nullable) or self.nullify_base_schema_class:
                 field_values['default'] = 'None'
             if c.alias is not None:
                 field_values['alias'] = f'"{c.alias}"'
 
-        return ', '.join([f'{k}={v}' for k, v in field_values.items()]) if len(field_values) > 0 else None
+        field_values_string = ', '.join(field_values_list_first) if len(field_values_list_first) > 0 else ''
+        if len(field_values) > 0:
+            if len(field_values_list_first) > 0:
+                field_values_string += ', '
+            field_values_string += ', '.join([f'{k}={v}' for k, v in field_values.items()])
+
+        return field_values_string
 
     def write_column(self, c: ColumnInfo) -> str:
         """Generate the column string for a table."""
@@ -153,10 +167,10 @@ class ClassWriter:
         field_values = self.write_column_field_values(c)
 
         if self.file_type == OrmType.SQLALCHEMY:
-            return f'{c.name} = Column({base_type}{", " + field_values if field_values is not None else ""})'
+            return f'{c.name} = Column({base_type}{", " + field_values if (field_values is not None and bool(field_values)) else ""})'  # noqa: E501
         else:
             column_string = f'{c.name}: {base_type}'
-            if field_values is not None:
+            if field_values is not None and bool(field_values):
                 column_string += f' = Field({field_values})'
             return column_string
 
@@ -171,6 +185,7 @@ class ClassWriter:
         post = ('View' if is_view else '') + (BASE_CLASS_POSTFIX if is_base else '')
         foreign_table_name = f'{to_pascal_case(fk.foreign_table_name)}{post}'
         column_name = fk.foreign_table_name.lower()
+
         base_type = f'list[{foreign_table_name}]'
         if is_nullable:
             base_type += ' | None'
@@ -180,7 +195,18 @@ class ClassWriter:
         #     base_schema_name = f'{to_pascal_case(fk.foreign_table_name)}{BASE_CLASS_POSTFIX}'
         #     base_type = f'Annotated[{base_type}, {base_schema_name}.{column_name}]'
 
-        return f'{column_name}: {base_type}' + (' = Field(default=None)' if is_nullable else '')
+        if self.file_type == OrmType.SQLALCHEMY and self.framework_type == FrameworkType.FASTAPI_JSONAPI:
+            back_populates = f'back_populates="{to_pascal_case(self.table.name)}"'
+            useList = ', useList=True' if fk.relation_type != RelationType.ONE_TO_ONE else ''
+            relationship = f'relationship("{to_pascal_case(fk.foreign_table_name)}", {back_populates}{useList})'
+            base_type = f'Mapped[{to_pascal_case(fk.foreign_table_name)}]'
+
+            return f'{column_name}: {base_type} = {relationship}'
+
+        if self.file_type == OrmType.PYDANTIC and self.framework_type == FrameworkType.FASTAPI:
+            return f'{column_name}: {base_type}' + (' = Field(default=None)' if is_nullable else '')
+
+        return None
 
     def write_table_args(self) -> list[str]:
         """Generate the table args for a table."""
@@ -209,14 +235,18 @@ class ClassWriter:
         else:
             columns = [self.write_column(c) for c in sorted_columns]
 
-        foreign_columns = (
-            [
-                self.write_foreign_table_column(fk, True, False, True)  # need to feed is_base, here, etc.
-                for fk in self.table.foreign_keys
-            ]
-            if self.file_type == OrmType.SQLALCHEMY  # only add foreign tables to working classes in pydantic
-            else []
-        )
+        foreign_columns = [
+            x
+            for x in (
+                [
+                    self.write_foreign_table_column(fk, True, False, True)  # need to feed is_base, here, etc.
+                    for fk in self.table.foreign_keys
+                ]
+                if self.file_type == OrmType.SQLALCHEMY  # only add foreign tables to working classes in pydantic
+                else []
+            )
+            if x is not None
+        ]
         table_args = self.write_table_args()
 
         class_string = ''
@@ -226,7 +256,7 @@ class ClassWriter:
             if len(primary_columns) > 0:
                 class_string += '\n\n'
             class_string += '\t# Columns\n' + '\n'.join([f'\t{c}' for c in columns])
-        if len(foreign_columns) > 0 and self.file_type == OrmType.PYDANTIC:
+        if len(foreign_columns) > 0:
             if len(primary_columns) > 0 or len(columns) > 0:
                 class_string += '\n\n'
             comment = 'Foreign Keys' if self.framework_type == FrameworkType.FASTAPI else 'Relationships'
@@ -302,19 +332,22 @@ class FileWriter:
         for table in self.tables:
             if self.file_type == OrmType.SQLALCHEMY:
                 if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
-                    imports.add('from sqlalchemy import ForeignKey')
                     imports.add('from sqlalchemy.orm import relationship')
+                    imports.add('from sqlalchemy.orm import Mapped')
+                    imports.add('from __future__ import annotations')
 
                 # both
                 imports.add('from sqlalchemy.ext.declarative import declarative_base')
                 imports.add('from sqlalchemy import Column')
+                imports.add('from sqlalchemy import ForeignKey')
                 if len(table.primary_key()) > 0:
                     imports.add('from sqlalchemy import PrimaryKeyConstraint')
 
             elif self.file_type == OrmType.PYDANTIC:
                 if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
                     imports.add('from pydantic import BaseModel as PydanticBaseModel')
-                    imports.add('from fastapi_jsonapi.schema_base import BaseModel, Field, RelationshipInfo')
+                    # imports.add('from fastapi_jsonapi.schema_base import BaseModel, Field, RelationshipInfo')
+                    imports.add('from fastapi_jsonapi.schema_base import Field')
                 else:
                     imports.add('from pydantic import BaseModel')
                     imports.add('from pydantic import Field')

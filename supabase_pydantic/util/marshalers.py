@@ -1,7 +1,11 @@
 import builtins
 import keyword
+import pprint
+import re
 from supabase_pydantic.util.constants import RelationType, PYDANTIC_TYPE_MAP
 from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
+
+pp = pprint.PrettyPrinter(indent=4)
 
 
 def column_name_is_reserved(column_name: str) -> bool:
@@ -111,12 +115,79 @@ def update_columns_with_constraints(tables: dict) -> None:
                         # primary key
                         if constraint.constraint_type() == 'PRIMARY KEY':
                             column.primary = True
+                        if constraint.constraint_type() == 'UNIQUE':
+                            column.is_unique = True
+
+
+def parse_constraint_definition_for_fk(constraint_definition: str) -> tuple[str, str, str] | None:
+    """Parse the foreign key definition from the constraint."""
+    match = re.match(r'FOREIGN KEY \(([^)]+)\) REFERENCES (\S+)\(([^)]+)\)', constraint_definition)
+    if match:
+        column_name = match.group(1)
+        foreign_table_name = match.group(2)
+        foreign_column_name = match.group(3)
+
+        return column_name, foreign_table_name, foreign_column_name
+
+
+def update_foreign_keys_with_constraints(tables: dict) -> None:
+    """Update foreign keys with constraints."""
+    for table in tables.values():
+        # Gather foreign key constraints
+        fk_constraints = [c for c in table.constraints if c.constraint_type() == 'FOREIGN KEY']
+        if len(fk_constraints) == 0:
+            continue
+
+        for c in fk_constraints:
+            # Parse the constraint definition for foreign key details
+            val = parse_constraint_definition_for_fk(c.constraint_definition)
+            if val is None:
+                continue
+            local_column_name, foreign_table_name, foreign_column_name = val
+            local_column_name = standardize_column_name(local_column_name)
+            foreign_table_name = standardize_column_name(foreign_table_name)
+
+            # Get columns for column and foreign column
+            local_column = next((col for col in table.columns if col.name == local_column_name), None)
+            foreign_column = next(
+                (col for col in tables[(table.schema, foreign_table_name)].columns if col.name == foreign_column_name),
+                None,
+            )
+
+            # Update the foreign key relation type
+            for fk in table.foreign_keys:
+                if fk.column_name == local_column_name:
+                    if (local_column.primary or local_column.is_unique) and (
+                        foreign_column.primary or foreign_column.is_unique
+                    ):
+                        fk.relation_type = RelationType.ONE_TO_ONE
+                    elif foreign_column.primary or foreign_column.is_unique:
+                        fk.relation_type = RelationType.ONE_TO_MANY
+                    else:
+                        fk.relation_type = RelationType.MANY_TO_MANY
+
+                    # print(
+                    #     f'{table.name}.{fk.column_name} => ',
+                    #     foreign_table_name,
+                    #     (local_column.primary or local_column.is_unique),
+                    #     (foreign_column.primary or foreign_column.is_unique),
+                    #     ' result => ',
+                    #     fk.relation_type,
+                    # )
+
+                    break
 
 
 def construct_table_info(column_details: list, fk_details: list, constraints: list) -> list[TableInfo]:
     """Construct TableInfo objects from column and foreign key details."""
+    # construction
     tables = get_table_details_from_columns(column_details)
     add_foreign_key_info_to_table_details(tables, fk_details)
     add_constraints_to_table_details(tables, constraints)
+
+    # updating
     update_columns_with_constraints(tables)
+    update_foreign_keys_with_constraints(tables)
+
+    # return
     return list(tables.values())

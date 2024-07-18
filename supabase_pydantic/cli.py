@@ -208,6 +208,13 @@ def main(
             directory=jsonapi_directory,
             enabled=generate_jsonapi,
         ),
+        'FastAPI-JSONAPI SQLAlchemy': WriterConfig(
+            file_type=OrmType.SQLALCHEMY,
+            framework_type=FrameworkType.FASTAPI_JSONAPI,
+            filename=sqlalchemy_fname,
+            directory=jsonapi_directory,
+            enabled=generate_jsonapi and generate_sqlalchemy,
+        ),
     }
 
     paths = []

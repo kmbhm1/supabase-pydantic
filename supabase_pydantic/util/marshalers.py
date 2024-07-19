@@ -156,19 +156,6 @@ def analyze_table_relationships(tables: dict) -> None:
             )
             is_source_foreign_key = any(col.name == fk.column_name and col.is_foreign_key for col in table.columns)
 
-            # TODO: for testing
-            # print(
-            #     table.name,
-            #     fk.foreign_table_name,
-            #     fk.foreign_column_name,
-            #     f'1:1 test={(is_source_unique or is_source_foreign_key) and (is_target_primary or is_target_unique)}',
-            #     f'target_primary={is_target_primary}',
-            #     f'target_unique={is_target_unique}',
-            #     f'target_foreign_key={is_target_foreign_key}',
-            #     f'source_unique={is_source_unique}',
-            #     f'source_foreign_key={is_source_foreign_key}',
-            # )
-
             # Determine the initial relationship type from source to target
             if (is_source_unique or is_source_foreign_key) and (is_target_primary or is_target_unique):
                 fk.relation_type = RelationType.ONE_TO_ONE  # Both sides are unique

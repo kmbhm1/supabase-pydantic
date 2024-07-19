@@ -106,10 +106,11 @@ class ColumnInfo(AsDictParent):
     datatype: str
     alias: str | None = None
     default: str | None = None
-    is_nullable: bool | None = True
     max_length: int | None = None
+    is_nullable: bool | None = True
     primary: bool = False
     is_unique: bool = False
+    is_foreign_key: bool = False
 
     def orm_imports(self, orm_type: OrmType = OrmType.PYDANTIC) -> set[str]:
         """Get the unique import statements for a column."""
@@ -135,8 +136,8 @@ class ForeignKeyInfo(AsDictParent):
     column_name: str
     foreign_table_name: str
     foreign_column_name: str
-    relation_type: RelationType  # E.g., "One-to-One", "One-to-Many"
     foreign_table_schema: str = 'public'
+    relation_type: RelationType | None = None  # E.g., "One-to-One", "One-to-Many"
 
 
 @dataclass
@@ -144,6 +145,7 @@ class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
     table_type: Literal['BASE TABLE', 'VIEW'] = 'BASE TABLE'
+    is_bridge: bool = False  # whether the table is a bridge table
     columns: list[ColumnInfo] = field(default_factory=list)
     foreign_keys: list[ForeignKeyInfo] = field(default_factory=list)
     constraints: list[ConstraintInfo] = field(default_factory=list)

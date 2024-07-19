@@ -186,6 +186,19 @@ class ClassWriter:
         foreign_table_name = f'{to_pascal_case(fk.foreign_table_name)}{post}'
         column_name = fk.foreign_table_name.lower()
 
+        # SQLALCHEMY
+        if self.file_type == OrmType.SQLALCHEMY:
+            if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
+                if self.table.name == 'case_reviews' or self.table.name == 'cases':
+                    print(self.table.name, fk.relation_type, fk.foreign_table_name, fk.foreign_column_name)
+                back_populates = f'back_populates="{to_pascal_case(self.table.name)}"'
+                useList = ', useList=True' if fk.relation_type != RelationType.ONE_TO_ONE else ''
+                relationship = f'relationship("{to_pascal_case(fk.foreign_table_name)}", {back_populates}{useList})'
+                base_type = f'Mapped[{to_pascal_case(fk.foreign_table_name)}]'
+
+                return f'{column_name}: {base_type} = {relationship}'
+
+        # PYDANTIC
         base_type = f'list[{foreign_table_name}]'
         if is_nullable:
             base_type += ' | None'
@@ -195,16 +208,24 @@ class ClassWriter:
         #     base_schema_name = f'{to_pascal_case(fk.foreign_table_name)}{BASE_CLASS_POSTFIX}'
         #     base_type = f'Annotated[{base_type}, {base_schema_name}.{column_name}]'
 
-        if self.file_type == OrmType.SQLALCHEMY and self.framework_type == FrameworkType.FASTAPI_JSONAPI:
-            back_populates = f'back_populates="{to_pascal_case(self.table.name)}"'
-            useList = ', useList=True' if fk.relation_type != RelationType.ONE_TO_ONE else ''
-            relationship = f'relationship("{to_pascal_case(fk.foreign_table_name)}", {back_populates}{useList})'
-            base_type = f'Mapped[{to_pascal_case(fk.foreign_table_name)}]'
+        if self.file_type == OrmType.PYDANTIC:
+            if self.framework_type == FrameworkType.FASTAPI:
+                return f'{column_name}: {base_type}' + (' = Field(default=None)' if is_nullable else '')
+            else:  # FrameworkType.FASTAPI_JSONAPI
+                is_list = fk.relation_type != RelationType.ONE_TO_ONE
+                base_type = base_type if is_list else foreign_table_name
+                if is_nullable and not is_list:
+                    base_type += ' | None'
+                resource_type = column_name
 
-            return f'{column_name}: {base_type} = {relationship}'
-
-        if self.file_type == OrmType.PYDANTIC and self.framework_type == FrameworkType.FASTAPI:
-            return f'{column_name}: {base_type}' + (' = Field(default=None)' if is_nullable else '')
+                return (
+                    f'{column_name}: {base_type} = Field('
+                    + '\n\t\trelationsip=RelationshipInfo('
+                    + f'\n\t\t\tresource_type="{resource_type}"'
+                    + (',\n\t\t\tmany=True' if is_list else '')
+                    + '\n\t\t),'
+                    + '\n\t)'
+                )
 
         return None
 
@@ -242,8 +263,6 @@ class ClassWriter:
                     self.write_foreign_table_column(fk, True, False, True)  # need to feed is_base, here, etc.
                     for fk in self.table.foreign_keys
                 ]
-                if self.file_type == OrmType.SQLALCHEMY  # only add foreign tables to working classes in pydantic
-                else []
             )
             if x is not None
         ]
@@ -346,7 +365,7 @@ class FileWriter:
             elif self.file_type == OrmType.PYDANTIC:
                 if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
                     imports.add('from pydantic import BaseModel as PydanticBaseModel')
-                    # imports.add('from fastapi_jsonapi.schema_base import BaseModel, Field, RelationshipInfo')
+                    imports.add('from fastapi_jsonapi.schema_base import RelationshipInfo')
                     imports.add('from fastapi_jsonapi.schema_base import Field')
                 else:
                     imports.add('from pydantic import BaseModel')
@@ -357,7 +376,6 @@ class FileWriter:
 
                 # both
                 if len(table.table_dependencies()) > 0:
-                    # imports.add('from typing import ForwardRef')
                     imports.add('from __future__ import annotations')
 
         return imports

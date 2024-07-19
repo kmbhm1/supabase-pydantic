@@ -37,6 +37,17 @@ def get_alias(column_name: str) -> str | None:
     )
 
 
+def parse_constraint_definition_for_fk(constraint_definition: str) -> tuple[str, str, str] | None:
+    """Parse the foreign key definition from the constraint."""
+    match = re.match(r'FOREIGN KEY \(([^)]+)\) REFERENCES (\S+)\(([^)]+)\)', constraint_definition)
+    if match:
+        column_name = match.group(1)
+        foreign_table_name = match.group(2)
+        foreign_column_name = match.group(3)
+
+        return column_name, foreign_table_name, foreign_column_name
+
+
 def get_table_details_from_columns(column_details: list) -> dict[str, TableInfo]:
     """Get the table details from the column details."""
     tables = {}
@@ -77,8 +88,8 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
                 constraint_name=constraint_name,
                 column_name=standardize_column_name(column_name),
                 foreign_table_name=foreign_table_name,
-                foreign_column_name=foreign_column_name,
-                relation_type=RelationType.ONE_TO_MANY,  # Simplified assumption
+                foreign_column_name=standardize_column_name(foreign_column_name),
+                relation_type=None,
                 foreign_table_schema=foreign_table_schema,
             )
             tables[table_key].add_foreign_key(fk_info)
@@ -112,70 +123,108 @@ def update_columns_with_constraints(tables: dict) -> None:
             for constraint in table.constraints:
                 for col in constraint.columns:
                     if column.name == col:
-                        # primary key
                         if constraint.constraint_type() == 'PRIMARY KEY':
                             column.primary = True
                         if constraint.constraint_type() == 'UNIQUE':
                             column.is_unique = True
+                        if constraint.constraint_type() == 'FOREIGN KEY':
+                            column.is_foreign_key = True
 
 
-def parse_constraint_definition_for_fk(constraint_definition: str) -> tuple[str, str, str] | None:
-    """Parse the foreign key definition from the constraint."""
-    match = re.match(r'FOREIGN KEY \(([^)]+)\) REFERENCES (\S+)\(([^)]+)\)', constraint_definition)
-    if match:
-        column_name = match.group(1)
-        foreign_table_name = match.group(2)
-        foreign_column_name = match.group(3)
-
-        return column_name, foreign_table_name, foreign_column_name
-
-
-def update_foreign_keys_with_constraints(tables: dict) -> None:
-    """Update foreign keys with constraints."""
+def analyze_table_relationships(tables: dict) -> None:
+    """Analyze table relationships."""
     for table in tables.values():
-        # Gather foreign key constraints
-        fk_constraints = [c for c in table.constraints if c.constraint_type() == 'FOREIGN KEY']
-        if len(fk_constraints) == 0:
-            continue
-
-        for c in fk_constraints:
-            # Parse the constraint definition for foreign key details
-            val = parse_constraint_definition_for_fk(c.constraint_definition)
-            if val is None:
-                continue
-            local_column_name, foreign_table_name, foreign_column_name = val
-            local_column_name = standardize_column_name(local_column_name)
-            foreign_table_name = standardize_column_name(foreign_table_name)
-
-            # Get columns for column and foreign column
-            local_column = next((col for col in table.columns if col.name == local_column_name), None)
-            foreign_column = next(
-                (col for col in tables[(table.schema, foreign_table_name)].columns if col.name == foreign_column_name),
+        for fk in table.foreign_keys:
+            # Get the foreign table object based on the foreign_table_name and foreign_table_schema.
+            foreign_table = next(
+                (t for t in tables.values() if t.name == fk.foreign_table_name and t.schema == fk.foreign_table_schema),
                 None,
             )
+            if not foreign_table:
+                continue  # Skip if no foreign table found
 
-            # Update the foreign key relation type
-            for fk in table.foreign_keys:
-                if fk.column_name == local_column_name:
-                    if (local_column.primary or local_column.is_unique) and (
-                        foreign_column.primary or foreign_column.is_unique
-                    ):
-                        fk.relation_type = RelationType.ONE_TO_ONE
-                    elif foreign_column.primary or foreign_column.is_unique:
-                        fk.relation_type = RelationType.ONE_TO_MANY
-                    else:
-                        fk.relation_type = RelationType.MANY_TO_MANY
+            # Checks
+            is_target_primary = any(col.primary and col.name == fk.foreign_column_name for col in foreign_table.columns)
+            is_target_unique = any(
+                col.is_unique and col.name == fk.foreign_column_name for col in foreign_table.columns
+            )
+            is_target_foreign_key = any(
+                col.is_foreign_key and col.name == fk.foreign_column_name for col in foreign_table.columns
+            )
+            is_source_unique = any(
+                col.name == fk.column_name and (col.is_unique or col.primary) for col in table.columns
+            )
+            is_source_foreign_key = any(col.name == fk.column_name and col.is_foreign_key for col in table.columns)
 
-                    # print(
-                    #     f'{table.name}.{fk.column_name} => ',
-                    #     foreign_table_name,
-                    #     (local_column.primary or local_column.is_unique),
-                    #     (foreign_column.primary or foreign_column.is_unique),
-                    #     ' result => ',
-                    #     fk.relation_type,
-                    # )
+            # TODO: for testing
+            # print(
+            #     table.name,
+            #     fk.foreign_table_name,
+            #     fk.foreign_column_name,
+            #     f'1:1 test={(is_source_unique or is_source_foreign_key) and (is_target_primary or is_target_unique)}',
+            #     f'target_primary={is_target_primary}',
+            #     f'target_unique={is_target_unique}',
+            #     f'target_foreign_key={is_target_foreign_key}',
+            #     f'source_unique={is_source_unique}',
+            #     f'source_foreign_key={is_source_foreign_key}',
+            # )
 
-                    break
+            # Determine the initial relationship type from source to target
+            if (is_source_unique or is_source_foreign_key) and (is_target_primary or is_target_unique):
+                fk.relation_type = RelationType.ONE_TO_ONE  # Both sides are unique
+            elif is_target_unique or is_target_primary or is_target_foreign_key:
+                fk.relation_type = RelationType.ONE_TO_MANY
+            else:
+                fk.relation_type = RelationType.MANY_TO_MANY
+
+            # Check for reciprocal foreign keys in the foreign table
+            reciprocal_fks = [
+                f
+                for f in foreign_table.foreign_keys
+                if f.foreign_table_name == table.name and f.foreign_column_name == fk.column_name
+            ]
+            if len(reciprocal_fks) > 1:
+                fk.relation_type = RelationType.MANY_TO_MANY
+
+            # Ensure the foreign table has a mirrored foreign key info for bidirectional clarity
+            if not any(f.constraint_name == fk.constraint_name for f in foreign_table.foreign_keys):
+                reverse_fk = ForeignKeyInfo(
+                    constraint_name=fk.constraint_name,
+                    column_name=fk.foreign_column_name,
+                    foreign_table_name=table.name,
+                    foreign_column_name=fk.column_name,
+                    relation_type=fk.relation_type,
+                )
+                foreign_table.foreign_keys.append(reverse_fk)
+
+
+def is_bridge_table(table: TableInfo) -> bool:
+    # Check for at least two foreign keys
+    if len(table.foreign_keys) < 2:
+        return False
+
+    # Identify columns that are both primary keys and part of foreign keys
+    primary_foreign_keys = [
+        col.name
+        for col in table.columns
+        if col.primary and any(fk.column_name == col.name for fk in table.foreign_keys)
+    ]
+
+    # Check if there are at least two such columns
+    if len(primary_foreign_keys) < 2:
+        return False
+
+    # Consider the table a bridge table if the primary key is composite and includes at least two foreign key columns
+    if len(primary_foreign_keys) == sum(1 for col in table.columns if col.primary):
+        return True
+
+    return False
+
+
+def analyze_bridge_tables(tables: dict) -> None:
+    """Analyze if each table is a bridge table."""
+    for table in tables.values():
+        table.is_bridge = is_bridge_table(table)
 
 
 def construct_table_info(column_details: list, fk_details: list, constraints: list) -> list[TableInfo]:
@@ -187,7 +236,11 @@ def construct_table_info(column_details: list, fk_details: list, constraints: li
 
     # updating
     update_columns_with_constraints(tables)
-    update_foreign_keys_with_constraints(tables)
+    analyze_bridge_tables(tables)
+    for i in range(2):
+        # TODO: update this fn to avoid running twice.
+        print('running analyze_table_relationships ' + str(i))
+        analyze_table_relationships(tables)  # run twice to ensure all relationships are captured
 
     # return
     return list(tables.values())

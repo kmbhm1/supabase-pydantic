@@ -189,8 +189,6 @@ class ClassWriter:
         # SQLALCHEMY
         if self.file_type == OrmType.SQLALCHEMY:
             if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
-                if self.table.name == 'case_reviews' or self.table.name == 'cases':
-                    print(self.table.name, fk.relation_type, fk.foreign_table_name, fk.foreign_column_name)
                 back_populates = f'back_populates="{to_pascal_case(self.table.name)}"'
                 useList = ', useList=True' if fk.relation_type != RelationType.ONE_TO_ONE else ''
                 relationship = f'relationship("{to_pascal_case(fk.foreign_table_name)}", {back_populates}{useList})'

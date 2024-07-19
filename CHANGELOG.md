@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.4.0 (2024-07-19)
+
+### Feature
+
+* feat(add-writer): cleanup (#15) ([`5d80031`](https://github.com/kmbhm1/supabase-pydantic/commit/5d80031e916e6b62689282dc5da3acad96ae63ef))
+
 ## v0.3.0 (2024-07-19)
 
 ### Feature

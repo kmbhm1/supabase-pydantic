@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.3.0 (2024-07-19)
+
+### Feature
+
+* feat(add-writer): updates to rerun pipeline (#14) ([`c7be9e5`](https://github.com/kmbhm1/supabase-pydantic/commit/c7be9e5a4970ed3f669078cf67d2b648700b5099))
+
+### Unknown
+
+* Add writer class and FastAPI-JSONAPI writing (#13)
+
+* feat(add-writer): add first FileWriter and ClassWriter classes
+* feat(add-writer): cleanup for writer classes, add sqlalchemy class writing, add nullable base schema, update cli args
+* feat(add-writer): integrate fastapi-jsonapi writing into writer classes, add job configuration for cli
+* feat(add-writer): update marshalling logic to incorporate foreign relation types, add sqlalchemy jsonapi starter
+* feat(add-writer): finalize marshalling logic and writer for relationships
+* feat(add-writer): update todo&#39;s ([`caf2b59`](https://github.com/kmbhm1/supabase-pydantic/commit/caf2b59e399f79c11f3ff4359b4739643def498b))
+
 ## v0.2.1 (2024-07-12)
 
 ### Fix

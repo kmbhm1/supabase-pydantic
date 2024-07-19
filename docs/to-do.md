@@ -16,3 +16,4 @@
 - [ ] Test with other conn methods (e.g., supabase secret key)
 - [ ] Integrage pyproject.toml
 - [ ] Separate nullable and non-nullable columns in models in a better way
+- [ ] Acquire a test dbs for integration tests

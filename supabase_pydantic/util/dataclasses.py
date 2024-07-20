@@ -7,10 +7,7 @@ from typing import Any, Literal
 
 from faker import Faker
 
-from supabase_pydantic.util.constants import (CONSTRAINT_TYPE_MAP,
-                                              PYDANTIC_TYPE_MAP,
-                                              SQLALCHEMY_TYPE_MAP,
-                                              RelationType)
+from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, PYDANTIC_TYPE_MAP, SQLALCHEMY_TYPE_MAP, RelationType
 from supabase_pydantic.util.fake import generate_fake_data
 
 

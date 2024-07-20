@@ -4,8 +4,7 @@ import pprint
 import re
 
 from supabase_pydantic.util.constants import PYDANTIC_TYPE_MAP, RelationType
-from supabase_pydantic.util.dataclasses import (ColumnInfo, ConstraintInfo,
-                                                ForeignKeyInfo, TableInfo)
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
 
 pp = pprint.PrettyPrinter(indent=4)
 

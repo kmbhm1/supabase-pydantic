@@ -1,8 +1,12 @@
-from .constants import (GET_ALL_PUBLIC_TABLES_AND_COLUMNS, GET_CONSTRAINTS,
-                        GET_TABLE_COLUMN_DETAILS, PYDANTIC_TYPE_MAP,
-                        ModelGenerationType, RelationType)
-from .dataclasses import (AsDictParent, ColumnInfo, ForeignKeyInfo,
-                          FrameworkType, OrmType, TableInfo, WriterConfig)
+from .constants import (
+    GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
+    GET_CONSTRAINTS,
+    GET_TABLE_COLUMN_DETAILS,
+    PYDANTIC_TYPE_MAP,
+    ModelGenerationType,
+    RelationType,
+)
+from .dataclasses import AsDictParent, ColumnInfo, ForeignKeyInfo, FrameworkType, OrmType, TableInfo, WriterConfig
 from .db import check_connection, create_connection, query_database
 from .fake import generate_fake_data
 from .json import CustomJsonEncoder

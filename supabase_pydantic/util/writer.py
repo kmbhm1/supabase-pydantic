@@ -1,12 +1,12 @@
-from supabase_pydantic.util.constants import (BASE_CLASS_POSTFIX,
-                                              CUSTOM_JSONAPI_META_MODEL_NAME,
-                                              CUSTOM_MODEL_NAME,
-                                              PYDANTIC_TYPE_MAP,
-                                              SQLALCHEMY_TYPE_MAP,
-                                              RelationType)
-from supabase_pydantic.util.dataclasses import (ColumnInfo, ForeignKeyInfo,
-                                                FrameworkType, OrmType,
-                                                TableInfo)
+from supabase_pydantic.util.constants import (
+    BASE_CLASS_POSTFIX,
+    CUSTOM_JSONAPI_META_MODEL_NAME,
+    CUSTOM_MODEL_NAME,
+    PYDANTIC_TYPE_MAP,
+    SQLALCHEMY_TYPE_MAP,
+    RelationType,
+)
+from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, FrameworkType, OrmType, TableInfo
 from supabase_pydantic.util.string import to_pascal_case
 
 

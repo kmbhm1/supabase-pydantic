@@ -187,6 +187,7 @@ def analyze_table_relationships(tables: dict) -> None:
 
 
 def is_bridge_table(table: TableInfo) -> bool:
+    """Check if the table is a bridge table."""
     # Check for at least two foreign keys
     if len(table.foreign_keys) < 2:
         return False

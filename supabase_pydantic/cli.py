@@ -35,6 +35,7 @@ port = os.environ.get('DB_PORT')
 
 
 def reload_env() -> tuple:
+    """Reload environment variables from .env file."""
     # Load environment variables from .env file
     load_dotenv(find_dotenv())
 

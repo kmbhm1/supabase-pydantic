@@ -10,6 +10,7 @@ def create_connection(dbname, user, password, host, port):
 
 
 def check_connection(conn):
+    """Check if the connection is open."""
     if conn.closed:
         print('Connection is closed.')
         return False

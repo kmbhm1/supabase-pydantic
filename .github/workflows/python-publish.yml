@@ -24,6 +24,8 @@ jobs:
           cache: "poetry"
       - name: Install dependencies
         run: poetry install
+      - name: Lint checking
+        run: poetry run ruff check .
       - name: Build package
         run: poetry build
 

@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "supabase-pydantic"
 version = "0.4.0"
-description = "A project to translate Supabase schemas into Pydantic models"
+description = "A Pydantic(+) model generator for Supabase"
 authors = ["K Boehm <kmbhm1@gmail.com>"]
 license = "MIT"
+repository = "https://github.com/kmbhm1/supabase-pydantic"
 readme = "README.md"
 classifiers = [
     "Development Status :: 1 - Planning",
@@ -20,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
 ]
+keywords = ["supabase", "pydantic", "fastapi", "sqlalchemy", "REST", "generator", "schema", "model"]
 
 [tool.poetry.scripts]
 sb-pydantic = 'supabase_pydantic.cli:main'

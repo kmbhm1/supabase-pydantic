@@ -11,12 +11,12 @@ classifiers = [
     "Environment :: Console",
     "Framework :: FastAPI",
     "Framework :: Pydantic",
-    "Framework :: Pydantic :: 2", 
+    "Framework :: Pydantic :: 2",
     "Framework :: Pytest",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
-    "Operating System :: MacOS :: MacOS X", 
+    "Operating System :: MacOS :: MacOS X",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -43,6 +43,8 @@ sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
 fastapi-jsonapi = "^2.8.0"
 pytest = "^8.2.2"
 python-semantic-release = "^9.8.5"
+pre-commit = "^3.7.1"
+commitizen = "^3.28.0"
 
 [tool.ruff]
 line-length = 120
@@ -210,4 +212,3 @@ insecure = false
 [tool.semantic_release.publish]
 dist_glob_patterns = ["dist/*"]
 upload_to_vcs_release = true
-

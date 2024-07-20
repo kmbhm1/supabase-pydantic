@@ -3,13 +3,13 @@ from typing import Any
 import psycopg2
 
 
-def create_connection(dbname, user, password, host, port):
+def create_connection(dbname: str, user: str, password: str, host: str, port: str) -> Any:
     """Create a connection to the database."""
     conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
     return conn
 
 
-def check_connection(conn):
+def check_connection(conn: Any) -> bool:
     """Check if the connection is open."""
     if conn.closed:
         print('Connection is closed.')

@@ -6,7 +6,14 @@ from supabase_pydantic.util.constants import (
     SQLALCHEMY_TYPE_MAP,
     RelationType,
 )
-from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, FrameworkType, OrmType, TableInfo
+from supabase_pydantic.util.dataclasses import (
+    ColumnInfo,
+    ForeignKeyInfo,
+    FrameworkType,
+    OrmType,
+    TableInfo,
+    get_enum_member_from_string,
+)
 from supabase_pydantic.util.string import to_pascal_case
 
 
@@ -19,9 +26,11 @@ class ClassWriter:
         nullify_base_schema_class: bool = False,
     ):
         self.table = table
-        self.file_type = OrmType.from_string(file_type) if isinstance(file_type, str) else file_type
+        self.file_type = get_enum_member_from_string(OrmType, file_type) if isinstance(file_type, str) else file_type
         self.framework_type = (
-            FrameworkType.from_string(framework_type) if isinstance(framework_type, str) else framework_type
+            get_enum_member_from_string(FrameworkType, framework_type)
+            if isinstance(framework_type, str)
+            else framework_type
         )
         self.nullify_base_schema_class = nullify_base_schema_class
 
@@ -225,7 +234,7 @@ class ClassWriter:
                     + '\n\t)'
                 )
 
-        return None
+        return ''
 
     def write_table_args(self) -> list[str]:
         """Generate the table args for a table."""
@@ -296,13 +305,15 @@ class FileWriter:
         nullify_base_schema_class: bool = False,
     ):
         self.tables = tables
-        self.file_type = OrmType.from_string(file_type) if isinstance(file_type, str) else file_type
+        self.file_type = get_enum_member_from_string(OrmType, file_type) if isinstance(file_type, str) else file_type
         self.framework_type = (
-            FrameworkType.from_string(framework_type) if isinstance(framework_type, str) else framework_type
+            get_enum_member_from_string(FrameworkType, framework_type)
+            if isinstance(framework_type, str)
+            else framework_type
         )
         self.nullify_base_schema_class = nullify_base_schema_class
 
-    def write(self, path: str, overwrite: bool = True):
+    def write(self, path: str, overwrite: bool = True) -> None:
         """Write the models file to a provided path."""
 
         # imports
@@ -411,7 +422,7 @@ class FileWriter:
     def write_working_class(self, table: TableInfo) -> str:
         """Generate the working class string for a table."""
         class_writer = ClassWriter(table, self.file_type, self.framework_type, self.nullify_base_schema_class)
-        return class_writer.write_working_class()
+        return class_writer.write_working_class() or ''
 
     def write_working_classes(self) -> str:
         """Generate the working class strings for all tables.
@@ -435,7 +446,7 @@ class FileWriter:
             tuple[str, str]: The base class string and the working class string
         """
         class_writer = ClassWriter(table, self.file_type, self.framework_type, self.nullify_base_schema_class)
-        return class_writer.write(), class_writer.write_working_class()
+        return class_writer.write() or '', class_writer.write_working_class() or ''
 
     def write_custom_model_string(self) -> str:
         """Generate a custom Pydantic model."""

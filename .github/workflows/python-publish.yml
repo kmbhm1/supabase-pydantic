@@ -26,6 +26,8 @@ jobs:
         run: poetry install
       - name: Lint checking
         run: poetry run ruff check .
+      - name: Type checking
+        run: poetry run mypy .
       - name: Build package
         run: poetry build
 

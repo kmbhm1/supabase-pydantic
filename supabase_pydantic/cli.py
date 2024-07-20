@@ -49,7 +49,7 @@ def reload_env() -> tuple:
     return db_name, user, password, host, port
 
 
-def check_readiness():
+def check_readiness() -> bool:
     """Check if environment variables are set correctly."""
     # db_name, user, password, host, port = reload_env()
     check = {'DB_NAME': db_name, 'DB_USER': user, 'DB_PASS': password, 'DB_HOST': host, 'DB_PORT': port}
@@ -63,7 +63,7 @@ def check_readiness():
     return True
 
 
-def clean_directory(directory: str):
+def clean_directory(directory: str) -> None:
     """Remove all files & directories in the specified directory."""
     if os.path.isdir(directory) and not os.listdir(directory):
         os.rmdir(directory)
@@ -80,7 +80,7 @@ def clean_directory(directory: str):
                 print(e)
 
 
-def clean_directories(directories: list):
+def clean_directories(directories: list) -> None:
     """Remove all files & directories in the specified directories."""
     for d in directories:
         print(f'Checking for directory: {d}')
@@ -137,7 +137,7 @@ def main(
     generate_jsonapi: bool,
     nullify_base_schema: bool,
     cleanup: bool,
-):
+) -> None:
     """A CLI tool to generate Pydantic models from a PostgreSQL database."""
 
     # Load environment variables from .env file & check if they are set correctly
@@ -165,6 +165,9 @@ def main(
     # Get Table & Column details from the database
     try:
         # Create a connection to the database & check if connection is successful
+        assert (
+            db_name is not None and user is not None and password is not None and host is not None and port is not None
+        ), 'Environment variables not set correctly.'
         conn = create_connection(db_name, user, password, host, port)
         assert check_connection(conn)
 

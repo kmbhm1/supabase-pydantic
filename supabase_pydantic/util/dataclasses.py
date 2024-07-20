@@ -11,31 +11,15 @@ from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, PYDANTIC_TYPE_
 from supabase_pydantic.util.fake import generate_fake_data
 
 
-def add_string_methods(cls: Any) -> Any:
-    """Decorator to add a from_string method to an Enum class."""
-
-    @classmethod
-    def from_string(cls, value: str):
-        value_lower = value.lower()
-        for member in cls:
-            if member.value == value_lower:
-                return member
-        raise ValueError(f"'{value}' is not a valid {cls.__name__}")
-
-    @classmethod
-    def to_string(cls, value: str):
-        value_lower = value.lower()
-        for member in cls:
-            if member.value == value_lower:
-                return member
-        raise ValueError(f"'{value}' is not a valid {cls.__name__}")
-
-    cls.from_string = from_string
-    cls.to_string = to_string
-    return cls
+def get_enum_member_from_string(cls: Any, value: str) -> Any:
+    """Get an Enum member from a string value."""
+    value_lower = value.lower()
+    for member in cls:
+        if member.value == value_lower:
+            return member
+    raise ValueError(f"'{value}' is not a valid {cls.__name__}")
 
 
-@add_string_methods
 class OrmType(Enum):
     """Enum for file types."""
 
@@ -43,7 +27,6 @@ class OrmType(Enum):
     SQLALCHEMY = 'sqlalchemy'
 
 
-@add_string_methods
 class FrameworkType(Enum):
     """Enum for framework types."""
 
@@ -71,13 +54,14 @@ class WriterConfig:
         """Get the full file path."""
         return os.path.join(self.directory, self.filename)
 
-    def __dict__(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
+        """Convert the WriterConfig object to a dictionary."""
         return {
-            'file_type': self.file_type,
-            'framework_type': self.framework_type,
+            'file_type': str(self.file_type),
+            'framework_type': str(self.framework_type),
             'filename': self.filename,
             'directory': self.directory,
-            'enabled': self.enabled,
+            'enabled': str(self.enabled),
         }
 
 
@@ -112,7 +96,7 @@ class ColumnInfo(AsDictParent):
     is_unique: bool = False
     is_foreign_key: bool = False
 
-    def orm_imports(self, orm_type: OrmType = OrmType.PYDANTIC) -> set[str]:
+    def orm_imports(self, orm_type: OrmType = OrmType.PYDANTIC) -> set[str | None]:
         """Get the unique import statements for a column."""
         imports = set()  # future proofing in case multiple imports are needed
         if orm_type == OrmType.SQLALCHEMY:
@@ -151,15 +135,15 @@ class TableInfo(AsDictParent):
     constraints: list[ConstraintInfo] = field(default_factory=list)
     generated_data: list[dict] = field(default_factory=list)
 
-    def add_column(self, column: ColumnInfo):
+    def add_column(self, column: ColumnInfo) -> None:
         """Add a column to the table."""
         self.columns.append(column)
 
-    def add_foreign_key(self, fk: ForeignKeyInfo):
+    def add_foreign_key(self, fk: ForeignKeyInfo) -> None:
         """Add a foreign key to the table."""
         self.foreign_keys.append(fk)
 
-    def add_constraint(self, constraint: ConstraintInfo):
+    def add_constraint(self, constraint: ConstraintInfo) -> None:
         """Add a constraint to the table."""
         self.constraints.append(constraint)
 
@@ -216,13 +200,12 @@ class TableInfo(AsDictParent):
             A dictionary with keys, nullable, non_nullable, and remaining as keys
             and lists of ColumnInfo objects as values.
         """
-
-        result = {'keys': [], 'nullable': [], 'non_nullable': [], 'remaining': []}
+        result: dict[str, list[ColumnInfo]] = {'keys': [], 'nullable': [], 'non_nullable': [], 'remaining': []}
         if separate_primary_key:
             result['keys'] = self.get_primary_columns(sort_results=True)
             result['remaining'] = self.get_secondary_columns(sort_results=True)
         else:
-            result['remaining'] = self.columns.sort(key=lambda x: x.name)
+            result['remaining'] = sorted(self.columns, key=lambda x: x.name)
 
         if separate_nullable:
             nullable_columns = [column for column in result['remaining'] if column.is_nullable]  # already sorted
@@ -235,15 +218,16 @@ class TableInfo(AsDictParent):
 
         return result
 
-    def generate_fake_row(self):
+    def generate_fake_row(self) -> dict[str, Any]:
         """Generate a dictionary with column names as keys and fake data as values."""
-        row = {}
+        row: dict[str, Any] = {}
         fake = Faker()
         for column in self.columns:
-            if column.is_nullable and random.random() < 0.1:
+            if column.is_nullable and random() < 0.1:
                 row[column.name] = None
             else:
+                is_nullable = column.is_nullable if column.is_nullable is not None else False
                 row[column.name] = generate_fake_data(
-                    column.post_gres_datatype, column.is_nullable, column.max_length, column.name, fake
+                    column.post_gres_datatype, is_nullable, column.max_length, column.name, fake
                 )
         return row

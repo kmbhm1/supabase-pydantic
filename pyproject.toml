@@ -41,10 +41,12 @@ click = "^8.1.7"
 ruff = "^0.4.1"
 sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
 fastapi-jsonapi = "^2.8.0"
-pytest = "^8.2.2"
 python-semantic-release = "^9.8.5"
 pre-commit = "^3.7.1"
 commitizen = "^3.28.0"
+pytest = "^8.2.2"
+mypy = "^1.11.0"
+pytest-mypy = "^0.10.3"
 
 [tool.ruff]
 line-length = 120
@@ -144,7 +146,24 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.mypy]
-plugins = ["sqlalchemy.ext.mypy.plugin"]
+plugins = ["pydantic.mypy"]
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "tests/*",
+    'entities/*', # ignore original files (models); temporary
+]
+python_version = "3.10"
+mypy_path = "."
+explicit_package_bases = true
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_return_any = true
+disallow_untyped_defs = true
+check_untyped_defs = true
 
 [build-system]
 requires = ["poetry-core"]

@@ -2,23 +2,15 @@ import os
 import pprint
 import shutil
 
+import click
 from dotenv import find_dotenv, load_dotenv
 
-from supabase_pydantic.util import (
-    construct_table_info,
-    create_connection,
-    query_database,
-    check_connection,
-    GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
-    GET_CONSTRAINTS,
-    GET_TABLE_COLUMN_DETAILS,
-    run_isort,
-    FrameworkType,
-    FileWriter,
-    OrmType,
-    WriterConfig,
-)
-import click
+from supabase_pydantic.util import (GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
+                                    GET_CONSTRAINTS, GET_TABLE_COLUMN_DETAILS,
+                                    FileWriter, FrameworkType, OrmType,
+                                    WriterConfig, check_connection,
+                                    construct_table_info, create_connection,
+                                    query_database, run_isort)
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)

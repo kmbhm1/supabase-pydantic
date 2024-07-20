@@ -1,5 +1,6 @@
 import json
 from random import random
+
 from faker import Faker
 
 from supabase_pydantic.util.json import CustomJsonEncoder

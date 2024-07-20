@@ -1,13 +1,16 @@
-from enum import Enum
 import json
-from dataclasses import asdict, dataclass, field
 import os
+from dataclasses import asdict, dataclass, field
+from enum import Enum
 from random import random
 from typing import Any, Literal
 
 from faker import Faker
 
-from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, PYDANTIC_TYPE_MAP, SQLALCHEMY_TYPE_MAP, RelationType
+from supabase_pydantic.util.constants import (CONSTRAINT_TYPE_MAP,
+                                              PYDANTIC_TYPE_MAP,
+                                              SQLALCHEMY_TYPE_MAP,
+                                              RelationType)
 from supabase_pydantic.util.fake import generate_fake_data
 
 

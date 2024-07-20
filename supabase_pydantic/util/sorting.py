@@ -1,5 +1,6 @@
 import subprocess
 from collections import defaultdict, deque
+
 from supabase_pydantic.util.dataclasses import TableInfo
 
 

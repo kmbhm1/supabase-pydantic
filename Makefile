@@ -29,7 +29,8 @@ pre-commit-setup:
 pre-commit:
 	@echo "Running pre-commit"
 	@poetry run pre-commit run --all-files --color always && \
-		poetry run pre-commit run --hook-stage pre-push --all-files --color always
+		poetry run pre-commit run --hook-stage pre-push --all-files --color always && \
+		poetry run pre-commit run --hook-stage push --all-files --color always
 
 sort-imports:
 	@echo "Sorting imports"

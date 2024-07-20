@@ -36,6 +36,7 @@ faker = "^24.11.0"
 isort = "^5.13.2"
 python-dotenv = "^1.0.1"
 click = "^8.1.7"
+toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.1"
@@ -47,6 +48,10 @@ commitizen = "^3.28.0"
 pytest = "^8.2.2"
 mypy = "^1.11.0"
 pytest-mypy = "^0.10.3"
+
+[tool.supabase_pydantic]
+overwrite_existing_files = true
+nullify_base_schema = true
 
 [tool.ruff]
 line-length = 120
@@ -154,7 +159,7 @@ exclude = [
     "build",
     "dist",
     "tests/*",
-    'entities/*', # ignore original files (models); temporary
+    'entities/*', # generated files
 ]
 python_version = "3.10"
 mypy_path = "."

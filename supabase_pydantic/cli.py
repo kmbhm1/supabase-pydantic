@@ -1,8 +1,10 @@
 import os
 import pprint
 import shutil
+from typing import Any
 
 import click
+import toml
 from dotenv import find_dotenv, load_dotenv
 
 from supabase_pydantic.util import (
@@ -19,6 +21,7 @@ from supabase_pydantic.util import (
     query_database,
     run_isort,
 )
+from supabase_pydantic.util.dataclasses import AppConfig, ToolConfig
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)
@@ -117,12 +120,27 @@ def generate_unique_filename(base_name: str, extension: str, directory: str = '.
     return file_path
 
 
+def load_config() -> AppConfig:
+    """Load the configuration from the pyproject.toml file."""
+    try:
+        with open('pyproject.toml') as f:
+            config_data: dict[str, Any] = toml.load(f)
+            tool_config: ToolConfig = config_data.get('tool', {})
+            app_config: AppConfig = tool_config.get('supabase_pydantic', {})
+            return app_config
+    except FileNotFoundError:
+        return {}
+
+
+config_dict: AppConfig = load_config()
+
+
 @click.command()
 @click.option(
     '-d', '--directory', 'default_directory', default='entities', help='The directory to save the generated files.'
 )
 @click.option('-a', '--all', '_all', is_flag=True, help='Generate all model files. Overrides other flags.')
-@click.option('--overwrite/--no-overwrite', default=True, help='Overwrite existing files.')
+@click.option('--overwrite/--no-overwrite', help='Overwrite existing files.')
 @click.option(
     '--sqlalchemy', 'generate_sqlalchemy', is_flag=True, help='Add SQLAlchemy database models to the generated files.'
 )
@@ -130,13 +148,13 @@ def generate_unique_filename(base_name: str, extension: str, directory: str = '.
 @click.option('--nullify-base-schema', is_flag=True, help='Force all default values in Base schema to be nullable.')
 @click.option('-c', '--clean', 'cleanup', is_flag=True, help='Remove & clean the generated directory and files.')
 def main(
-    default_directory: str,
     _all: bool,
-    overwrite: bool,
     generate_sqlalchemy: bool,
     generate_jsonapi: bool,
-    nullify_base_schema: bool,
     cleanup: bool,
+    default_directory: str = config_dict.get('default_directory', 'entities'),
+    overwrite: bool = config_dict.get('overwrite_existing_files', True),
+    nullify_base_schema: bool = config_dict.get('nullify_base_schema', False),
 ) -> None:
     """A CLI tool to generate Pydantic models from a PostgreSQL database."""
 

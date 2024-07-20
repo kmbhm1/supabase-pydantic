@@ -3,6 +3,7 @@
 - [x] Finalize JsonAPI writers as correct with FastAPI-JSONAPI lib
 - [x] README: change Supabase-Pydantic to `supabase-py`; change this description, "A project to translate Supabase schemas into Pydantic models"; add github link
 - [ ] Add community health guidelines
+- [ ] Integrate pyproject.toml
 - [ ] Add better examples and usage in README
 - [x] Add linting with ruff and in actions
 - [ ] Add tests with coverage and in actions
@@ -14,6 +15,5 @@
 - [ ] Explore SDK integrations, rather than CLI use
 - [ ] Add example Makefile command
 - [ ] Test with other conn methods (e.g., supabase secret key)
-- [ ] Integrate pyproject.toml
 - [ ] Separate nullable and non-nullable columns in models in a better way
 - [ ] Acquire test dbs for integration tests

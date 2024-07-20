@@ -3,12 +3,22 @@ import os
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from random import random
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 from faker import Faker
 
 from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, PYDANTIC_TYPE_MAP, SQLALCHEMY_TYPE_MAP, RelationType
 from supabase_pydantic.util.fake import generate_fake_data
+
+
+class AppConfig(TypedDict, total=False):
+    default_directory: str
+    overwrite_existing_files: bool
+    nullify_base_schema: bool
+
+
+class ToolConfig(TypedDict):
+    supabase_pydantic: AppConfig
 
 
 def get_enum_member_from_string(cls: Any, value: str) -> Any:

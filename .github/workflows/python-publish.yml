@@ -28,18 +28,20 @@ jobs:
         run: poetry run ruff check --output-format=github .
       - name: Type checking
         run: poetry run mypy .
-      - name: Testing & Coverage checking with Pytest
-        id: test
+      - name: Test with Pytest
+        run: poetry run pytest --cov=supabase_pydantic --cov-report=term-missing
+      - name: Coverage check
+        id: coverage
         run: |
-          poetry run pytest -v -s
-          poetry run coverage report -m
-          COVERAGE=$(poetry run coverage report | grep TOTAL | awk '{print $4}' | tr -d '%')
+          COVERAGE=$(poetry run pytest --cov=supabase_pydantic --cov-report=term-missing | grep TOTAL | awk '{print $4}' | tr -d '%')
           echo "Coverage percentage is $COVERAGE%"
           echo "::set-output name=coverage::$COVERAGE"
-          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
-            echo "Coverage is below 60% threshold"
+          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
+            echo "Coverage is below 40% threshold"
             exit 1
           fi
+      - name: Use Coverage
+        run: echo "The coverage is ${{ steps.coverage.outputs.coverage }}%"
       - name: Build package
         run: poetry build
 

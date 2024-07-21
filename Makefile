@@ -40,7 +40,6 @@ sort-imports:
 	@echo "Sorting imports"
 	@poetry run isort .
 
-
 lint:
 	@echo "Running ruff linter"
 	@poetry run ruff check .

@@ -1,24 +1,27 @@
 import os
 import pprint
 import shutil
+from typing import Any
 
+import click
+import toml
 from dotenv import find_dotenv, load_dotenv
 
 from supabase_pydantic.util import (
-    construct_table_info,
-    create_connection,
-    query_database,
-    check_connection,
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_CONSTRAINTS,
     GET_TABLE_COLUMN_DETAILS,
-    run_isort,
-    FrameworkType,
     FileWriter,
+    FrameWorkType,
     OrmType,
     WriterConfig,
+    check_connection,
+    construct_table_info,
+    create_connection,
+    query_database,
+    run_isort,
 )
-import click
+from supabase_pydantic.util.dataclasses import AppConfig, ToolConfig
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)
@@ -35,6 +38,7 @@ port = os.environ.get('DB_PORT')
 
 
 def reload_env() -> tuple:
+    """Reload environment variables from .env file."""
     # Load environment variables from .env file
     load_dotenv(find_dotenv())
 
@@ -48,7 +52,7 @@ def reload_env() -> tuple:
     return db_name, user, password, host, port
 
 
-def check_readiness():
+def check_readiness() -> bool:
     """Check if environment variables are set correctly."""
     # db_name, user, password, host, port = reload_env()
     check = {'DB_NAME': db_name, 'DB_USER': user, 'DB_PASS': password, 'DB_HOST': host, 'DB_PORT': port}
@@ -62,7 +66,7 @@ def check_readiness():
     return True
 
 
-def clean_directory(directory: str):
+def clean_directory(directory: str) -> None:
     """Remove all files & directories in the specified directory."""
     if os.path.isdir(directory) and not os.listdir(directory):
         os.rmdir(directory)
@@ -79,7 +83,7 @@ def clean_directory(directory: str):
                 print(e)
 
 
-def clean_directories(directories: list):
+def clean_directories(directories: list) -> None:
     """Remove all files & directories in the specified directories."""
     for d in directories:
         print(f'Checking for directory: {d}')
@@ -116,12 +120,27 @@ def generate_unique_filename(base_name: str, extension: str, directory: str = '.
     return file_path
 
 
+def load_config() -> AppConfig:
+    """Load the configuration from the pyproject.toml file."""
+    try:
+        with open('pyproject.toml') as f:
+            config_data: dict[str, Any] = toml.load(f)
+            tool_config: ToolConfig = config_data.get('tool', {})
+            app_config: AppConfig = tool_config.get('supabase_pydantic', {})
+            return app_config
+    except FileNotFoundError:
+        return {}
+
+
+config_dict: AppConfig = load_config()
+
+
 @click.command()
 @click.option(
     '-d', '--directory', 'default_directory', default='entities', help='The directory to save the generated files.'
 )
 @click.option('-a', '--all', '_all', is_flag=True, help='Generate all model files. Overrides other flags.')
-@click.option('--overwrite/--no-overwrite', default=True, help='Overwrite existing files.')
+@click.option('--overwrite/--no-overwrite', help='Overwrite existing files.')
 @click.option(
     '--sqlalchemy', 'generate_sqlalchemy', is_flag=True, help='Add SQLAlchemy database models to the generated files.'
 )
@@ -129,14 +148,14 @@ def generate_unique_filename(base_name: str, extension: str, directory: str = '.
 @click.option('--nullify-base-schema', is_flag=True, help='Force all default values in Base schema to be nullable.')
 @click.option('-c', '--clean', 'cleanup', is_flag=True, help='Remove & clean the generated directory and files.')
 def main(
-    default_directory: str,
     _all: bool,
-    overwrite: bool,
     generate_sqlalchemy: bool,
     generate_jsonapi: bool,
-    nullify_base_schema: bool,
     cleanup: bool,
-):
+    default_directory: str = config_dict.get('default_directory', 'entities'),
+    overwrite: bool = config_dict.get('overwrite_existing_files', True),
+    nullify_base_schema: bool = config_dict.get('nullify_base_schema', False),
+) -> None:
     """A CLI tool to generate Pydantic models from a PostgreSQL database."""
 
     # Load environment variables from .env file & check if they are set correctly
@@ -164,6 +183,9 @@ def main(
     # Get Table & Column details from the database
     try:
         # Create a connection to the database & check if connection is successful
+        assert (
+            db_name is not None and user is not None and password is not None and host is not None and port is not None
+        ), 'Environment variables not set correctly.'
         conn = create_connection(db_name, user, password, host, port)
         assert check_connection(conn)
 
@@ -189,28 +211,28 @@ def main(
     jobs: dict[str, WriterConfig] = {
         'FastAPI Pydantic': WriterConfig(
             file_type=OrmType.PYDANTIC,
-            framework_type=FrameworkType.FASTAPI,
+            framework_type=FrameWorkType.FASTAPI,
             filename=pydantic_fname,
             directory=fastapi_directory,
             enabled=True,
         ),
         'FastAPI SQLAlchemy': WriterConfig(
             file_type=OrmType.SQLALCHEMY,
-            framework_type=FrameworkType.FASTAPI,
+            framework_type=FrameWorkType.FASTAPI,
             filename=sqlalchemy_fname,
             directory=fastapi_directory,
             enabled=generate_sqlalchemy,
         ),
         'FastAPI-JSONAPI Pydantic': WriterConfig(
             file_type=OrmType.PYDANTIC,
-            framework_type=FrameworkType.FASTAPI_JSONAPI,
+            framework_type=FrameWorkType.FASTAPI_JSONAPI,
             filename=pydantic_fname,
             directory=jsonapi_directory,
             enabled=generate_jsonapi,
         ),
         'FastAPI-JSONAPI SQLAlchemy': WriterConfig(
             file_type=OrmType.SQLALCHEMY,
-            framework_type=FrameworkType.FASTAPI_JSONAPI,
+            framework_type=FrameWorkType.FASTAPI_JSONAPI,
             filename=sqlalchemy_fname,
             directory=jsonapi_directory,
             enabled=generate_jsonapi and generate_sqlalchemy,

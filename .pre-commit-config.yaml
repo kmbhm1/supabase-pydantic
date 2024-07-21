@@ -1,0 +1,70 @@
+default_language_version:
+    python: python3.10
+fail_fast: true
+exclude: 'docs/.*|cli/.*|.venv/.*|.vscode/.*|serverless.yml|poetry.lock|Makefile|Dockerfile*|.env*'
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        stages: [commit]
+      - id: end-of-file-fixer
+        stages: [commit]
+      - id: check-yaml
+        stages: [commit]
+      - id: sort-simple-yaml
+        stages: [commit]
+      - id: check-added-large-files
+        stages: [commit]
+      - id: check-ast
+        stages: [commit]
+      - id: check-json
+        stages: [commit]
+      - id: pretty-format-json
+        stages: [commit]
+        args: [--autofix, --indent, "2"]
+      - id: check-toml
+        stages: [commit]
+      - id: debug-statements
+        stages: [commit]
+      - id: mixed-line-ending
+        stages: [commit]
+      - id: requirements-txt-fixer
+        stages: [commit]
+      - id: sort-simple-yaml
+        stages: [commit]
+      - id: detect-private-key
+        stages: [commit]
+      - id: no-commit-to-branch
+        stages: [commit]
+        args: [--branch, staging, --branch, main, --branch, master]
+      - id: check-case-conflict
+        stages: [commit]
+      - id: check-merge-conflict
+        stages: [commit]
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.15.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.2.2
+    hooks:
+      - id: ruff  # linter without fixer
+        stages: [ push ]
+        types_or: [ python3, python ]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        stages: [push]
+        exclude: '^tests/'
+        args: [--ignore-missing-imports, --warn-unused-configs, --check-untyped-defs]
+        additional_dependencies:
+          - pydantic
+          - pydantic-settings
+          - types-toml
+          - types-pytz
+          - fastapi
+          - passlib
+          - supabase-py

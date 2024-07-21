@@ -1,5 +1,7 @@
 import json
 from random import random
+from typing import Any
+
 from faker import Faker
 
 from supabase_pydantic.util.json import CustomJsonEncoder
@@ -7,7 +9,7 @@ from supabase_pydantic.util.json import CustomJsonEncoder
 
 def generate_fake_data(
     post_gres_datatype: str, is_nullable: bool, max_length: int | None, name: str, fake: Faker = Faker()
-):
+) -> Any:
     """Generate fake data based on the column datatype."""
     datatype = post_gres_datatype.lower()
 
@@ -15,7 +17,7 @@ def generate_fake_data(
         return 'NULL'
 
     if datatype in ['integer', 'bigint']:
-        return fake.random_number(digits=max_length if max_length else 5)
+        return fake.random_number(digits=(max_length if max_length else 5))
     elif datatype == 'text' or 'varchar' in datatype or datatype == 'character varying':
         if name.lower() == 'email':
             return f"'{fake.email()}'"

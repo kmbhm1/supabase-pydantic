@@ -24,6 +24,22 @@ jobs:
           cache: "poetry"
       - name: Install dependencies
         run: poetry install
+      - name: Lint checking
+        run: poetry run ruff check --output-format=github .
+      - name: Type checking
+        run: poetry run mypy .
+      - name: Test with Pytest
+        run: poetry run pytest -v -s --cov=supabase_pydantic --cov-report=term-missing
+      - name: Coverage check
+        id: coverage
+        run: |
+          COVERAGE=$(poetry run pytest --cov=supabase_pydantic --cov-report=term-missing | grep TOTAL | awk '{print $4}' | tr -d '%')
+          echo "Coverage percentage is $COVERAGE%"
+          echo "::set-output name=coverage::$COVERAGE"
+          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
+            echo "Coverage is below 40% threshold"
+            exit 1
+          fi
       - name: Build package
         run: poetry build
 

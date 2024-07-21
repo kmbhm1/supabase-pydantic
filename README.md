@@ -1,6 +1,6 @@
 # Supabase Pydantic Schemas
 
-A project for digesting Supabase (or Postgres) table & view schemas into Pydantic models. Currently, this is ideal for projects that integrate [FastAPI](https://fastapi.tiangolo.com/) with [Supabase-Python](https://supabase.com/docs/reference/python/introduction), but more updates are coming soon ...
+A project for digesting Supabase (or Postgres) table & view schemas into Pydantic models. Currently, this is ideal for projects that integrate [FastAPI](https://fastapi.tiangolo.com/) with [supabase-py](https://supabase.com/docs/reference/python/introduction), but more updates are coming soon ...
 
 ## Installation
 

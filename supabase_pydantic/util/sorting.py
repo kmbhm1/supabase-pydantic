@@ -1,9 +1,11 @@
 import subprocess
 from collections import defaultdict, deque
+
 from supabase_pydantic.util.dataclasses import TableInfo
 
 
-def run_isort(file_path: str):
+def run_isort(file_path: str) -> None:
+    """Run the isort command on the specified file."""
     try:
         # Run the isort command on the specified file
         result = subprocess.run(['isort', file_path], check=True, capture_output=True, text=True)

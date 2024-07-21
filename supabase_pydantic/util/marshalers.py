@@ -2,7 +2,8 @@ import builtins
 import keyword
 import pprint
 import re
-from supabase_pydantic.util.constants import RelationType, PYDANTIC_TYPE_MAP
+
+from supabase_pydantic.util.constants import PYDANTIC_TYPE_MAP, RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -46,18 +47,19 @@ def parse_constraint_definition_for_fk(constraint_definition: str) -> tuple[str,
         foreign_column_name = match.group(3)
 
         return column_name, foreign_table_name, foreign_column_name
+    return None
 
 
-def get_table_details_from_columns(column_details: list) -> dict[str, TableInfo]:
+def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str], TableInfo]:
     """Get the table details from the column details."""
     tables = {}
     for row in column_details:
         (schema, table_name, column_name, default, is_nullable, data_type, max_length, table_type) = row
-        table_key = (schema, table_name)
+        table_key: tuple[str, str] = (schema, table_name)
         if table_key not in tables:
             tables[table_key] = TableInfo(name=table_name, schema=schema, table_type=table_type)
         column_info = ColumnInfo(
-            name=standardize_column_name(column_name),
+            name=standardize_column_name(column_name) or column_name,
             alias=get_alias(column_name),
             post_gres_datatype=data_type,
             datatype=PYDANTIC_TYPE_MAP.get(data_type, ('Any, from typing import Any'))[0],
@@ -86,9 +88,9 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
         if table_key in tables:
             fk_info = ForeignKeyInfo(
                 constraint_name=constraint_name,
-                column_name=standardize_column_name(column_name),
+                column_name=standardize_column_name(column_name) or column_name,
                 foreign_table_name=foreign_table_name,
-                foreign_column_name=standardize_column_name(foreign_column_name),
+                foreign_column_name=standardize_column_name(foreign_column_name) or foreign_column_name,
                 relation_type=None,
                 foreign_table_schema=foreign_table_schema,
             )
@@ -103,7 +105,7 @@ def add_constraints_to_table_details(tables: dict, constraints: list) -> None:
         if table_key in tables:
             constraint = ConstraintInfo(
                 constraint_name=constraint_name,
-                columns=[standardize_column_name(c) for c in columns],
+                columns=[standardize_column_name(c) or str(c) for c in columns],
                 raw_constraint_type=constraint_type,
                 constraint_definition=constraint_definition,
             )
@@ -186,6 +188,7 @@ def analyze_table_relationships(tables: dict) -> None:
 
 
 def is_bridge_table(table: TableInfo) -> bool:
+    """Check if the table is a bridge table."""
     # Check for at least two foreign keys
     if len(table.foreign_keys) < 2:
         return False

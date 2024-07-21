@@ -1,25 +1,27 @@
 [tool.poetry]
 name = "supabase-pydantic"
 version = "0.4.0"
-description = "A project to translate Supabase schemas into Pydantic models"
+description = "A Pydantic(+) model generator for Supabase"
 authors = ["K Boehm <kmbhm1@gmail.com>"]
 license = "MIT"
+repository = "https://github.com/kmbhm1/supabase-pydantic"
 readme = "README.md"
 classifiers = [
     "Development Status :: 1 - Planning",
     "Environment :: Console",
     "Framework :: FastAPI",
     "Framework :: Pydantic",
-    "Framework :: Pydantic :: 2", 
+    "Framework :: Pydantic :: 2",
     "Framework :: Pytest",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
-    "Operating System :: MacOS :: MacOS X", 
+    "Operating System :: MacOS :: MacOS X",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
 ]
+keywords = ["supabase", "pydantic", "fastapi", "sqlalchemy", "REST", "generator", "schema", "model"]
 
 [tool.poetry.scripts]
 sb-pydantic = 'supabase_pydantic.cli:main'
@@ -34,13 +36,25 @@ faker = "^24.11.0"
 isort = "^5.13.2"
 python-dotenv = "^1.0.1"
 click = "^8.1.7"
+toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.1"
 sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
 fastapi-jsonapi = "^2.8.0"
-pytest = "^8.2.2"
 python-semantic-release = "^9.8.5"
+pre-commit = "^3.7.1"
+commitizen = "^3.28.0"
+pytest = "^8.2.2"
+mypy = "^1.11.0"
+pytest-mypy = "^0.10.3"
+pytest-cov = "^5.0.0"
+pytest-mock = "^3.14.0"
+types-toml = "^0.10.8.20240310"
+
+[tool.supabase_pydantic]
+overwrite_existing_files = true
+nullify_base_schema = true
 
 [tool.ruff]
 line-length = 120
@@ -136,11 +150,28 @@ convention = "google"
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "space"
-skip-magic-trailing-comma = true
+skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.mypy]
-plugins = ["sqlalchemy.ext.mypy.plugin"]
+plugins = ["pydantic.mypy"]
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "tests/*",
+    'entities/*', # generated files
+]
+python_version = "3.10"
+mypy_path = "."
+explicit_package_bases = true
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_return_any = true
+disallow_untyped_defs = true
+check_untyped_defs = true
 
 [build-system]
 requires = ["poetry-core"]
@@ -208,4 +239,3 @@ insecure = false
 [tool.semantic_release.publish]
 dist_glob_patterns = ["dist/*"]
 upload_to_vcs_release = true
-

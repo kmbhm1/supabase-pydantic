@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v0.5.0 (2024-07-21)
+
+### Feature
+
+* feat(pre-commit): add pre commits, linting, formatting, pyrpoject.toml config, and tests (#16)
+
+* docs: update pyproject and docs
+* style: import sorting
+* style: ruff format
+* feat(pre-commit): add pre-commit and commitizen
+* feat(pre-commit): add lint checking with ruff to github action, correct linting errors
+* feat(pre-commit): integrate mypy
+* feat: add toml configuration
+* fix: compensate for array notation in type maps
+* feat: add testing
+* feat(pre-commit): missing types for toml
+* feat(pre-commit): fix coverage run in action
+* feat(pre-commit): fix pytest coverage test and check in action
+* feat(pre-commit): fix test and coverage
+* feat(pre-commit): re-add verbose with testing step in action
+* feat(pre-commit): remove uneccessary step for reporting ([`6b686e8`](https://github.com/kmbhm1/supabase-pydantic/commit/6b686e86ce699e0ae5c4a9014a971b30d7bc01a1))
+
 ## v0.4.0 (2024-07-19)
 
 ### Feature

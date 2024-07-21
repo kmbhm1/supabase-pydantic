@@ -31,11 +31,11 @@ jobs:
       - name: Test with Pytest
         run: poetry run pytest -v -s
       - name: Generate coverage report
-        run: coverage report -m
+        run: poetry run coverage report -m
       - name: Check & capture coverage percentage (>60%)
         id: coverage
         run: |
-          COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | tr -d '%')
+          COVERAGE=$(poetry run coverage report | grep TOTAL | awk '{print $4}' | tr -d '%')
           echo "Coverage percentage is $COVERAGE%"
           echo "::set-output name=coverage::$COVERAGE"
           if (( $(echo "$COVERAGE < 60" | bc -l) )); then

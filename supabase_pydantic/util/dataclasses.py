@@ -7,8 +7,9 @@ from typing import Any, Literal, TypedDict
 
 from faker import Faker
 
-from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, PYDANTIC_TYPE_MAP, SQLALCHEMY_TYPE_MAP, RelationType
+from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, RelationType
 from supabase_pydantic.util.fake import generate_fake_data
+from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type
 
 
 class AppConfig(TypedDict, total=False):
@@ -37,7 +38,7 @@ class OrmType(Enum):
     SQLALCHEMY = 'sqlalchemy'
 
 
-class FrameworkType(Enum):
+class FrameWorkType(Enum):
     """Enum for framework types."""
 
     FASTAPI = 'fastapi'
@@ -47,7 +48,7 @@ class FrameworkType(Enum):
 @dataclass
 class WriterConfig:
     file_type: OrmType
-    framework_type: FrameworkType
+    framework_type: FrameWorkType
     filename: str
     directory: str
     enabled: bool
@@ -110,18 +111,18 @@ class ColumnInfo(AsDictParent):
         """Get the unique import statements for a column."""
         imports = set()  # future proofing in case multiple imports are needed
         if orm_type == OrmType.SQLALCHEMY:
-            i = SQLALCHEMY_TYPE_MAP.get(self.post_gres_datatype, ('Any', 'from sqlalchemy import Column'))[1]
+            i = get_sqlalchemy_type(self.post_gres_datatype, ('Any', 'from sqlalchemy import Column'))[1]
         else:
-            i = PYDANTIC_TYPE_MAP.get(self.post_gres_datatype, ('Any', None))[1]
+            i = get_pydantic_type(self.post_gres_datatype)[1]
         imports.add(i)
         return imports
 
     def orm_datatype(self, orm_type: OrmType = OrmType.PYDANTIC) -> str:
         """Get the datatype for a column."""
         if orm_type == OrmType.SQLALCHEMY:
-            return SQLALCHEMY_TYPE_MAP.get(self.post_gres_datatype, ('String', None))[0]
+            return get_sqlalchemy_type(self.post_gres_datatype)[0]
 
-        return PYDANTIC_TYPE_MAP.get(self.post_gres_datatype, ('Any', None))[0]
+        return get_pydantic_type(self.post_gres_datatype)[0]
 
 
 @dataclass

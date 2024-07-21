@@ -3,18 +3,18 @@ from supabase_pydantic.util.constants import (
     CUSTOM_JSONAPI_META_MODEL_NAME,
     CUSTOM_MODEL_NAME,
     PYDANTIC_TYPE_MAP,
-    SQLALCHEMY_TYPE_MAP,
     RelationType,
 )
 from supabase_pydantic.util.dataclasses import (
     ColumnInfo,
     ForeignKeyInfo,
-    FrameworkType,
+    FrameWorkType,
     OrmType,
     TableInfo,
     get_enum_member_from_string,
 )
 from supabase_pydantic.util.string import to_pascal_case
+from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type
 
 
 class ClassWriter:
@@ -22,13 +22,13 @@ class ClassWriter:
         self,
         table: TableInfo,
         file_type: OrmType | str = OrmType.PYDANTIC,
-        framework_type: FrameworkType | str = FrameworkType.FASTAPI,
+        framework_type: FrameWorkType | str = FrameWorkType.FASTAPI,
         nullify_base_schema_class: bool = False,
     ):
         self.table = table
         self.file_type = get_enum_member_from_string(OrmType, file_type) if isinstance(file_type, str) else file_type
         self.framework_type = (
-            get_enum_member_from_string(FrameworkType, framework_type)
+            get_enum_member_from_string(FrameWorkType, framework_type)
             if isinstance(framework_type, str)
             else framework_type
         )
@@ -43,7 +43,7 @@ class ClassWriter:
         """Generate the working class string for a table."""
 
         if self.file_type == OrmType.PYDANTIC:
-            if self.framework_type == FrameworkType.FASTAPI:
+            if self.framework_type == FrameWorkType.FASTAPI:
                 to_join = [
                     f'class {to_pascal_case(self.table.name)}({self.write_base_class_name()}):',
                     f'\t"""{to_pascal_case(self.table.name)} Schema for Pydantic.',
@@ -63,7 +63,7 @@ class ClassWriter:
 
                 return '\n'.join(to_join)
 
-            else:  # FrameworkType.FASTAPI_JSONAPI
+            else:  # FrameWorkType.FASTAPI_JSONAPI
                 jsonapi_class_types = ['Patch', 'Input', 'Item']
                 working_classes = [
                     '\n'.join(
@@ -126,7 +126,7 @@ class ClassWriter:
         # Developer's Note: self.nullify_base_schema_class only affects Pydantic models for now
 
         if self.file_type == OrmType.SQLALCHEMY:
-            base_type = SQLALCHEMY_TYPE_MAP.get(c.post_gres_datatype, ('String', None))[0]
+            base_type = get_sqlalchemy_type(c.post_gres_datatype)[0]
             if base_type.lower() == 'uuid':
                 base_type = 'UUID(as_uuid=True)'
             if 'time zone' in c.post_gres_datatype.lower():
@@ -197,7 +197,7 @@ class ClassWriter:
 
         # SQLALCHEMY
         if self.file_type == OrmType.SQLALCHEMY:
-            if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
+            if self.framework_type == FrameWorkType.FASTAPI_JSONAPI:
                 back_populates = f'back_populates="{to_pascal_case(self.table.name)}"'
                 useList = ', useList=True' if fk.relation_type != RelationType.ONE_TO_ONE else ''
                 relationship = f'relationship("{to_pascal_case(fk.foreign_table_name)}", {back_populates}{useList})'
@@ -216,9 +216,9 @@ class ClassWriter:
         #     base_type = f'Annotated[{base_type}, {base_schema_name}.{column_name}]'
 
         if self.file_type == OrmType.PYDANTIC:
-            if self.framework_type == FrameworkType.FASTAPI:
+            if self.framework_type == FrameWorkType.FASTAPI:
                 return f'{column_name}: {base_type}' + (' = Field(default=None)' if is_nullable else '')
-            else:  # FrameworkType.FASTAPI_JSONAPI
+            else:  # FrameWorkType.FASTAPI_JSONAPI
                 is_list = fk.relation_type != RelationType.ONE_TO_ONE
                 base_type = base_type if is_list else foreign_table_name
                 if is_nullable and not is_list:
@@ -285,7 +285,7 @@ class ClassWriter:
         if len(foreign_columns) > 0:
             if len(primary_columns) > 0 or len(columns) > 0:
                 class_string += '\n\n'
-            comment = 'Foreign Keys' if self.framework_type == FrameworkType.FASTAPI else 'Relationships'
+            comment = 'Foreign Keys' if self.framework_type == FrameWorkType.FASTAPI else 'Relationships'
             class_string += f'\t# {comment}\n' + '\n'.join([f'\t{c}' for c in foreign_columns])
         if len(table_args) > 0 and self.file_type == OrmType.SQLALCHEMY:
             if len(primary_columns) > 0 or len(columns) > 0:
@@ -301,13 +301,13 @@ class FileWriter:
         self,
         tables: list[TableInfo],
         file_type: OrmType | str = OrmType.PYDANTIC,
-        framework_type: FrameworkType | str = FrameworkType.FASTAPI,
+        framework_type: FrameWorkType | str = FrameWorkType.FASTAPI,
         nullify_base_schema_class: bool = False,
     ):
         self.tables = tables
         self.file_type = get_enum_member_from_string(OrmType, file_type) if isinstance(file_type, str) else file_type
         self.framework_type = (
-            get_enum_member_from_string(FrameworkType, framework_type)
+            get_enum_member_from_string(FrameWorkType, framework_type)
             if isinstance(framework_type, str)
             else framework_type
         )
@@ -359,7 +359,7 @@ class FileWriter:
 
         for table in self.tables:
             if self.file_type == OrmType.SQLALCHEMY:
-                if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
+                if self.framework_type == FrameWorkType.FASTAPI_JSONAPI:
                     imports.add('from sqlalchemy.orm import relationship')
                     imports.add('from sqlalchemy.orm import Mapped')
                     imports.add('from __future__ import annotations')
@@ -372,7 +372,7 @@ class FileWriter:
                     imports.add('from sqlalchemy import PrimaryKeyConstraint')
 
             elif self.file_type == OrmType.PYDANTIC:
-                if self.framework_type == FrameworkType.FASTAPI_JSONAPI:
+                if self.framework_type == FrameWorkType.FASTAPI_JSONAPI:
                     imports.add('from pydantic import BaseModel as PydanticBaseModel')
                     imports.add('from fastapi_jsonapi.schema_base import RelationshipInfo')
                     imports.add('from fastapi_jsonapi.schema_base import Field')
@@ -393,12 +393,12 @@ class FileWriter:
         """Generate the data type imports for the file."""
         imports = set()
         fb = 'from sqlalchemy import Column' if self.file_type == OrmType.SQLALCHEMY else None
-        type_map = PYDANTIC_TYPE_MAP if self.file_type == OrmType.PYDANTIC else SQLALCHEMY_TYPE_MAP
+        type_map_getter = get_pydantic_type if self.file_type == OrmType.PYDANTIC else get_sqlalchemy_type
 
         for table in self.tables:
             for column in table.columns:
                 t = column.post_gres_datatype
-                res = type_map.get(t, ('Any', fb))[1]
+                res = type_map_getter(t, ('Any', fb))[1]
                 if res is not None:
                     imports.add(res)
 
@@ -431,9 +431,9 @@ class FileWriter:
         should be written.
         """
         if self.file_type == OrmType.PYDANTIC:
-            if self.framework_type == FrameworkType.FASTAPI:
+            if self.framework_type == FrameWorkType.FASTAPI:
                 return '\n\n\n'.join([self.write_working_class(t) for t in self.tables])
-            else:  # FrameworkType.FASTAPI_JSONAPI
+            else:  # FrameWorkType.FASTAPI_JSONAPI
                 return '\n\n\n'.join([f'# {t.name}\n' + self.write_working_class(t) for t in self.tables])
         return ''
 
@@ -450,7 +450,7 @@ class FileWriter:
 
     def write_custom_model_string(self) -> str:
         """Generate a custom Pydantic model."""
-        b = 'BaseModel' if self.framework_type == FrameworkType.FASTAPI else CUSTOM_JSONAPI_META_MODEL_NAME
+        b = 'BaseModel' if self.framework_type == FrameWorkType.FASTAPI else CUSTOM_JSONAPI_META_MODEL_NAME
         return f'class {CUSTOM_MODEL_NAME}({b}):\n\tpass'
 
     def write_declarative_base_string(self) -> str:

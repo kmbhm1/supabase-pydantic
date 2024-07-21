@@ -50,6 +50,7 @@ mypy = "^1.11.0"
 pytest-mypy = "^0.10.3"
 pytest-cov = "^5.0.0"
 pytest-mock = "^3.14.0"
+types-toml = "^0.10.8.20240310"
 
 [tool.supabase_pydantic]
 overwrite_existing_files = true

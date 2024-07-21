@@ -40,8 +40,6 @@ jobs:
             echo "Coverage is below 40% threshold"
             exit 1
           fi
-      - name: Use Coverage
-        run: echo "The coverage is ${{ steps.coverage.outputs.coverage }}%"
       - name: Build package
         run: poetry build
 

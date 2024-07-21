@@ -48,6 +48,8 @@ commitizen = "^3.28.0"
 pytest = "^8.2.2"
 mypy = "^1.11.0"
 pytest-mypy = "^0.10.3"
+pytest-cov = "^5.0.0"
+pytest-mock = "^3.14.0"
 
 [tool.supabase_pydantic]
 overwrite_existing_files = true

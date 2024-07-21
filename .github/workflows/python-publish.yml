@@ -25,9 +25,25 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Lint checking
-        run: poetry run ruff check .
+        run: poetry run ruff check --output-format=github .
       - name: Type checking
         run: poetry run mypy .
+      - name: Test with Pytest
+        run: poetry run pytest -v -s
+      - name: Generate coverage report
+        run: coverage report -m
+      - name: Check & capture coverage percentage (>60%)
+        id: coverage
+        run: |
+          COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | tr -d '%')
+          echo "Coverage percentage is $COVERAGE%"
+          echo "::set-output name=coverage::$COVERAGE"
+          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+            echo "Coverage is below 60% threshold"
+            exit 1
+          fi
+      - name: Use Coverage
+        run: echo "The coverage is ${{ steps.coverage.outputs.coverage }}%"
       - name: Build package
         run: poetry build
 

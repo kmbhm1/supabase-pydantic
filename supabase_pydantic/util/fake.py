@@ -17,7 +17,7 @@ def generate_fake_data(
         return 'NULL'
 
     if datatype in ['integer', 'bigint']:
-        return fake.random_number(digits=max_length if max_length else 5)
+        return fake.random_number(digits=(max_length if max_length else 5))
     elif datatype == 'text' or 'varchar' in datatype or datatype == 'character varying':
         if name.lower() == 'email':
             return f"'{fake.email()}'"

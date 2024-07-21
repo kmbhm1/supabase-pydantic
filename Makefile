@@ -1,3 +1,24 @@
+
+#######################################################
+# Project setup & housekeeeping 					  #
+#######################################################
+
+clean:
+	@echo "Cleaning up Python compiled directories"
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type d -name "htmlcov" -exec rm -rf {} +
+	@find . -type d -name "*.egg-info" -exec rm -rf {} +
+	@find . -type d -name ".mypy_cache" -exec rm -rf {} +
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	@find . -type f -name "*.py[co]" -exec rm -f {} +
+	@find . -type f -name "*.pyo" -exec rm -f {} +
+	@poetry run pre-commit clean
+
+
+#######################################################
+# Build  & CICD										  #
+#######################################################
+
 build:
 	@echo "Building the project"
 	@poetry build
@@ -6,9 +27,19 @@ requirements.txt:
 	@echo "Creating requirements.txt"
 	@poetry export --output requirements.txt
 
-noop-next:
+check-next-version:
 	@echo "Checking next version with semantic-release"
 	@poetry run semantic-release -vv --noop version --print
+
+
+#######################################################
+# Linting & Formatting 							      #
+#######################################################
+
+sort-imports:
+	@echo "Sorting imports"
+	@poetry run isort .
+
 
 lint:
 	@echo "Running ruff linter"
@@ -32,6 +63,15 @@ pre-commit:
 		poetry run pre-commit run --hook-stage pre-push --all-files --color always && \
 		poetry run pre-commit run --hook-stage push --all-files --color always
 
-sort-imports:
-	@echo "Sorting imports"
-	@poetry run isort .
+#######################################################
+# Testing 										      #
+#######################################################
+
+
+test:
+	@echo "Running tests"
+	@poetry run pytest -v -s --cov --cov-report=term-missing 
+
+coverage:
+	@echo "Running tests with coverage"
+	@poetry run pytest --cov=supabase_pydantic --cov-report=term-missing --cov-report=html --cov-config=pyproject.toml

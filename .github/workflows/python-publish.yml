@@ -28,13 +28,11 @@ jobs:
         run: poetry run ruff check --output-format=github .
       - name: Type checking
         run: poetry run mypy .
-      - name: Test with Pytest
-        run: poetry run pytest -v -s
-      - name: Generate coverage report
-        run: poetry run coverage report -m
-      - name: Check & capture coverage percentage (>60%)
-        id: coverage
+      - name: Testing & Coverage checking with Pytest
+        id: test
         run: |
+          poetry run pytest -v -s
+          poetry run coverage report -m
           COVERAGE=$(poetry run coverage report | grep TOTAL | awk '{print $4}' | tr -d '%')
           echo "Coverage percentage is $COVERAGE%"
           echo "::set-output name=coverage::$COVERAGE"
@@ -42,8 +40,6 @@ jobs:
             echo "Coverage is below 60% threshold"
             exit 1
           fi
-      - name: Use Coverage
-        run: echo "The coverage is ${{ steps.coverage.outputs.coverage }}%"
       - name: Build package
         run: poetry build
 

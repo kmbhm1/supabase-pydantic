@@ -2,7 +2,7 @@
 
 - [x] Finalize JsonAPI writers as correct with FastAPI-JSONAPI lib
 - [x] README: change Supabase-Pydantic to `supabase-py`; change this description, "A project to translate Supabase schemas into Pydantic models"; add github link
-- [ ] Add community health guidelines
+- [x] Add community health guidelines
 - [ ] Add better examples and usage in README
 - [ ] Add example Makefile command
 - [x] Integrate pyproject.toml
@@ -19,3 +19,4 @@
 - [ ] Acquire test dbs for integration tests
 - [ ] Finish adding tests for writers and marshalers
 - [ ] Add uploading of coverage report to codecov or somewhere
+- [ ] Integrate mkdocs, mkdocs-material, mkdocstrings, mkdocstrings-python

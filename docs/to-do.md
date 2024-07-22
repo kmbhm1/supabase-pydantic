@@ -12,7 +12,7 @@
 - [x] Add pre-commit hooks
 - [ ] Add compatibility with 3.11 & 3.12
 - [ ] Setup issues and wiki pages for github (+ docs site from github?)
-- [ ] Explore security scanners in pipelines & pre-commit
+- [x] Explore security scanners in pipelines
 - [ ] Explore SDK integrations, rather than CLI use
 - [ ] Test with other conn methods (e.g., supabase secret key)
 - [ ] Separate nullable and non-nullable columns in models in a better way

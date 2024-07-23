@@ -6,6 +6,7 @@
 - [Python Semantic Release](https://python-semantic-release.readthedocs.io/en/latest/configuration.html#config-remote-type) & corresponding [migrations](https://python-semantic-release.readthedocs.io/en/latest/migrating_from_v7.html#breaking-commands-repurposed-version-and-publish) for python semantic release
 - [Publishing](https://github.com/pypa/gh-action-pypi-publish) to PyPi using GitHub Actions
 - [Community Guidelines](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file) & [Example](https://github.com/jessesquires/.github/tree/main?tab=readme-ov-file) project
+- [How to](https://www.youtube.com/watch?v=Q-YA_dA8C20) with mkdocs
 
 ## Inspiration
 

@@ -12,6 +12,7 @@
 - [x] Add pre-commit hooks
 - [ ] Add compatibility with 3.11 & 3.12
 - [ ] Setup issues and wiki pages for github (+ docs site from github?)
+- [ ] Integrate mkdocs, mkdocs-material, mkdocstrings, mkdocstrings-python
 - [x] Explore security scanners in pipelines
 - [ ] Explore SDK integrations, rather than CLI use
 - [ ] Test with other conn methods (e.g., supabase secret key)
@@ -19,4 +20,5 @@
 - [ ] Acquire test dbs for integration tests
 - [ ] Finish adding tests for writers and marshalers
 - [ ] Add uploading of coverage report to codecov or somewhere
-- [ ] Integrate mkdocs, mkdocs-material, mkdocstrings, mkdocstrings-python
+- [ ] Add badges to README
+- [ ] polymorphism for Writer class; add interfaces?

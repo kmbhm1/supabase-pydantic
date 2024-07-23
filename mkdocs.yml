@@ -1,0 +1,13 @@
+site_name: Supabase Pydantic
+
+theme:
+  name: material
+
+nav:
+  - Home: index.md
+  - ToDos: to-do.md
+  - References: references.md
+
+plugins:
+  - search
+  - mkdocstrings

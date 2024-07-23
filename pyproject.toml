@@ -37,6 +37,9 @@ isort = "^5.13.2"
 python-dotenv = "^1.0.1"
 click = "^8.1.7"
 toml = "^0.10.2"
+mkdocs = "^1.6.0"
+mkdocs-material = "^9.5.30"
+mkdocstrings = {extras = ["python"], version = "^0.25.1"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.1"

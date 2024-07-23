@@ -74,3 +74,12 @@ test:
 coverage:
 	@echo "Running tests with coverage"
 	@poetry run pytest --cov=supabase_pydantic --cov-report=term-missing --cov-report=html --cov-config=pyproject.toml
+
+
+#######################################################
+# Documentation 									  #
+#######################################################
+
+serve-docs:
+	@echo "Building documentation"
+	@poetry run mkdocs serve

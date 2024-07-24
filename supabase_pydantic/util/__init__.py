@@ -13,7 +13,7 @@ from .json import CustomJsonEncoder
 from .marshalers import construct_table_info
 from .sorting import run_isort
 from .string import to_pascal_case
-from .util import adapt_type_map
+from .util import adapt_type_map, clean_directories, generate_unique_filename
 from .writer import FileWriter
 
 __all__ = [
@@ -35,9 +35,11 @@ __all__ = [
     'WriterConfig',
     'adapt_type_map',
     'check_connection',
+    'clean_directories',
     'construct_table_info',
     'create_connection',
     'generate_fake_data',
+    'generate_unique_filename',
     'query_database',
     'run_isort',
     'to_pascal_case',

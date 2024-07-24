@@ -1,6 +1,5 @@
 import os
 import pprint
-import shutil
 from typing import Any
 
 import click
@@ -16,8 +15,10 @@ from supabase_pydantic.util import (
     OrmType,
     WriterConfig,
     check_connection,
+    clean_directories,
     construct_table_info,
     create_connection,
+    generate_unique_filename,
     query_database,
     run_isort,
 )
@@ -66,60 +67,6 @@ def check_readiness() -> bool:
     return True
 
 
-def clean_directory(directory: str) -> None:
-    """Remove all files & directories in the specified directory."""
-    if os.path.isdir(directory) and not os.listdir(directory):
-        os.rmdir(directory)
-    else:
-        for file in os.listdir(directory):
-            file_path = os.path.join(directory, file)
-            try:
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print(f'An error occurred while deleting {file_path}.')
-                print(e)
-
-
-def clean_directories(directories: list) -> None:
-    """Remove all files & directories in the specified directories."""
-    for d in directories:
-        print(f'Checking for directory: {d}')
-        if not os.path.isdir(d):
-            print(f'Directory {d} does not exist.')
-            return
-
-        print(f'Cleaning directory: {d}')
-        clean_directory(d)
-
-
-def generate_unique_filename(base_name: str, extension: str, directory: str = '.') -> str:
-    """Generate a unique filename based on the base name & extension.
-
-    Args:
-        base_name (str): The base name of the file (without extension)
-        extension (str): The extension of the file (e.g., 'py', 'json', 'txt')
-        directory (str): The directory where the file will be saved
-
-    Returns:
-        str: The unique file name
-
-    """
-    extension = extension.lstrip('.')
-    file_name = f'{base_name}.{extension}'
-    file_path = os.path.join(directory, file_name)
-    i = 1
-    while os.path.exists(file_path):
-        file_name = f'{base_name}_{i}.{extension}'
-        file_path = os.path.join(directory, file_name)
-        i += 1
-
-    print(file_path)
-    return file_path
-
-
 def load_config() -> AppConfig:
     """Load the configuration from the pyproject.toml file."""
     try:
@@ -133,6 +80,24 @@ def load_config() -> AppConfig:
 
 
 config_dict: AppConfig = load_config()
+
+
+# @click.group()
+# def gen():
+#     """Generate models from a PostgreSQL database."""
+#     click.echo('Generating models...')
+
+
+# @gen.command()
+# def pydantic():
+#     """Generate Pydantic models."""
+#     click.echo('Generating Pydantic models...')
+
+
+# @gen.command()
+# def sqlalchemy():
+#     """Generate SQLAlchemy models."""
+#     click.echo('Generating SQLAlchemy models...')
 
 
 @click.command()

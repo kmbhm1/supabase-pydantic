@@ -1,13 +1,42 @@
 site_name: Supabase Pydantic
+site_url: https://kmbhm1.github.io/supabase-pydantic/
+repo_url: https://github.com/kmbhm1/supabase-pydantic
+repo_name: kmbhm1/supabase-pydantic
+site_description: Supabase Pydantic is a tool for generating ORM constructs for rapid prototyping and deployment with Supabase.
+site_author: KB <kmbhm1@gmail.com>
 
 theme:
   name: material
+  features:
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.tabs
+    - navigation.top
+    - toc.follow
+    - toc.integrate
 
 nav:
-  - Home: index.md
-  - ToDos: to-do.md
-  - References: references.md
+  - Getting Started:
+    - getting-started/welcome.md
+    - getting-started/purpose.md
+    - Help with Schemas: getting-started/getting-help.md
+    - getting-started/installation.md
+    - getting-started/contributing.md
+    - getting-started/changelog.md
+  - Examples:
+    - FastAPI: examples/setup-fastapi.md
+    - Setup a JSON API: examples/setup-jsonapi.md
 
 plugins:
   - search
   - mkdocstrings
+  - redirects:
+      redirect_maps:
+        'index.md': 'getting-started/welcome.md'
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      toc_depth: 2

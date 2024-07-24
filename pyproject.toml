@@ -40,6 +40,7 @@ toml = "^0.10.2"
 mkdocs = "^1.6.0"
 mkdocs-material = "^9.5.30"
 mkdocstrings = {extras = ["python"], version = "^0.25.1"}
+mkdocs-redirects = "^1.2.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.1"

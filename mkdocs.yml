@@ -24,7 +24,7 @@ nav:
     - Help with Schemas: getting-started/getting-help.md
     - getting-started/installation.md
     - getting-started/contributing.md
-    - getting-started/changelog.md
+    - Changelog: getting-started/changelog.md
   - Examples:
     - FastAPI: examples/setup-fastapi.md
     - Setup a JSON API: examples/setup-jsonapi.md
@@ -39,4 +39,6 @@ plugins:
 markdown_extensions:
   - toc:
       permalink: true
-      toc_depth: 2
+      toc_depth: 1
+  - pymdownx.snippets:
+      check_paths: true

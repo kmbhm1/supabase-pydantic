@@ -232,8 +232,8 @@ class TableInfo(AsDictParent):
             non_nullable_columns = [column for column in result.remaining if not column.is_nullable]
 
             # Combine them with non-nullable first
-            result.nullable = non_nullable_columns
-            result.non_nullable = nullable_columns
+            result.nullable = nullable_columns
+            result.non_nullable = non_nullable_columns
             result.remaining = []
 
         return result

@@ -133,7 +133,7 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         comments: list[str] = [],
         classes_override: list[str] = [],
         is_base: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         sxn = get_section_comment(comment_title, comments)
         classes = classes_override

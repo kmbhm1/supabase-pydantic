@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX
 from supabase_pydantic.util.dataclasses import TableInfo
 from supabase_pydantic.util.string import to_pascal_case
 from supabase_pydantic.util.writers.util import generate_unique_filename
@@ -11,6 +12,10 @@ class AbstractClassWriter(ABC):
         self.table = table
         self.nullify_base_schema_class = nullify_base_schema_class
         self.name = to_pascal_case(self.table.name)
+
+    @staticmethod
+    def _proper_name(name: str, use_base: bool = False) -> str:
+        return to_pascal_case(name) + (BASE_CLASS_POSTFIX if use_base else '')
 
     def write_class(self, add_fk: bool = False) -> str:
         """Method to write the complete class definition."""
@@ -44,12 +49,12 @@ class AbstractClassWriter(ABC):
     @abstractmethod
     def write_primary_keys(self) -> str | None:
         """Method to generate primary key definitions for the class."""
-        raise NotImplementedError('write_primary_columns not implemented')
+        raise NotImplementedError('write_primary_keys not implemented')
 
     @abstractmethod
     def write_primary_columns(self) -> str | None:
         """Method to generate column definitions for the class."""
-        raise NotImplementedError('write_columns not implemented')
+        raise NotImplementedError('write_primary_columns not implemented')
 
     @abstractmethod
     def write_foreign_columns(self, use_base: bool = False) -> str | None:
@@ -89,7 +94,7 @@ class AbstractFileWriter(ABC):
         ]
 
         # filter None and join parts
-        return self.jstr.join(p for p in parts if p is not None)
+        return self.jstr.join(p for p in parts if p is not None) + '\n'
 
     def save(self, overwrite: bool = False) -> str:
         """Method to save the file."""
@@ -119,7 +124,7 @@ class AbstractFileWriter(ABC):
     @abstractmethod
     def write_base_classes(self) -> str:
         """Method to generate class definitions for the file."""
-        raise NotImplementedError('write_classes not implemented')
+        raise NotImplementedError('write_base_classes not implemented')
 
     @abstractmethod
     def write_operational_classes(self) -> str | None:

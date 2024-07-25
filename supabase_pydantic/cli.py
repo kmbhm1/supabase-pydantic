@@ -211,10 +211,9 @@ def main(
         if not c.enabled:
             continue
 
-        if job == 'FastAPI Pydantic':
+        if job == 'FastAPI Pydantic' or job == 'FastAPI-JSONAPI Pydantic':
             print('Generating FastAPI Pydantic with new Writer')
-            writer = factory.get_file_writer(tables, c.fpath(), c.file_type, c.framework_type)
-            p = writer.save(overwrite)
+            p = factory.get_file_writer(tables, c.fpath(), c.file_type, c.framework_type).save(overwrite)
             paths.append(p)
             print(f'{job} models generated successfully: {p}')
         else:

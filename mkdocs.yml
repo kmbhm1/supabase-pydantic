@@ -19,9 +19,9 @@ theme:
 
 nav:
   - Getting Started:
-    - getting-started/welcome.md
-    - getting-started/purpose.md
-    - Help with Schemas: getting-started/getting-help.md
+    - Welcome: getting-started/welcome.md
+    - Why use supabase-pydantic?: getting-started/purpose.md
+    - Help with supabase-pydantic: getting-started/getting-help.md
     - getting-started/installation.md
     - getting-started/contributing.md
     - Changelog: getting-started/changelog.md

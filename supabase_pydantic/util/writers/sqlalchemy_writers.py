@@ -1,10 +1,13 @@
 from typing import Any
 
+from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, SortedColumns, TableInfo
 from supabase_pydantic.util.string import to_pascal_case
 from supabase_pydantic.util.util import get_sqlalchemy_type
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
 from supabase_pydantic.util.writers.util import get_section_comment
+
+# FastAPI
 
 
 class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
@@ -165,3 +168,49 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
     def write_operational_classes(self) -> str | None:
         """Method to write the operational classes."""
         return None
+
+
+# JSONAPI
+
+
+class SqlAlchemyJSONAPIClassWriter(SqlAlchemyFastAPIClassWriter):
+    def __init__(self, table: TableInfo, nullify_base_schema_class: bool = False):
+        super().__init__(table, nullify_base_schema_class)
+
+    def write_foreign_columns(self, use_base: bool = False) -> str | None:
+        """Method to generate foreign column definitions for the class."""
+        table_arg_str = super().write_foreign_columns(use_base)
+
+        # foreign keys
+        fkeys = []
+        for fk in self.table.foreign_keys:
+            column_name = fk.foreign_table_name.lower()
+            back_populates = f'back_populates="{self.tname}"'
+            useList = ', useList=True' if fk.relation_type != RelationType.ONE_TO_ONE else ''
+            relationship = f'relationship("{to_pascal_case(fk.foreign_table_name)}", {back_populates}{useList})'
+            base_type = f'Mapped[{to_pascal_case(fk.foreign_table_name)}]'
+
+            fkeys.append(f'{column_name}: {base_type} = {relationship}')
+
+        return AbstractClassWriter.column_section('Foreign Keys', fkeys) + (
+            '\n\n' + table_arg_str if table_arg_str else ''
+        )
+
+
+class SqlAlchemyJSONAPIWriter(SqlAlchemyFastAPIWriter):
+    def __init__(
+        self, tables: list[TableInfo], file_path: str, writer: type[AbstractClassWriter] = SqlAlchemyJSONAPIClassWriter
+    ):
+        super().__init__(tables, file_path, writer)
+
+    def write_imports(self) -> str:
+        """Method to generate the imports for the file."""
+        import_str = super().write_imports()
+
+        imports = {
+            'from sqlalchemy.orm import relationship',
+            'from sqlalchemy.orm import Mapped',
+            'from __future__ import annotations',
+        }
+
+        return import_str + '\n' + '\n'.join(sorted(imports))

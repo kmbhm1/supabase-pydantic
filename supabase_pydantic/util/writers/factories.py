@@ -1,7 +1,7 @@
 from supabase_pydantic.util.dataclasses import FrameWorkType, OrmType, TableInfo
 from supabase_pydantic.util.writers.abstract_classes import AbstractFileWriter
 from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter, PydanticJSONAPIWriter
-from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
+from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter, SqlAlchemyJSONAPIWriter
 
 
 class FileWriterFactory:
@@ -26,8 +26,8 @@ class FileWriterFactory:
         match file_type, framework_type:
             case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI:
                 return SqlAlchemyFastAPIWriter(tables, file_path)
-            # case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI:
-            #     pass
+            case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI:
+                return SqlAlchemyJSONAPIWriter(tables, file_path)
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI:
                 return PydanticFastAPIWriter(tables, file_path)
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI_JSONAPI:

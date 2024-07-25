@@ -10,7 +10,6 @@ from supabase_pydantic.util import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_CONSTRAINTS,
     GET_TABLE_COLUMN_DETAILS,
-    FileWriter,
     FileWriterFactory,
     FrameWorkType,
     OrmType,
@@ -19,7 +18,6 @@ from supabase_pydantic.util import (
     clean_directories,
     construct_table_info,
     create_connection,
-    generate_unique_filename,
     query_database,
     run_isort,
 )
@@ -211,23 +209,10 @@ def main(
         if not c.enabled:
             continue
 
-        if job != 'FastAPI-JSONAPI SQLAlchemy':
-            print('Generating FastAPI Pydantic with new Writer')
-            p = factory.get_file_writer(tables, c.fpath(), c.file_type, c.framework_type).save(overwrite)
-            paths.append(p)
-            print(f'{job} models generated successfully: {p}')
-        else:
-            print(f'Generating {job} models...')
-            old_writer = FileWriter(
-                tables,
-                file_type=c.file_type,
-                framework_type=c.framework_type,
-                nullify_base_schema_class=nullify_base_schema,
-            )
-            fpath = generate_unique_filename(c.name(), c.ext(), c.directory) if overwrite else c.fpath()
-            old_writer.write(fpath)
-            paths.append(fpath)
-            print(f'{job} models generated successfully: {fpath}')
+        print(f'Generating {job} models...')
+        p = factory.get_file_writer(tables, c.fpath(), c.file_type, c.framework_type).save(overwrite)
+        paths.append(p)
+        print(f'{job} models generated successfully: {p}')
 
     try:
         for p in paths:

@@ -1,3 +1,5 @@
+from typing import Any
+
 from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, CUSTOM_MODEL_NAME
 from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
 from supabase_pydantic.util.string import to_pascal_case
@@ -42,7 +44,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
 
         return col
 
-    def write_docs(self):
+    def write_docs(self) -> str:
         """Method to generate the docstrings for the class."""
         qualifier = 'Nullable Base' if self.nullify_base_schema_class else 'Base'
         return f'\n\t"""{self.name} {qualifier} Schema."""\n\n'
@@ -62,10 +64,10 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         if len(self.table.foreign_keys) == 0:
             return None
 
-        def n(name: str):
+        def n(name: str) -> str:
             return to_pascal_case(name) + (BASE_CLASS_POSTFIX if use_base else '')
 
-        def col(x: ForeignKeyInfo):  # nullable foreign key
+        def col(x: ForeignKeyInfo) -> str:  # nullable foreign key
             return f'{x.foreign_table_name.lower()}: list[{n(x.foreign_table_name)}] | None = Field(default=None)'
 
         fks = [col(fk) for fk in self.table.foreign_keys]
@@ -82,7 +84,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             '\t"""',
         ]
         if len(self.table.foreign_keys) > 0:
-            op_class.append(self.write_foreign_columns(use_base=False))
+            fcols = self.write_foreign_columns(use_base=False)
+            if fcols is not None:
+                op_class.append(fcols)
         else:  # add a pass statement if there are no foreign keys
             op_class.append('\tpass')
 
@@ -97,7 +101,7 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         """Method to generate the imports for the file."""
         default_import = ('Any', None)
 
-        def pyi(c: ColumnInfo):  # pyi = pydantic import  # noqa
+        def pyi(c: ColumnInfo) -> str | None:  # pyi = pydantic import  # noqa
             return get_pydantic_type(c.post_gres_datatype, default_import)[1]
 
         # standard
@@ -115,13 +119,13 @@ class PydanticFastAPIWriter(AbstractFileWriter):
 
     def _class_writer_helper(
         self, comment_title: str, comments: list[str] = [], classes_override: list[str] = [], is_base: bool = True
-    ) -> str | None:
+    ) -> str:
         sxn = get_section_comment(comment_title, comments)
         classes = classes_override
         if len(classes_override) == 0:
             attr = 'write_class' if is_base else 'write_operational_class'
 
-            def method(t: TableInfo):
+            def method(t: TableInfo) -> Any:
                 return getattr(self.writer(t), attr)
 
             classes = [method(t)() for t in self.tables]

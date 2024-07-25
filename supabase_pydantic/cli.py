@@ -219,14 +219,14 @@ def main(
             print(f'{job} models generated successfully: {p}')
         else:
             print(f'Generating {job} models...')
-            writer = FileWriter(
+            old_writer = FileWriter(
                 tables,
                 file_type=c.file_type,
                 framework_type=c.framework_type,
                 nullify_base_schema_class=nullify_base_schema,
             )
             fpath = generate_unique_filename(c.name(), c.ext(), c.directory) if not overwrite else c.fpath()
-            writer.write(fpath)
+            old_writer.write(fpath)
             paths.append(fpath)
             print(f'{job} models generated successfully: {fpath}')
 

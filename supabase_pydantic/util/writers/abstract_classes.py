@@ -72,7 +72,7 @@ class AbstractClassWriter(ABC):
 
 
 class AbstractFileWriter(ABC):
-    def __init__(self, tables: list[TableInfo], file_path: str, writer: AbstractClassWriter):
+    def __init__(self, tables: list[TableInfo], file_path: str, writer: type[AbstractClassWriter]):
         self.tables = tables
         self.file_path = file_path
         self.writer = writer
@@ -93,12 +93,9 @@ class AbstractFileWriter(ABC):
 
     def save(self, overwrite: bool = False) -> str:
         """Method to save the file."""
-        base, ext, directory = Path(self.file_path).stem, Path(self.file_path).suffix, Path(self.file_path).parent
-        p = (
-            generate_unique_filename(base, ext, directory)
-            if overwrite and Path(self.file_path).exists()
-            else self.file_path
-        )
+        fp = Path(self.file_path)
+        base, ext, directory = fp.stem, fp.suffix, str(fp.parent)
+        p = generate_unique_filename(base, ext, directory) if overwrite and fp.exists() else self.file_path
 
         with open(p, 'w') as f:
             f.write(self.write())

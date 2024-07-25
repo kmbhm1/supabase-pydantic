@@ -23,13 +23,13 @@ class FileWriterFactory:
             The file writer instance.
         """  # noqa: E501
         match file_type, framework_type:
-            case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI:
-                pass
-            case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI:
-                pass
+            # case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI:
+            #     pass
+            # case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI:
+            #     pass
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI:
                 return PydanticFastAPIWriter(tables, file_path)
-            case OrmType.PYDANTIC, FrameWorkType.FASTAPI_JSONAPI:
-                pass
+            # case OrmType.PYDANTIC, FrameWorkType.FASTAPI_JSONAPI:
+            #     pass
             case _:
                 raise ValueError(f'Unsupported file type or framework type: {file_type}, {framework_type}')

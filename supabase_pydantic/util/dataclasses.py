@@ -136,6 +136,14 @@ class ForeignKeyInfo(AsDictParent):
 
 
 @dataclass
+class SortedColumns:
+    primary_keys: list[ColumnInfo]
+    nullable: list[ColumnInfo]
+    non_nullable: list[ColumnInfo]
+    remaining: list[ColumnInfo]
+
+
+@dataclass
 class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
@@ -200,7 +208,7 @@ class TableInfo(AsDictParent):
 
     def sort_and_separate_columns(
         self, separate_nullable: bool = False, separate_primary_key: bool = False
-    ) -> dict[str, list[ColumnInfo]]:
+    ) -> SortedColumns:
         """Sort and combine columns based on is_nullable attribute.
 
         Args:
@@ -211,21 +219,22 @@ class TableInfo(AsDictParent):
             A dictionary with keys, nullable, non_nullable, and remaining as keys
             and lists of ColumnInfo objects as values.
         """
-        result: dict[str, list[ColumnInfo]] = {'keys': [], 'nullable': [], 'non_nullable': [], 'remaining': []}
+        # result: dict[str, list[ColumnInfo]] = {'keys': [], 'nullable': [], 'non_nullable': [], 'remaining': []}
+        result: SortedColumns = SortedColumns([], [], [], [])
         if separate_primary_key:
-            result['keys'] = self.get_primary_columns(sort_results=True)
-            result['remaining'] = self.get_secondary_columns(sort_results=True)
+            result.primary_keys = self.get_primary_columns(sort_results=True)
+            result.remaining = self.get_secondary_columns(sort_results=True)
         else:
-            result['remaining'] = sorted(self.columns, key=lambda x: x.name)
+            result.remaining = sorted(self.columns, key=lambda x: x.name)
 
         if separate_nullable:
-            nullable_columns = [column for column in result['remaining'] if column.is_nullable]  # already sorted
-            non_nullable_columns = [column for column in result['remaining'] if not column.is_nullable]
+            nullable_columns = [column for column in result.remaining if column.is_nullable]  # already sorted
+            non_nullable_columns = [column for column in result.remaining if not column.is_nullable]
 
             # Combine them with non-nullable first
-            result['nullable'] = non_nullable_columns
-            result['non_nullable'] = nullable_columns
-            result['remaining'] = []
+            result.nullable = non_nullable_columns
+            result.non_nullable = nullable_columns
+            result.remaining = []
 
         return result
 

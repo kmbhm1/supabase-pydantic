@@ -11,6 +11,7 @@ from supabase_pydantic.util import (
     GET_CONSTRAINTS,
     GET_TABLE_COLUMN_DETAILS,
     FileWriter,
+    FileWriterFactory,
     FrameWorkType,
     OrmType,
     WriterConfig,
@@ -205,21 +206,29 @@ def main(
     }
 
     paths = []
+    factory = FileWriterFactory()
     for job, c in jobs.items():  # c = config
         if not c.enabled:
             continue
 
-        print(f'Generating {job} models...')
-        writer = FileWriter(
-            tables,
-            file_type=c.file_type,
-            framework_type=c.framework_type,
-            nullify_base_schema_class=nullify_base_schema,
-        )
-        fpath = generate_unique_filename(c.name(), c.ext(), c.directory) if not overwrite else c.fpath()
-        writer.write(fpath)
-        paths.append(fpath)
-        print(f'{job} models generated successfully: {fpath}')
+        if job == 'FastAPI Pydantic':
+            print('Generating FastAPI Pydantic with new Writer')
+            writer = factory.get_file_writer(tables, c.fpath(), c.file_type, c.framework_type)
+            p = writer.save(overwrite)
+            paths.append(p)
+            print(f'{job} models generated successfully: {p}')
+        else:
+            print(f'Generating {job} models...')
+            writer = FileWriter(
+                tables,
+                file_type=c.file_type,
+                framework_type=c.framework_type,
+                nullify_base_schema_class=nullify_base_schema,
+            )
+            fpath = generate_unique_filename(c.name(), c.ext(), c.directory) if not overwrite else c.fpath()
+            writer.write(fpath)
+            paths.append(fpath)
+            print(f'{job} models generated successfully: {fpath}')
 
     try:
         for p in paths:

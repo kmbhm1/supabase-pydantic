@@ -1,53 +1,35 @@
-from supabase_pydantic.util.dataclasses import FrameWorkType, OrmType
-
-
-class ClassWriterFactory:
-    @staticmethod
-    def get_class_writer(
-        table: str,
-        file_type: OrmType = OrmType.PYDANTIC,
-        framework_type: FrameWorkType = FrameWorkType.FASTAPI,
-        nullify_base_schema_class: bool = False,
-    ):
-        """Get the class writer based on the provided parameters.
-
-        Args:
-            table (str): The table name.
-            file_type (OrmType, optional): The ORM type. Defaults to OrmType.PYDANTIC.
-            framework_type (FrameWorkType, optional): The framework type. Defaults to FrameWorkType.FASTAPI.
-            nullify_base_schema_class (bool, optional): Whether to nullify the base schema class. Defaults to False.
-
-        Returns:
-            The class writer instance.
-        """  # noqa: E501
-        # if file_type == 'SQLAlchemy':
-        #     if framework_type == 'FastAPI':
-        #         return SQLAlchemyFastAPIClassWriter(table, file_type, framework_type, nullify_base_schema_class)
-        #     elif framework_type == 'JSONAPI':
-        #         return SQLAlchemyJSONAPIClassWriter(table, file_type, framework_type, nullify_base_schema_class)
-        # elif file_type == 'Pydantic':
-        #     if framework_type == 'FastAPI':
-        #         return PydanticFastAPIClassWriter(table, file_type, framework_type, nullify_base_schema_class)
-        #     elif framework_type == 'JSONAPI':
-        #         return PydanticJSONAPIClassWriter(table, file_type, framework_type, nullify_base_schema_class)
-        # else:
-        #     raise ValueError('Unsupported file type or framework type')
-        pass
+from supabase_pydantic.util.dataclasses import FrameWorkType, OrmType, TableInfo
+from supabase_pydantic.util.writers.abstract_classes import AbstractFileWriter
+from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter
 
 
 class FileWriterFactory:
     @staticmethod
     def get_file_writer(
+        tables: list[TableInfo],
+        file_path: str,
         file_type: OrmType = OrmType.PYDANTIC,
         framework_type: FrameWorkType = FrameWorkType.FASTAPI,
-    ):
+    ) -> AbstractFileWriter:
         """Get the file writer based on the provided parameters.
 
         Args:
+            tables (list[TableInfo]): The list of tables.
+            file_path (str): The file path.
             file_type (OrmType, optional): The ORM type. Defaults to OrmType.PYDANTIC.
             framework_type (FrameWorkType, optional): The framework type. Defaults to FrameWorkType.FASTAPI.
 
         Returns:
             The file writer instance.
         """  # noqa: E501
-        pass
+        match file_type, framework_type:
+            case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI:
+                pass
+            case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI:
+                pass
+            case OrmType.PYDANTIC, FrameWorkType.FASTAPI:
+                return PydanticFastAPIWriter(tables, file_path)
+            case OrmType.PYDANTIC, FrameWorkType.FASTAPI_JSONAPI:
+                pass
+            case _:
+                raise ValueError(f'Unsupported file type or framework type: {file_type}, {framework_type}')

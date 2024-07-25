@@ -1,6 +1,7 @@
-from .factories import ClassWriterFactory, FileWriterFactory
+from .factories import FileWriterFactory
+from .util import generate_unique_filename
 
 __all__ = [
-    'ClassWriterFactory',
     'FileWriterFactory',
+    'generate_unique_filename',
 ]

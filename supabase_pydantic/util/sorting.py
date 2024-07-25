@@ -16,6 +16,18 @@ def run_isort(file_path: str) -> None:
         print(e.stderr)
 
 
+def format_with_ruff(file_path: str) -> None:
+    """Run the ruff formatter on a specified Python file."""
+    try:
+        # Run ruff using subprocess.run
+        result = subprocess.run(['ruff', 'format', file_path], check=True, text=True, capture_output=True)
+        print('Ruff formatting successful.')
+        print(result.stdout)  # Output the stdout of the ruff command
+    except subprocess.CalledProcessError as e:
+        print('Error during Ruff formatting:')
+        print(e.stderr)  # Print any error output from ruff
+
+
 def get_graph_from_tables(tables: list[TableInfo]) -> tuple[dict[str, list[str]], dict[str, int]]:
     """Generate a graph & indegree dictionary from the tables."""
     graph = defaultdict(list)

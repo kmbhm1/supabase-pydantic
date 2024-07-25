@@ -15,8 +15,10 @@
 - [x] Explore security scanners in pipelines
 - [ ] Explore SDK integrations, rather than CLI use
 - [ ] Test with other conn methods (e.g., supabase secret key)
-- [ ] Separate nullable and non-nullable columns in models in a better way
+- ~~[ ] Separate nullable and non-nullable columns in models in a better way~~
 - [ ] Acquire test dbs for integration tests
 - [ ] Finish adding tests for writers and marshalers
 - [ ] Add uploading of coverage report to codecov or somewhere
 - [ ] Integrate mkdocs, mkdocs-material, mkdocstrings, mkdocstrings-python
+- [x] Convert Writer to abstract class pattern
+- [ ] Update CLI with behavior more like supabase-js type gen command

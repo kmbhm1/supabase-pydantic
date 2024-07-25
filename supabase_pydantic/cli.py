@@ -18,6 +18,7 @@ from supabase_pydantic.util import (
     clean_directories,
     construct_table_info,
     create_connection,
+    format_with_ruff,
     query_database,
     run_isort,
 )
@@ -217,6 +218,7 @@ def main(
     try:
         for p in paths:
             run_isort(p)
+            format_with_ruff(p)
     except Exception as e:
         print('An error occurred while running isort.')
         print(e)

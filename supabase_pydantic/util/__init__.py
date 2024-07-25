@@ -11,7 +11,7 @@ from .db import check_connection, create_connection, query_database
 from .fake import generate_fake_data
 from .json import CustomJsonEncoder
 from .marshalers import construct_table_info
-from .sorting import run_isort
+from .sorting import format_with_ruff, run_isort
 from .string import to_pascal_case
 from .util import adapt_type_map, clean_directories
 from .writers import FileWriterFactory, generate_unique_filename
@@ -38,6 +38,7 @@ __all__ = [
     'clean_directories',
     'construct_table_info',
     'create_connection',
+    'format_with_ruff',
     'generate_fake_data',
     'generate_unique_filename',
     'query_database',

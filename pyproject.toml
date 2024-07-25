@@ -37,9 +37,9 @@ isort = "^5.13.2"
 python-dotenv = "^1.0.1"
 click = "^8.1.7"
 toml = "^0.10.2"
+ruff = "^0.4.1"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.4.1"
 sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
 fastapi-jsonapi = "^2.8.0"
 python-semantic-release = "^9.8.5"

@@ -14,14 +14,12 @@ from .marshalers import construct_table_info
 from .sorting import run_isort
 from .string import to_pascal_case
 from .util import adapt_type_map, clean_directories
-from .writer import FileWriter
 from .writers import FileWriterFactory, generate_unique_filename
 
 __all__ = [
     'AsDictParent',
     'ColumnInfo',
     'CustomJsonEncoder',
-    'FileWriter',
     'FileWriterFactory',
     'ForeignKeyInfo',
     'FrameWorkType',

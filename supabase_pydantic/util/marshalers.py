@@ -229,7 +229,7 @@ def construct_table_info(column_details: list, fk_details: list, constraints: li
     analyze_bridge_tables(tables)
     for i in range(2):
         # TODO: update this fn to avoid running twice.
-        print('running analyze_table_relationships ' + str(i))
+        # print('running analyze_table_relationships ' + str(i))
         analyze_table_relationships(tables)  # run twice to ensure all relationships are captured
 
     # return

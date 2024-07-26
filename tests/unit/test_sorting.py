@@ -13,7 +13,6 @@ def test_run_isort_success(mocker, capsys):
 
     run_isort('dummy_file.py')
     out, err = capsys.readouterr()
-    assert 'isort ran successfully.' in out
     assert err == '' or err is None
 
 

@@ -69,7 +69,7 @@ pre-commit:
 
 test:
 	@echo "Running tests"
-	@poetry run pytest -v -s --cov --cov-report=term-missing 
+	@poetry run pytest -v -s --cov=supabase_pydantic --cov-report=term-missing
 
 coverage:
 	@echo "Running tests with coverage"

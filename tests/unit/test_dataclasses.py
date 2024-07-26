@@ -1,51 +1,13 @@
 import json
 import re
 import pytest
+from supabase_pydantic.util.constants import OrmType
 from supabase_pydantic.util.dataclasses import (
     ConstraintInfo,
     ForeignKeyInfo,
-    OrmType,
-    FrameWorkType,
     TableInfo,
-    WriterConfig,
     ColumnInfo,
 )
-
-
-def test_get_enum_member_from_string_and_enums():
-    """Test get_enum_member_from_string and FrameWorkType & OrmType."""
-    from supabase_pydantic.util.dataclasses import get_enum_member_from_string, OrmType
-
-    assert get_enum_member_from_string(OrmType, 'pydantic') == OrmType.PYDANTIC
-    assert get_enum_member_from_string(OrmType, 'sqlalchemy') == OrmType.SQLALCHEMY
-    with pytest.raises(ValueError):
-        get_enum_member_from_string(OrmType, 'invalid')
-
-    assert get_enum_member_from_string(FrameWorkType, 'fastapi') == FrameWorkType.FASTAPI
-    assert get_enum_member_from_string(FrameWorkType, 'fastapi-jsonapi') == FrameWorkType.FASTAPI_JSONAPI
-    with pytest.raises(ValueError):
-        get_enum_member_from_string(FrameWorkType, 'invalid')
-
-
-def test_WriterConfig_methods():
-    """Test WriterConfig methods."""
-    writer_config = WriterConfig(
-        file_type=OrmType.PYDANTIC,
-        framework_type=FrameWorkType.FASTAPI,
-        filename='test.py',
-        directory='foo',
-        enabled=True,
-    )
-    assert writer_config.ext() == 'py'
-    assert writer_config.name() == 'test'
-    assert writer_config.fpath() == 'foo/test.py'
-    assert writer_config.to_dict() == {
-        'file_type': 'OrmType.PYDANTIC',
-        'framework_type': 'FrameWorkType.FASTAPI',
-        'filename': 'test.py',
-        'directory': 'foo',
-        'enabled': 'True',
-    }
 
 
 def test_ConstraintInfo_methods():
@@ -205,20 +167,20 @@ def test_TableInfo_methods():
     assert secondary_columns[1].name == 'test'
 
     separated_columns = table.sort_and_separate_columns(separate_nullable=True, separate_primary_key=True)
-    assert len(separated_columns['nullable']) == 1
-    assert len(separated_columns['keys']) == 1
-    assert len(separated_columns['non_nullable']) == 1
-    assert len(separated_columns['remaining']) == 0
+    assert len(separated_columns.nullable) == 1
+    assert len(separated_columns.primary_keys) == 1
+    assert len(separated_columns.non_nullable) == 1
+    assert len(separated_columns.remaining) == 0
 
     # test sorting without separation
     separated_columns = table.sort_and_separate_columns()
-    assert len(separated_columns['nullable']) == 0
-    assert len(separated_columns['keys']) == 0
-    assert len(separated_columns['non_nullable']) == 0
-    assert len(separated_columns['remaining']) == 3
-    assert separated_columns['remaining'][0].name == 'id'
-    assert separated_columns['remaining'][1].name == 'name'
-    assert separated_columns['remaining'][2].name == 'test'
+    assert len(separated_columns.nullable) == 0
+    assert len(separated_columns.primary_keys) == 0
+    assert len(separated_columns.non_nullable) == 0
+    assert len(separated_columns.remaining) == 3
+    assert separated_columns.remaining[0].name == 'id'
+    assert separated_columns.remaining[1].name == 'name'
+    assert separated_columns.remaining[2].name == 'test'
 
 
 def test_generate_fake_row():

@@ -1,79 +1,13 @@
 import json
-import os
 from dataclasses import asdict, dataclass, field
-from enum import Enum
 from random import random
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal
 
 from faker import Faker
 
-from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, RelationType
+from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, OrmType, RelationType
 from supabase_pydantic.util.fake import generate_fake_data
 from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type
-
-
-class AppConfig(TypedDict, total=False):
-    default_directory: str
-    overwrite_existing_files: bool
-    nullify_base_schema: bool
-
-
-class ToolConfig(TypedDict):
-    supabase_pydantic: AppConfig
-
-
-def get_enum_member_from_string(cls: Any, value: str) -> Any:
-    """Get an Enum member from a string value."""
-    value_lower = value.lower()
-    for member in cls:
-        if member.value == value_lower:
-            return member
-    raise ValueError(f"'{value}' is not a valid {cls.__name__}")
-
-
-class OrmType(Enum):
-    """Enum for file types."""
-
-    PYDANTIC = 'pydantic'
-    SQLALCHEMY = 'sqlalchemy'
-
-
-class FrameWorkType(Enum):
-    """Enum for framework types."""
-
-    FASTAPI = 'fastapi'
-    FASTAPI_JSONAPI = 'fastapi-jsonapi'
-
-
-@dataclass
-class WriterConfig:
-    file_type: OrmType
-    framework_type: FrameWorkType
-    filename: str
-    directory: str
-    enabled: bool
-
-    def ext(self) -> str:
-        """Get the file extension based on the file name."""
-        return self.filename.split('.')[-1]
-
-    def name(self) -> str:
-        """Get the file name without the extension."""
-        return self.filename.split('.')[0]
-
-    def fpath(self) -> str:
-        """Get the full file path."""
-        return os.path.join(self.directory, self.filename)
-
-    def to_dict(self) -> dict[str, str]:
-        """Convert the WriterConfig object to a dictionary."""
-        return {
-            'file_type': str(self.file_type),
-            'framework_type': str(self.framework_type),
-            'filename': self.filename,
-            'directory': self.directory,
-            'enabled': str(self.enabled),
-        }
 
 
 @dataclass

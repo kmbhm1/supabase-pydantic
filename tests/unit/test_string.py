@@ -1,4 +1,4 @@
-from supabase_pydantic.util.string import to_pascal_case
+from supabase_pydantic.util.util import to_pascal_case
 
 
 def test_to_pascal_case():

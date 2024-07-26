@@ -1,4 +1,5 @@
-from supabase_pydantic.util.dataclasses import FrameWorkType, OrmType, TableInfo
+from supabase_pydantic.util.constants import FrameWorkType, OrmType
+from supabase_pydantic.util.dataclasses import TableInfo
 from supabase_pydantic.util.writers.abstract_classes import AbstractFileWriter
 from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter, PydanticJSONAPIWriter
 from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter, SqlAlchemyJSONAPIWriter

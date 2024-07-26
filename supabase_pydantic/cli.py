@@ -4,25 +4,20 @@ from typing import Any
 
 import click
 import toml
+from click_option_group import OptionGroup, RequiredMutuallyExclusiveOptionGroup
 from dotenv import find_dotenv, load_dotenv
 
 from supabase_pydantic.util import (
-    GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
-    GET_CONSTRAINTS,
-    GET_TABLE_COLUMN_DETAILS,
+    AppConfig,
     FileWriterFactory,
-    FrameWorkType,
-    OrmType,
-    WriterConfig,
-    check_connection,
+    ToolConfig,
     clean_directories,
-    construct_table_info,
-    create_connection,
+    construct_table_info_from_postgres,
     format_with_ruff,
-    query_database,
+    get_standard_jobs,
+    get_working_directories,
     run_isort,
 )
-from supabase_pydantic.util.dataclasses import AppConfig, ToolConfig
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)
@@ -37,25 +32,13 @@ password = os.environ.get('DB_PASS')
 host = os.environ.get('DB_HOST')
 port = os.environ.get('DB_PORT')
 
-
-def reload_env() -> tuple:
-    """Reload environment variables from .env file."""
-    # Load environment variables from .env file
-    load_dotenv(find_dotenv())
-
-    # Replace these variables with your database connection details
-    db_name = os.environ.get('DB_NAME')
-    user = os.environ.get('DB_USER')
-    password = os.environ.get('DB_PASS')
-    host = os.environ.get('DB_HOST')
-    port = os.environ.get('DB_PORT')
-
-    return db_name, user, password, host, port
+# Standard choices
+model_choices = ['pydantic', 'sqlalchemy']
+framework_choices = ['fastapi', 'fastapi-jsonapi']
 
 
 def check_readiness() -> bool:
     """Check if environment variables are set correctly."""
-    # db_name, user, password, host, port = reload_env()
     check = {'DB_NAME': db_name, 'DB_USER': user, 'DB_PASS': password, 'DB_HOST': host, 'DB_PORT': port}
     for k, v in check.items():
         # print(k, v)
@@ -82,147 +65,166 @@ def load_config() -> AppConfig:
 config_dict: AppConfig = load_config()
 
 
-# @click.group()
-# def gen():
-#     """Generate models from a PostgreSQL database."""
-#     click.echo('Generating models...')
+# click
 
 
-# @gen.command()
-# def pydantic():
-#     """Generate Pydantic models."""
-#     click.echo('Generating Pydantic models...')
+@click.group()
+@click.option('--debug/--no-debug', default=False)
+@click.pass_context
+def cli(ctx: Any, debug: bool) -> None:
+    """A CLI tool for generating Pydantic models from a Supabase/PostgreSQL database.
+
+    In the future, more ORM frameworks and databases will be supported. In the works:
+    Django, REST Flask, SQLAlchemy, Tortoise-ORM, and more.
+
+    Additionally, more REST API generators will be supported ...
+
+    Stay tuned!
+    """
+    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
+    # by means other than the `if` block below)
+    ctx.ensure_object(dict)
+
+    ctx.obj['DEBUG'] = debug
+    # use as: click.echo(f"Debug is {'on' if ctx.obj['DEBUG'] else 'off'}")
 
 
-# @gen.command()
-# def sqlalchemy():
-#     """Generate SQLAlchemy models."""
-#     click.echo('Generating SQLAlchemy models...')
-
-
-@click.command()
+@cli.command('clean', short_help='Cleans generated files.')
+@click.pass_context
 @click.option(
-    '-d', '--directory', 'default_directory', default='entities', help='The directory to save the generated files.'
+    '-d',  # short option
+    '--dir',  # short option
+    '--directory',
+    'directory',
+    default=config_dict.get('default_directory', 'entities'),
+    required=False,
+    help='The directory to clear of generated files and directories. Defaults to "entities".',
 )
-@click.option('-a', '--all', '_all', is_flag=True, help='Generate all model files. Overrides other flags.')
-@click.option('--overwrite/--no-overwrite', help='Overwrite existing files.')
+def clean(ctx: Any, directory: str) -> None:
+    """This command cleans the project directory by removing generated files and clearing caches."""
+    click.echo('Cleaning up the project...')
+    try:
+        directories = get_working_directories(directory, tuple(framework_choices), auto_create=False)
+        clean_directories(directories)
+    except (FileExistsError, FileNotFoundError):
+        click.echo(f'Directory doesn\'t exist: "{directory}". Exiting...')
+        return
+    except Exception as e:
+        click.echo(f'An error occurred while cleaning the project: {e}')
+        return
+    else:
+        click.echo('Project cleaned.')
+
+
+generator_config = OptionGroup('Generator Options', help='Options for generating code.')
+connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration', help='The sources of the input data')
+
+# TODO: add these as options for connection sources
+# @connect_sources.option(
+#     '--linked',
+#     is_flag=True,
+#     help='Use linked database connection.',
+# )
+# @connect_sources.option(
+#     '--dburl',
+#     type=str,
+#     help='Use database URL for connection.',
+# )
+# @connect_sources.option(
+#     '--project-id',
+#     type=str,
+#     help='Use project ID for connection.',
+# )
+
+
+@cli.command(short_help='Generates code with specified configurations.')
+@generator_config.option(
+    '-t',
+    '--type',
+    'models',
+    multiple=True,
+    default=['pydantic'],
+    type=click.Choice(model_choices, case_sensitive=False),
+    required=False,
+    help='The model type to generate. This can be a space separated list of valid model types. Default is "pydantic".',
+)
+@generator_config.option(
+    '-r',
+    '--framework',
+    'frameworks',
+    multiple=True,
+    default=['fastapi'],
+    type=click.Choice(framework_choices, case_sensitive=False),
+    required=False,
+    help='The framework to generate code for. This can be a space separated list of valid frameworks. Default is "fastapi".',  # noqa: E501
+)
+@connect_sources.option(
+    '--local',
+    is_flag=True,
+    help='Use local database connection.',
+)
 @click.option(
-    '--sqlalchemy', 'generate_sqlalchemy', is_flag=True, help='Add SQLAlchemy database models to the generated files.'
+    '-d',
+    '--dir',
+    'default_directory',
+    multiple=False,
+    default='entities',
+    type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
+    help='The directory to save files. Defaults to "entities".',
+    required=False,
 )
-@click.option('--fastapi-jsonapi', 'generate_jsonapi', is_flag=True, help='Generate files for FastAPI-JSONAPI.')
-@click.option('--nullify-base-schema', is_flag=True, help='Force all default values in Base schema to be nullable.')
-@click.option('-c', '--clean', 'cleanup', is_flag=True, help='Remove & clean the generated directory and files.')
-def main(
-    _all: bool,
-    generate_sqlalchemy: bool,
-    generate_jsonapi: bool,
-    cleanup: bool,
-    default_directory: str = config_dict.get('default_directory', 'entities'),
-    overwrite: bool = config_dict.get('overwrite_existing_files', True),
-    nullify_base_schema: bool = config_dict.get('nullify_base_schema', False),
+@click.option('--overwrite/--no-overwrite', default=True, help='Overwrite existing files. Defaults to overwrite.')
+def gen(
+    models: tuple[str],
+    frameworks: tuple[str],
+    default_directory: str,
+    overwrite: bool,
+    local: bool = False,
+    # linked: bool = False,
+    # dburl: str | None = None,
+    # project_id: str | None = None,
 ) -> None:
-    """A CLI tool to generate Pydantic models from a PostgreSQL database."""
+    """Generate models from a PostgreSQL database."""
+    # pp.pprint(locals())
+    # if dburl is None and project_id is None and not local and not linked:
+    #     print('Please provide a connection source. Exiting...')
+    #     return
+    if not local:
+        print('Only local connection is supported at the moment. Exiting...')
+        return
 
     # Load environment variables from .env file & check if they are set correctly
     load_dotenv(find_dotenv())
     assert check_readiness()
 
-    # Check if _all is set to True, if so, set generate_sqlalchemy & generate_jsonapi to True
-    if _all:
-        generate_sqlalchemy = True
-        generate_jsonapi = True
+    # Get the directories for the generated files
+    dirs = get_working_directories(default_directory, frameworks, auto_create=True)
 
-    # Set the default directory & create the directories
-    fastapi_directory = os.path.join(default_directory, 'fastapi')
-    jsonapi_directory = os.path.join(default_directory, 'fastapi_jsonapi')  # TODO: add later
-
-    directories = [default_directory, fastapi_directory]
-    if generate_jsonapi or cleanup:
-        directories.append(jsonapi_directory)
-
-    # Clean the directories if the cleanup flag is set
-    if cleanup:
-        clean_directories(directories)
-        return
-
-    # Get Table & Column details from the database
-    try:
-        # Create a connection to the database & check if connection is successful
-        assert (
-            db_name is not None and user is not None and password is not None and host is not None and port is not None
-        ), 'Environment variables not set correctly.'
-        conn = create_connection(db_name, user, password, host, port)
-        assert check_connection(conn)
-
-        # Fetch table column details & foreign key details
-        column_details = query_database(conn, GET_ALL_PUBLIC_TABLES_AND_COLUMNS)
-        fk_details = query_database(conn, GET_TABLE_COLUMN_DETAILS)
-        constraints = query_database(conn, GET_CONSTRAINTS)
-        tables = construct_table_info(column_details, fk_details, constraints)
-    except Exception as e:
-        raise e
-    finally:
-        if conn:
-            conn.close()
-            print('Connection closed.')
-
-    # Check if the directory exists, if not, create it
-    for d in directories:
-        if not os.path.exists(d):
-            os.makedirs(d)
+    # Get the database schema details
+    tables = construct_table_info_from_postgres(db_name, user, password, host, port)
 
     # Configure the writer jobs
-    pydantic_fname, sqlalchemy_fname = 'schemas.py', 'database.py'
-    jobs: dict[str, WriterConfig] = {
-        'FastAPI Pydantic': WriterConfig(
-            file_type=OrmType.PYDANTIC,
-            framework_type=FrameWorkType.FASTAPI,
-            filename=pydantic_fname,
-            directory=fastapi_directory,
-            enabled=True,
-        ),
-        'FastAPI SQLAlchemy': WriterConfig(
-            file_type=OrmType.SQLALCHEMY,
-            framework_type=FrameWorkType.FASTAPI,
-            filename=sqlalchemy_fname,
-            directory=fastapi_directory,
-            enabled=generate_sqlalchemy,
-        ),
-        'FastAPI-JSONAPI Pydantic': WriterConfig(
-            file_type=OrmType.PYDANTIC,
-            framework_type=FrameWorkType.FASTAPI_JSONAPI,
-            filename=pydantic_fname,
-            directory=jsonapi_directory,
-            enabled=generate_jsonapi,
-        ),
-        'FastAPI-JSONAPI SQLAlchemy': WriterConfig(
-            file_type=OrmType.SQLALCHEMY,
-            framework_type=FrameWorkType.FASTAPI_JSONAPI,
-            filename=sqlalchemy_fname,
-            directory=jsonapi_directory,
-            enabled=generate_jsonapi and generate_sqlalchemy,
-        ),
-    }
+    jobs = {k: v for k, v in get_standard_jobs(models, frameworks, dirs).items() if v.enabled}
 
+    # Generate the models; Run jobs
     paths = []
     factory = FileWriterFactory()
     for job, c in jobs.items():  # c = config
-        if not c.enabled:
-            continue
-
         print(f'Generating {job} models...')
         p = factory.get_file_writer(tables, c.fpath(), c.file_type, c.framework_type).save(overwrite)
         paths.append(p)
         print(f'{job} models generated successfully: {p}')
 
+    # Format the generated files
     try:
         for p in paths:
             run_isort(p)
             format_with_ruff(p)
+            print(f'File formatted successfully: {p}')
     except Exception as e:
-        print('An error occurred while running isort.')
+        print('An error occurred while running isort and ruff: ')
         print(e)
 
 
 if __name__ == '__main__':
-    main()
+    cli()

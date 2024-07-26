@@ -2,8 +2,7 @@ from typing import Any
 
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, SortedColumns, TableInfo
-from supabase_pydantic.util.string import to_pascal_case
-from supabase_pydantic.util.util import get_sqlalchemy_type
+from supabase_pydantic.util.util import get_sqlalchemy_type, to_pascal_case
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
 from supabase_pydantic.util.writers.util import get_section_comment
 

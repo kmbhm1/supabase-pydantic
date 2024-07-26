@@ -3,7 +3,7 @@ from pathlib import Path
 
 from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX
 from supabase_pydantic.util.dataclasses import TableInfo
-from supabase_pydantic.util.string import to_pascal_case
+from supabase_pydantic.util.util import to_pascal_case
 from supabase_pydantic.util.writers.util import generate_unique_filename
 
 

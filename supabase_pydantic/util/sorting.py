@@ -8,9 +8,9 @@ def run_isort(file_path: str) -> None:
     """Run the isort command on the specified file."""
     try:
         # Run the isort command on the specified file
-        result = subprocess.run(['isort', file_path], check=True, capture_output=True, text=True)
-        print(result.stdout)
-        print('isort ran successfully.')
+        _ = subprocess.run(['isort', file_path], check=True, capture_output=True, text=True)
+        # print(result.stdout)
+        # print(f'isort ran successfully: {file_path}')
     except subprocess.CalledProcessError as e:
         print('An error occurred while running isort:')
         print(e.stderr)
@@ -20,9 +20,9 @@ def format_with_ruff(file_path: str) -> None:
     """Run the ruff formatter on a specified Python file."""
     try:
         # Run ruff using subprocess.run
-        result = subprocess.run(['ruff', 'format', file_path], check=True, text=True, capture_output=True)
-        print('Ruff formatting successful.')
-        print(result.stdout)  # Output the stdout of the ruff command
+        _ = subprocess.run(['ruff', 'format', file_path], check=True, text=True, capture_output=True)
+        # print(f'Ruff formatting successful: {file_path}')
+        # print(result.stdout)  # Output the stdout of the ruff command
     except subprocess.CalledProcessError as e:
         print('Error during Ruff formatting:')
         print(e.stderr)  # Print any error output from ruff

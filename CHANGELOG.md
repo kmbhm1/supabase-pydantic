@@ -1,5 +1,40 @@
 # CHANGELOG
 
+## v0.6.0 (2024-07-26)
+
+### Documentation
+
+* docs: fix broken links (#21) ([`be69b73`](https://github.com/kmbhm1/supabase-pydantic/commit/be69b732743c2db75a7f7aa88b2d954006feb037))
+
+* docs: community guidelines (#20)
+
+* docs: add CODE_OF_CONDUCT.md
+* docs: add SUPPORT.md
+* docs: add SECURITY.md (#17)
+* docs: add bug report and feature request templates (#18)
+* chore: remove .vscode
+* docs: add CODEOWNERS
+* docs: add FUNDING.yml (#19)
+* docs: add CONTRIBUTING.md ([`865ecf2`](https://github.com/kmbhm1/supabase-pydantic/commit/865ecf292dda8a89eab64489396eaed09f250121))
+
+### Feature
+
+* feat: Convert writers to Abstract Base Class and reformate CLI with args like supabase-cli gen function (#22)
+
+* feat(cli-refine-1): move utility functions and add example args for revised cli, like supabase cli generate cmd
+* feat(writer-abc): starter for abc&#39;s for new writer classes
+* feat(writer-abc): add methods to abcs and factories for writers
+* feat(writer-abc): implement pydantic fastapi writer from abc
+* feat(writer-abc): pre-commit updates
+* feat(writer-abc): updates for jsonapi pydantic writer
+* feat(writer-abc): updates for fastapi sqlalchemy writer
+* feat(writer-abc): updates for jsonapi sqlalchemy writer
+* feat(writer-abc): rm original writer.py
+* feat(writer-abc): add ruff formatting step for generated files
+* feat(cli-refine-1): convert cli to be like supabase cli gen fn
+* test: temporary update threshold for failing coverge
+* chore: change lint and type checking in action to verbose ([`d23b88d`](https://github.com/kmbhm1/supabase-pydantic/commit/d23b88d29be7497c7cc5e67e4fc4615f22605537))
+
 ## v0.5.0 (2024-07-21)
 
 ### Feature

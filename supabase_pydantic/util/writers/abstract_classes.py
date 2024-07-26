@@ -100,8 +100,7 @@ class AbstractFileWriter(ABC):
         """Method to save the file."""
         fp = Path(self.file_path)
         base, ext, directory = fp.stem, fp.suffix, str(fp.parent)
-        p = generate_unique_filename(base, ext, directory) if overwrite and fp.exists() else self.file_path
-
+        p = generate_unique_filename(base, ext, directory) if not overwrite and fp.exists() else self.file_path
         with open(p, 'w') as f:
             f.write(self.write())
 

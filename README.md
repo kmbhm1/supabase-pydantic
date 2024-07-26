@@ -16,6 +16,13 @@ $ echo "DB_PORT=<your_db_port>" >> .env         # add your postgres db port
 
 ## Usage
 
+Generate Pydantic models for FastAPI:
+
 ```bash
-$ sb-pydantic gen models pydantic --local  # generate pydantic models from local postgres db
+$ sb-pydantic gen --type pydantic --framework fastapi --local
+PostGres connection is open.
+PostGres connection is closed.
+Generating FastAPI Pydantic models...
+FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas.py
+File formatted successfully: /path/to/your/project/entities/fastapi/schemas.py
 ```

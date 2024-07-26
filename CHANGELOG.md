@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.6.1 (2024-07-26)
+
+### Fix
+
+* fix: correct overwrite logic (#23)
+
+* fix: correct overwrite logic
+* docs: update README with new cli args ([`70a02d7`](https://github.com/kmbhm1/supabase-pydantic/commit/70a02d718f5c752cc302504ca57fa69b3231f8df))
+
 ## v0.6.0 (2024-07-26)
 
 ### Documentation

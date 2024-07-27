@@ -62,6 +62,8 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
     def write_primary_columns(self) -> str | None:
         """Method to generate column definitions for the class."""
         cols = [self.write_column(c) for c in self.separated_columns.remaining]
+        if len(cols) == 0:
+            return None
         return AbstractClassWriter.column_section('Columns', cols)
 
     def write_foreign_columns(self, use_base: bool = True) -> str | None:

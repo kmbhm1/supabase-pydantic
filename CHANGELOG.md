@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.2 (2024-07-27)
+
+### Fix
+
+* fix: poetry script entry fn (#24) ([`06ff101`](https://github.com/kmbhm1/supabase-pydantic/commit/06ff1018cc71df054a867f5eef7aed859b5384fc))
+
 ## v0.6.1 (2024-07-26)
 
 ### Fix

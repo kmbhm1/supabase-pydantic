@@ -24,8 +24,8 @@ classifiers = [
 keywords = ["supabase", "pydantic", "fastapi", "sqlalchemy", "REST", "generator", "schema", "model"]
 
 [tool.poetry.scripts]
-sb-pydantic = 'supabase_pydantic.cli:main'
-supabase-pydantic = 'supabase_pydantic.cli:main'
+sb-pydantic = 'supabase_pydantic.cli:cli'
+supabase-pydantic = 'supabase_pydantic.cli:cli'
 
 [tool.poetry.dependencies]
 python = "^3.10"

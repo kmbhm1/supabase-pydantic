@@ -1,6 +1,5 @@
 import json
 import re
-import pytest
 from supabase_pydantic.util.constants import OrmType
 from supabase_pydantic.util.dataclasses import (
     ConstraintInfo,

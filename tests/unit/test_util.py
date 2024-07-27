@@ -1,7 +1,12 @@
 import pytest
 
 from supabase_pydantic.util.constants import FrameWorkType, OrmType
-from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type, get_enum_member_from_string
+from supabase_pydantic.util.util import (
+    get_pydantic_type,
+    get_sqlalchemy_type,
+    get_enum_member_from_string,
+    to_pascal_case,
+)
 
 
 def test_all_postgres_data_types_are_mapped_to_pydantic_and_sqlalchemy():
@@ -72,3 +77,12 @@ def test_get_enum_member_from_string_and_enums():
     assert get_enum_member_from_string(FrameWorkType, 'fastapi-jsonapi') == FrameWorkType.FASTAPI_JSONAPI
     with pytest.raises(ValueError):
         get_enum_member_from_string(FrameWorkType, 'invalid')
+
+
+def test_to_pascal_case():
+    """Test to_pascal_case."""
+    assert to_pascal_case('snake_case') == 'SnakeCase'
+    assert to_pascal_case('snake_case_with_more_words') == 'SnakeCaseWithMoreWords'
+    assert to_pascal_case('snake') == 'Snake'
+    assert to_pascal_case('snake_case_with_1_number') == 'SnakeCaseWith1Number'
+    assert to_pascal_case('snake_case_with_1_number_and_1_symbol!') == 'SnakeCaseWith1NumberAnd1Symbol!'

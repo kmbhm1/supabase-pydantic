@@ -36,8 +36,8 @@ jobs:
           COVERAGE=$(poetry run pytest --cov=supabase_pydantic --cov-report=term-missing | grep TOTAL | awk '{print $4}' | tr -d '%')
           echo "Coverage percentage is $COVERAGE%"
           echo "::set-output name=coverage::$COVERAGE"
-          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
-            echo "Coverage is below 40% threshold"
+          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "Coverage is below 90% threshold"
             exit 1
           fi
       - name: Build package

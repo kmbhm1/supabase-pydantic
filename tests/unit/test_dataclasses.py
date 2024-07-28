@@ -1,5 +1,6 @@
 import json
 import re
+from unittest.mock import patch
 from supabase_pydantic.util.constants import OrmType
 from supabase_pydantic.util.dataclasses import (
     ConstraintInfo,
@@ -215,15 +216,30 @@ def test_generate_fake_row():
                 is_unique=False,
                 is_foreign_key=False,
             ),
+            ColumnInfo(
+                name='foo',
+                post_gres_datatype='text',
+                datatype='str',
+                alias='baz',
+                default=None,
+                max_length=255,
+                is_nullable=True,
+                primary=False,
+                is_unique=False,
+                is_foreign_key=False,
+            ),
         ],
         foreign_keys=[],
         constraints=[],
         generated_data=[],
     )
 
+    with patch('supabase_pydantic.util.dataclasses.random', return_value=0.05):
+        row = table.generate_fake_row()
+
     row = table.generate_fake_row()
     uuid_regex = r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
     assert re.match(uuid_regex, row['id'].replace("'", ''))
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     assert re.match(email_regex, row['email'].replace("'", ''))
-    assert len(row) == 2
+    assert len(row) == 3

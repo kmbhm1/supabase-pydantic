@@ -102,7 +102,7 @@ def clean_directory(directory: str) -> None:
                     shutil.rmtree(file_path)
             except Exception as e:
                 print(f'An error occurred while deleting {file_path}.')
-                print(e)
+                print(str(e))
 
     shutil.rmtree(directory)
 

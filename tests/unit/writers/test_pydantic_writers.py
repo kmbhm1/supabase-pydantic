@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import patch, MagicMock
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ConstraintInfo, ForeignKeyInfo
 from supabase_pydantic.util.writers.pydantic_writers import (
@@ -44,7 +43,7 @@ def table_info():
 
 
 @pytest.fixture
-def class_writer(table_info):
+def fastapi_class_writer(table_info):
     return PydanticFastAPIClassWriter(table_info)
 
 
@@ -129,7 +128,7 @@ def api_writer_tables():
 
 
 @pytest.fixture
-def file_writer(api_writer_tables):
+def fastapi_file_writer(api_writer_tables):
     return PydanticFastAPIWriter(api_writer_tables, 'dummy_path.py')
 
 
@@ -138,7 +137,8 @@ def jsonapi_writer(api_writer_tables):
     return PydanticJSONAPIWriter(api_writer_tables, 'dummy_path.py')
 
 
-def test_pydantic_fast_api_writer_imports(file_writer):
+def test_pydantic_fast_api_writer_imports(fastapi_file_writer):
+    """Validate the imports for the Pydantic FastAPI writer."""
     expected_imports = (
         'from __future__ import annotations\n'
         'from pydantic import BaseModel\n'
@@ -146,31 +146,35 @@ def test_pydantic_fast_api_writer_imports(file_writer):
         'from pydantic import Json\n'
         'from pydantic import UUID4'
     )
-    assert file_writer.write_imports() == expected_imports
+    assert fastapi_file_writer.write_imports() == expected_imports
 
 
-def test_PydanticFastAPIClassWriter_write_name(class_writer):
-    assert class_writer.write_name() == 'UserBaseSchema'
+def test_PydanticFastAPIClassWriter_write_name(fastapi_class_writer):
+    """Validate the write_name method for Pydantic FastAPI Class Writer."""
+    assert fastapi_class_writer.write_name() == 'UserBaseSchema'
 
 
-def test_PydanticFastAPIClassWriter_write_metaclass(class_writer):
+def test_PydanticFastAPIClassWriter_write_metaclass(fastapi_class_writer):
+    """Validate the write_metaclass method for Pydantic FastAPI Class Writer."""
     expected_output = 'foo, bar'
-    assert class_writer.write_metaclass(['foo', 'bar']) == expected_output
-    assert class_writer.write_metaclass(None) == 'CustomModel'
+    assert fastapi_class_writer.write_metaclass(['foo', 'bar']) == expected_output
+    assert fastapi_class_writer.write_metaclass(None) == 'CustomModel'
 
 
-def test_PydanticFastAPIClassWriter_write_column(class_writer):
+def test_PydanticFastAPIClassWriter_write_column(fastapi_class_writer):
+    """Validate the write_column method for Pydantic FastAPI Class Writer."""
     column = ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int')
     column_two = ColumnInfo(name='email', post_gres_datatype='varchar', is_nullable=True, datatype='str', alias='foo')
 
     expected_output = 'id: int'
     expected_output_two = 'email: str | None = Field(default=None, alias="foo")'
 
-    assert class_writer.write_column(column) == expected_output
-    assert class_writer.write_column(column_two) == expected_output_two
+    assert fastapi_class_writer.write_column(column) == expected_output
+    assert fastapi_class_writer.write_column(column_two) == expected_output_two
 
 
-def test_PydanticFastAPIClassWriter_write_primary_keys(class_writer):
+def test_PydanticFastAPIClassWriter_write_class(fastapi_class_writer):
+    """Validate the write_class method for Pydantic FastAPI Class Writer."""
     expected_output = (
         'class UserBaseSchema(CustomModel):\n'
         '\t"""User Base Schema."""\n\n'
@@ -180,10 +184,11 @@ def test_PydanticFastAPIClassWriter_write_primary_keys(class_writer):
         '\tcompany_id: UUID4\n'
         '\temail: str | None = Field(default=None)'
     )
-    assert class_writer.write_class() == expected_output
+    assert fastapi_class_writer.write_class() == expected_output
 
 
 def test_PydanticFastAPIClassWriter_write_primary_keys_no_columns():
+    """Validate the write_primary_keys method for Pydantic FastAPI Class Writer."""
     table_info = TableInfo(name='User', schema='public', columns=[], foreign_keys=[], constraints=[])
     writer = PydanticFastAPIClassWriter(table_info)
     expected_output = 'class UserBaseSchema(CustomModel):\n' '\t"""User Base Schema."""\n\n'
@@ -191,6 +196,7 @@ def test_PydanticFastAPIClassWriter_write_primary_keys_no_columns():
 
 
 def test_PydanticFastAPIClassWriter_write_foreign_columns():
+    """Validate the write_foreign_columns method for Pydantic FastAPI Class Writer."""
     table_info = TableInfo(
         name='User',
         schema='public',
@@ -229,6 +235,7 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns():
 
 
 def test_PydanticFastAPIClassWriter_write_foreign_columns_returns_None():
+    """Validate the write_foreign_columns method for Pydantic FastAPI Class Writer returns None with no foreign tables."""
     table_info = TableInfo(
         name='User',
         schema='public',
@@ -254,6 +261,7 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns_returns_None():
 
 
 def test_PydanticFastAPIClassWriter_write_foreign_columns(table_info):
+    """Validate the write_foreign_columns method for Pydantic FastAPI Class Writer."""
     writer = PydanticFastAPIClassWriter(table_info)
     expected_output = (
         'class User(UserBaseSchema):\n\t'
@@ -273,7 +281,8 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns(table_info):
     )
 
 
-def test_PydanticFastAPIWriter_write(file_writer):
+def test_PydanticFastAPIWriter_write(fastapi_file_writer):
+    """Validate the write method for Pydantic FastAPI Writer."""
     expected_output = (
         'from __future__ import annotations\nfrom pydantic import BaseModel\n'
         'from pydantic import Field\nfrom pydantic import Json\n'
@@ -299,10 +308,11 @@ def test_PydanticFastAPIWriter_write(file_writer):
         'Inherits from ClientBaseSchema. Add any customization here.\n\t"""\n\tpass\n'
     )
 
-    assert file_writer.write() == expected_output
+    assert fastapi_file_writer.write() == expected_output
 
 
 def test_PydanticJSONAPIClassWriter_write(jsonapi_class_writer):
+    """Validate the write method for Pydantic JSONAPI Class Writer."""
     expected_output = (
         'class UserBaseSchema(CustomModel):\n\t'
         '"""User Base Schema."""\n\n\t# Primary Keys\n\t'
@@ -317,6 +327,7 @@ def test_PydanticJSONAPIClassWriter_write(jsonapi_class_writer):
 
 
 def test_PydanticJSONAPIClassWriter_write_foreign_columns_returns_none():
+    """Validate the write_foreign_columns method for Pydantic JSONAPI Class Writer returns None with no foreign tables."""
     table_info = TableInfo(
         name='User',
         schema='public',
@@ -342,6 +353,7 @@ def test_PydanticJSONAPIClassWriter_write_foreign_columns_returns_none():
 
 
 def test_PydanticJSONAPIClassWriter_write_operational_class(jsonapi_class_writer):
+    """Validate the write_operational_class method for Pydantic JSONAPI Class Writer."""
     expected_output = (
         'class UserPatchSchema(UserBaseSchema):\n\t'
         '"""User PATCH Schema."""\n\t'
@@ -355,6 +367,7 @@ def test_PydanticJSONAPIClassWriter_write_operational_class(jsonapi_class_writer
 
 
 def test_PydanticJSONAPIWriter_write(jsonapi_writer):
+    """Validate the write method for Pydantic JSONAPI Writer."""
     expected_output = (
         'from __future__ import annotations\n'
         'from fastapi_jsonapi.schema_base import Field, RelationshipInfo\n'

@@ -93,6 +93,20 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
+
+      #----------------------------------------------
+      #   Run Tests & Upload Coverage
+      #----------------------------------------------
+
+      - name: Run tests and collect coverage
+        run: poetry run pytest -v -s --cov=supabase_pydantic
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       #----------------------------------------------
       #   Python Semantic Release
       #----------------------------------------------

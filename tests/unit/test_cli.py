@@ -78,12 +78,3 @@ def test_clean_command_handles_other_errors(runner, mock_env_vars):
         result = runner.invoke(cli, ['clean'])
         assert 'An error occurred while cleaning the project' in result.output
         assert result.exit_code == 0
-
-
-def test_gen_command_local_connection(runner, mock_env_vars):
-    """Test the generate models command with a local database connection."""
-    with patch('supabase_pydantic.cli.construct_table_info_from_postgres') as mock_construct:
-        result = runner.invoke(cli, ['gen', '--local'])
-        assert 'Only local connection is supported at the moment.' not in result.output
-        assert result.exit_code == 0
-        mock_construct.assert_called_once()

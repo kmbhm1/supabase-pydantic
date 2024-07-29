@@ -37,7 +37,7 @@ model_choices = ['pydantic', 'sqlalchemy']
 framework_choices = ['fastapi', 'fastapi-jsonapi']
 
 
-def check_readiness(env_vars: dict[str, str]) -> bool:
+def check_readiness(env_vars: dict[str, str | None]) -> bool:
     """Check if environment variables are set correctly."""
     if not env_vars:
         print('No environment variables provided.')

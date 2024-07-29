@@ -28,7 +28,7 @@ def format_with_ruff(file_path: str) -> None:
         print(e.stderr)  # Print any error output from ruff
 
 
-def get_graph_from_tables(tables):
+def get_graph_from_tables(tables: list[TableInfo]) -> tuple[defaultdict, dict]:
     """Generate a graph and indegree dictionary from the tables."""
     graph = defaultdict(list)
     indegree = {table.name: 0 for table in tables}

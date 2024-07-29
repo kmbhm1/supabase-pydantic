@@ -28,7 +28,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
 
     def write_metaclass(self, metaclasses: list[str] | None = None) -> str | None:
         """Method to generate the metaclasses for the class."""
-        if metaclasses is not None:
+        if metaclasses is not None and (isinstance(metaclasses, list), len(metaclasses) > 0):
             return ', '.join(metaclasses)
         return CUSTOM_MODEL_NAME
 

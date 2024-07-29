@@ -1,17 +1,14 @@
 import pytest
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ConstraintInfo, ForeignKeyInfo
+from supabase_pydantic.util.dataclasses import ConstraintInfo, ForeignKeyInfo, TableInfo, ColumnInfo
 from supabase_pydantic.util.writers.pydantic_writers import (
     PydanticFastAPIClassWriter,
     PydanticFastAPIWriter,
     PydanticJSONAPIClassWriter,
     PydanticJSONAPIWriter,
-    TableInfo,
-    ColumnInfo,
 )
 
 
-# Sample TableInfo setup
 @pytest.fixture
 def table_info():
     return TableInfo(
@@ -135,18 +132,6 @@ def fastapi_file_writer(api_writer_tables):
 @pytest.fixture
 def jsonapi_writer(api_writer_tables):
     return PydanticJSONAPIWriter(api_writer_tables, 'dummy_path.py')
-
-
-def test_pydantic_fast_api_writer_imports(fastapi_file_writer):
-    """Validate the imports for the Pydantic FastAPI writer."""
-    expected_imports = (
-        'from __future__ import annotations\n'
-        'from pydantic import BaseModel\n'
-        'from pydantic import Field\n'
-        'from pydantic import Json\n'
-        'from pydantic import UUID4'
-    )
-    assert fastapi_file_writer.write_imports() == expected_imports
 
 
 def test_PydanticFastAPIClassWriter_write_name(fastapi_class_writer):
@@ -309,6 +294,18 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
     )
 
     assert fastapi_file_writer.write() == expected_output
+
+
+def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
+    """Validate the imports for the Pydantic FastAPI writer."""
+    expected_imports = (
+        'from __future__ import annotations\n'
+        'from pydantic import BaseModel\n'
+        'from pydantic import Field\n'
+        'from pydantic import Json\n'
+        'from pydantic import UUID4'
+    )
+    assert fastapi_file_writer.write_imports() == expected_imports
 
 
 def test_PydanticJSONAPIClassWriter_write(jsonapi_class_writer):

@@ -12,14 +12,14 @@ from supabase_pydantic.util.writers.util import get_section_comment
 class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
     def __init__(self, table: TableInfo, nullify_base_schema_class: bool = False):
         super().__init__(table, nullify_base_schema_class)
-        self.tname = to_pascal_case(self.table.name)
+        self._tname = to_pascal_case(self.table.name)
         self.separated_columns: SortedColumns = self.table.sort_and_separate_columns(
             separate_nullable=True, separate_primary_key=True
         )
 
     def write_name(self) -> str:
         """Method to generate the header for the base class."""
-        return self.tname
+        return self._tname
 
     def write_metaclass(self, metaclasses: list[str] | None = None) -> str | None:
         """Method to generate the metaclasses for the class."""
@@ -28,7 +28,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
     def write_docs(self) -> str:
         """Method to generate the docstrings for the class."""
         qualifier = 'Nullable Base' if self.nullify_base_schema_class else 'Base'
-        return f'\n\t"""{self.tname} {qualifier}."""\n\n\t__tablename__ = "{self.table.name}"\n\n'
+        return f'\n\t"""{self._tname} {qualifier}."""\n\n\t__tablename__ = "{self.table.name}"\n\n'
 
     def write_column(self, c: ColumnInfo) -> str:
         """Method to generate column definition for the class."""
@@ -186,7 +186,7 @@ class SqlAlchemyJSONAPIClassWriter(SqlAlchemyFastAPIClassWriter):
         fkeys = []
         for fk in self.table.foreign_keys:
             column_name = fk.foreign_table_name.lower()
-            back_populates = f'back_populates="{self.tname}"'
+            back_populates = f'back_populates="{self._tname}"'
             useList = ', useList=True' if fk.relation_type != RelationType.ONE_TO_ONE else ''
             relationship = f'relationship("{to_pascal_case(fk.foreign_table_name)}", {back_populates}{useList})'
             base_type = f'Mapped[{to_pascal_case(fk.foreign_table_name)}]'

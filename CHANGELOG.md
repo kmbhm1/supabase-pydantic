@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.7.0 (2024-07-29)
+
+### Feature
+
+* feat: Add full coverage testing, testing coverage checking, and coverage reporting (#25)
+
+* test: update db tests and cleanup
+* test: update sorting tests
+* test: update util tests
+* test: update coverage passing
+* test: update writer abc, factories, and util tests
+* test: add marshalers tests
+* test: add pydantic writers tests
+* test: clean pydantic writers tests
+* test: add sqlalchemy writer tests
+* test: add cli tests
+* feat: add full coverage testing and code coverage reporting
+* chore: fix mypy issues
+* chore: remove incorrect test ([`f84dd83`](https://github.com/kmbhm1/supabase-pydantic/commit/f84dd8381a187d1035df89a158af05400d2e6336))
+
 ## v0.6.2 (2024-07-27)
 
 ### Fix

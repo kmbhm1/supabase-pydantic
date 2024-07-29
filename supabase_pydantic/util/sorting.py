@@ -28,14 +28,15 @@ def format_with_ruff(file_path: str) -> None:
         print(e.stderr)  # Print any error output from ruff
 
 
-def get_graph_from_tables(tables: list[TableInfo]) -> tuple[dict[str, list[str]], dict[str, int]]:
-    """Generate a graph & indegree dictionary from the tables."""
+def get_graph_from_tables(tables: list[TableInfo]) -> tuple[defaultdict, dict]:
+    """Generate a graph and indegree dictionary from the tables."""
     graph = defaultdict(list)
     indegree = {table.name: 0 for table in tables}
 
     for table in tables:
         for fk in table.foreign_keys:
-            graph[table.name].append(fk.foreign_table_name)
+            # table.name should point to fk.foreign_table_name
+            graph[fk.foreign_table_name].append(table.name)
             indegree[table.name] += 1
 
     return graph, indegree
@@ -43,14 +44,10 @@ def get_graph_from_tables(tables: list[TableInfo]) -> tuple[dict[str, list[str]]
 
 def topological_sort(tables: list[TableInfo]) -> list[TableInfo]:
     """Topologically sort the tables based on foreign key relationships."""
-    # Build the graph
     graph, indegree = get_graph_from_tables(tables)
-
-    # Find all nodes with no incoming edges
     queue = deque([table.name for table in tables if indegree[table.name] == 0])
     sorted_tables = []
 
-    # Process the graph
     while queue:
         current = queue.popleft()
         sorted_tables.append(current)
@@ -61,8 +58,9 @@ def topological_sort(tables: list[TableInfo]) -> list[TableInfo]:
                 queue.append(neighbor)
 
     if len(sorted_tables) != len(tables):
+        print(f'Debug: Graph {graph}')
+        print(f'Debug: Indegree {indegree}')
         raise ValueError(f'Cycle detected in the graph. Cannot sort tables. Final list: {sorted_tables}')
 
-    # Convert names back to TableInfo instances
     name_to_table = {table.name: table for table in tables}
     return [name_to_table[name] for name in sorted_tables]

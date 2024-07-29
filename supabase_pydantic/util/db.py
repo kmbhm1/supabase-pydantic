@@ -43,6 +43,7 @@ def construct_table_info_from_postgres(
 ) -> Any:
     """Construct table information from database."""
     # Get Table & Column details from the database
+    conn: Any = None
     try:
         # Create a connection to the database & check if connection is successful
         assert (

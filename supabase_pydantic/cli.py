@@ -37,14 +37,15 @@ model_choices = ['pydantic', 'sqlalchemy']
 framework_choices = ['fastapi', 'fastapi-jsonapi']
 
 
-def check_readiness() -> bool:
+def check_readiness(env_vars: dict[str, str | None]) -> bool:
     """Check if environment variables are set correctly."""
-    check = {'DB_NAME': db_name, 'DB_USER': user, 'DB_PASS': password, 'DB_HOST': host, 'DB_PORT': port}
-    for k, v in check.items():
+    if not env_vars:
+        print('No environment variables provided.')
+        return False
+    for k, v in env_vars.items():
         # print(k, v)
         if v is None:
             print(f'Environment variables not set correctly. {k} is missing. Please set it in .env file.')
-            print('Exiting...')
             return False
 
     return True
@@ -195,7 +196,8 @@ def gen(
 
     # Load environment variables from .env file & check if they are set correctly
     load_dotenv(find_dotenv())
-    assert check_readiness()
+    env_vars = {'DB_NAME': db_name, 'DB_USER': user, 'DB_PASS': password, 'DB_HOST': host, 'DB_PORT': port}
+    assert check_readiness(env_vars)
 
     # Get the directories for the generated files
     dirs = get_working_directories(default_directory, frameworks, auto_create=True)

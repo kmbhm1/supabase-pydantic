@@ -28,7 +28,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
 
     def write_metaclass(self, metaclasses: list[str] | None = None) -> str | None:
         """Method to generate the metaclasses for the class."""
-        if metaclasses is not None:
+        if metaclasses is not None and (isinstance(metaclasses, list), len(metaclasses) > 0):
             return ', '.join(metaclasses)
         return CUSTOM_MODEL_NAME
 
@@ -62,6 +62,8 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
     def write_primary_columns(self) -> str | None:
         """Method to generate column definitions for the class."""
         cols = [self.write_column(c) for c in self.separated_columns.remaining]
+        if len(cols) == 0:
+            return None
         return AbstractClassWriter.column_section('Columns', cols)
 
     def write_foreign_columns(self, use_base: bool = True) -> str | None:

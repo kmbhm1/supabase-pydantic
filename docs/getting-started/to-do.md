@@ -16,9 +16,15 @@
 - [x] Explore security scanners in pipelines
 - [ ] Explore SDK integrations, rather than CLI use
 - [ ] Test with other conn methods (e.g., supabase secret key)
-- [ ] Separate nullable and non-nullable columns in models in a better way
+- [x] Separate nullable and non-nullable columns in models in a better way
 - [ ] Acquire test dbs for integration tests
-- [ ] Finish adding tests for writers and marshalers
-- [ ] Add uploading of coverage report to codecov or somewhere
+- [x] Finish adding tests for writers and marshalers
+- [x] Add uploading of coverage report to codecov or somewhere
 - [ ] Add badges to README
 - [ ] polymorphism for Writer class; add interfaces?
+
+- [x] Convert Writer to abstract class pattern
+- [x] Update CLI with behavior more like supabase-js type gen command
+- [ ] Update for [django](https://docs.djangoproject.com/en/5.0/topics/db/models/#automatic-primary-key-fields) model.Model and [update](https://docs.sqlalchemy.org/en/20/tutorial/metadata.html#declaring-mapped-classes) sqlalchemy for Declarative base
+- [ ] route generators? [flask](https://www.reddit.com/r/flask/comments/gyf22b/if_you_are_using_flask_you_should_start_using/), django-rest, fastapi, jsonapi, etc.
+- [ ] Revisit table relationship logic

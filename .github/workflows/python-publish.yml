@@ -25,9 +25,9 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Lint checking
-        run: poetry run ruff check --output-format=github .
+        run: poetry run ruff check -v --output-format=github .
       - name: Type checking
-        run: poetry run mypy .
+        run: poetry run mypy -v .
       - name: Test with Pytest
         run: poetry run pytest -v -s --cov=supabase_pydantic --cov-report=term-missing
       - name: Coverage check
@@ -36,8 +36,8 @@ jobs:
           COVERAGE=$(poetry run pytest --cov=supabase_pydantic --cov-report=term-missing | grep TOTAL | awk '{print $4}' | tr -d '%')
           echo "Coverage percentage is $COVERAGE%"
           echo "::set-output name=coverage::$COVERAGE"
-          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
-            echo "Coverage is below 40% threshold"
+          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "Coverage is below 90% threshold"
             exit 1
           fi
       - name: Build package
@@ -92,6 +92,20 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         run: poetry install
+
+
+      #----------------------------------------------
+      #   Run Tests & Upload Coverage
+      #----------------------------------------------
+
+      - name: Run tests and collect coverage
+        run: poetry run pytest -v -s --cov=supabase_pydantic --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       #----------------------------------------------
       #   Python Semantic Release

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "supabase-pydantic"
-version = "0.5.0"
+version = "0.7.0"
 description = "A Pydantic(+) model generator for Supabase"
 authors = ["K Boehm <kmbhm1@gmail.com>"]
 license = "MIT"
@@ -24,8 +24,8 @@ classifiers = [
 keywords = ["supabase", "pydantic", "fastapi", "sqlalchemy", "REST", "generator", "schema", "model"]
 
 [tool.poetry.scripts]
-sb-pydantic = 'supabase_pydantic.cli:main'
-supabase-pydantic = 'supabase_pydantic.cli:main'
+sb-pydantic = 'supabase_pydantic.cli:cli'
+supabase-pydantic = 'supabase_pydantic.cli:cli'
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -42,9 +42,10 @@ mkdocs-material = "^9.5.30"
 mkdocstrings = {extras = ["python"], version = "^0.25.1"}
 mkdocs-redirects = "^1.2.1"
 pymdown-extensions = "^10.8.1"
+ruff = "^0.4.1"
+click-option-group = "^0.5.6"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.4.1"
 sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
 fastapi-jsonapi = "^2.8.0"
 python-semantic-release = "^9.8.5"
@@ -244,3 +245,19 @@ insecure = false
 [tool.semantic_release.publish]
 dist_glob_patterns = ["dist/*"]
 upload_to_vcs_release = true
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".",
+]
+log_level = "INFO"
+[tool.coverage]
+[tool.coverage.run]
+omit = [
+    '__init__.py',
+    '.venv/*',
+]
+
+[tool.coverage.report]
+skip_empty = true
+fail_under = 90

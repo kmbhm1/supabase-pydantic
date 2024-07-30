@@ -8,22 +8,35 @@ def run_isort(file_path: str) -> None:
     """Run the isort command on the specified file."""
     try:
         # Run the isort command on the specified file
-        result = subprocess.run(['isort', file_path], check=True, capture_output=True, text=True)
-        print(result.stdout)
-        print('isort ran successfully.')
+        _ = subprocess.run(['isort', file_path], check=True, capture_output=True, text=True)
+        # print(result.stdout)
+        # print(f'isort ran successfully: {file_path}')
     except subprocess.CalledProcessError as e:
         print('An error occurred while running isort:')
         print(e.stderr)
 
 
-def get_graph_from_tables(tables: list[TableInfo]) -> tuple[dict[str, list[str]], dict[str, int]]:
-    """Generate a graph & indegree dictionary from the tables."""
+def format_with_ruff(file_path: str) -> None:
+    """Run the ruff formatter on a specified Python file."""
+    try:
+        # Run ruff using subprocess.run
+        _ = subprocess.run(['ruff', 'format', file_path], check=True, text=True, capture_output=True)
+        # print(f'Ruff formatting successful: {file_path}')
+        # print(result.stdout)  # Output the stdout of the ruff command
+    except subprocess.CalledProcessError as e:
+        print('Error during Ruff formatting:')
+        print(e.stderr)  # Print any error output from ruff
+
+
+def get_graph_from_tables(tables: list[TableInfo]) -> tuple[defaultdict, dict]:
+    """Generate a graph and indegree dictionary from the tables."""
     graph = defaultdict(list)
     indegree = {table.name: 0 for table in tables}
 
     for table in tables:
         for fk in table.foreign_keys:
-            graph[table.name].append(fk.foreign_table_name)
+            # table.name should point to fk.foreign_table_name
+            graph[fk.foreign_table_name].append(table.name)
             indegree[table.name] += 1
 
     return graph, indegree
@@ -31,14 +44,10 @@ def get_graph_from_tables(tables: list[TableInfo]) -> tuple[dict[str, list[str]]
 
 def topological_sort(tables: list[TableInfo]) -> list[TableInfo]:
     """Topologically sort the tables based on foreign key relationships."""
-    # Build the graph
     graph, indegree = get_graph_from_tables(tables)
-
-    # Find all nodes with no incoming edges
     queue = deque([table.name for table in tables if indegree[table.name] == 0])
     sorted_tables = []
 
-    # Process the graph
     while queue:
         current = queue.popleft()
         sorted_tables.append(current)
@@ -49,8 +58,9 @@ def topological_sort(tables: list[TableInfo]) -> list[TableInfo]:
                 queue.append(neighbor)
 
     if len(sorted_tables) != len(tables):
+        print(f'Debug: Graph {graph}')
+        print(f'Debug: Indegree {indegree}')
         raise ValueError(f'Cycle detected in the graph. Cannot sort tables. Final list: {sorted_tables}')
 
-    # Convert names back to TableInfo instances
     name_to_table = {table.name: table for table in tables}
     return [name_to_table[name] for name in sorted_tables]

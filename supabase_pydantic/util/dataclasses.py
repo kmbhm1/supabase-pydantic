@@ -1,79 +1,13 @@
 import json
-import os
 from dataclasses import asdict, dataclass, field
-from enum import Enum
 from random import random
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal
 
 from faker import Faker
 
-from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, RelationType
+from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, OrmType, RelationType
 from supabase_pydantic.util.fake import generate_fake_data
 from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type
-
-
-class AppConfig(TypedDict, total=False):
-    default_directory: str
-    overwrite_existing_files: bool
-    nullify_base_schema: bool
-
-
-class ToolConfig(TypedDict):
-    supabase_pydantic: AppConfig
-
-
-def get_enum_member_from_string(cls: Any, value: str) -> Any:
-    """Get an Enum member from a string value."""
-    value_lower = value.lower()
-    for member in cls:
-        if member.value == value_lower:
-            return member
-    raise ValueError(f"'{value}' is not a valid {cls.__name__}")
-
-
-class OrmType(Enum):
-    """Enum for file types."""
-
-    PYDANTIC = 'pydantic'
-    SQLALCHEMY = 'sqlalchemy'
-
-
-class FrameWorkType(Enum):
-    """Enum for framework types."""
-
-    FASTAPI = 'fastapi'
-    FASTAPI_JSONAPI = 'fastapi-jsonapi'
-
-
-@dataclass
-class WriterConfig:
-    file_type: OrmType
-    framework_type: FrameWorkType
-    filename: str
-    directory: str
-    enabled: bool
-
-    def ext(self) -> str:
-        """Get the file extension based on the file name."""
-        return self.filename.split('.')[-1]
-
-    def name(self) -> str:
-        """Get the file name without the extension."""
-        return self.filename.split('.')[0]
-
-    def fpath(self) -> str:
-        """Get the full file path."""
-        return os.path.join(self.directory, self.filename)
-
-    def to_dict(self) -> dict[str, str]:
-        """Convert the WriterConfig object to a dictionary."""
-        return {
-            'file_type': str(self.file_type),
-            'framework_type': str(self.framework_type),
-            'filename': self.filename,
-            'directory': self.directory,
-            'enabled': str(self.enabled),
-        }
 
 
 @dataclass
@@ -133,6 +67,14 @@ class ForeignKeyInfo(AsDictParent):
     foreign_column_name: str
     foreign_table_schema: str = 'public'
     relation_type: RelationType | None = None  # E.g., "One-to-One", "One-to-Many"
+
+
+@dataclass
+class SortedColumns:
+    primary_keys: list[ColumnInfo]
+    nullable: list[ColumnInfo]
+    non_nullable: list[ColumnInfo]
+    remaining: list[ColumnInfo]
 
 
 @dataclass
@@ -200,7 +142,7 @@ class TableInfo(AsDictParent):
 
     def sort_and_separate_columns(
         self, separate_nullable: bool = False, separate_primary_key: bool = False
-    ) -> dict[str, list[ColumnInfo]]:
+    ) -> SortedColumns:
         """Sort and combine columns based on is_nullable attribute.
 
         Args:
@@ -211,21 +153,22 @@ class TableInfo(AsDictParent):
             A dictionary with keys, nullable, non_nullable, and remaining as keys
             and lists of ColumnInfo objects as values.
         """
-        result: dict[str, list[ColumnInfo]] = {'keys': [], 'nullable': [], 'non_nullable': [], 'remaining': []}
+        # result: dict[str, list[ColumnInfo]] = {'keys': [], 'nullable': [], 'non_nullable': [], 'remaining': []}
+        result: SortedColumns = SortedColumns([], [], [], [])
         if separate_primary_key:
-            result['keys'] = self.get_primary_columns(sort_results=True)
-            result['remaining'] = self.get_secondary_columns(sort_results=True)
+            result.primary_keys = self.get_primary_columns(sort_results=True)
+            result.remaining = self.get_secondary_columns(sort_results=True)
         else:
-            result['remaining'] = sorted(self.columns, key=lambda x: x.name)
+            result.remaining = sorted(self.columns, key=lambda x: x.name)
 
         if separate_nullable:
-            nullable_columns = [column for column in result['remaining'] if column.is_nullable]  # already sorted
-            non_nullable_columns = [column for column in result['remaining'] if not column.is_nullable]
+            nullable_columns = [column for column in result.remaining if column.is_nullable]  # already sorted
+            non_nullable_columns = [column for column in result.remaining if not column.is_nullable]
 
             # Combine them with non-nullable first
-            result['nullable'] = non_nullable_columns
-            result['non_nullable'] = nullable_columns
-            result['remaining'] = []
+            result.nullable = nullable_columns
+            result.non_nullable = non_nullable_columns
+            result.remaining = []
 
         return result
 

@@ -28,3 +28,5 @@
 - [ ] Update for [django](https://docs.djangoproject.com/en/5.0/topics/db/models/#automatic-primary-key-fields) model.Model and [update](https://docs.sqlalchemy.org/en/20/tutorial/metadata.html#declaring-mapped-classes) sqlalchemy for Declarative base
 - [ ] route generators? [flask](https://www.reddit.com/r/flask/comments/gyf22b/if_you_are_using_flask_you_should_start_using/), django-rest, fastapi, jsonapi, etc.
 - [ ] Revisit table relationship logic
+- [ ] Add to conda
+- [ ] Submit repo for reviews with Pydantic docs, Supabase docs, etc.

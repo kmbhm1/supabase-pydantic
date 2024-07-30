@@ -7,7 +7,27 @@ site_author: KB <kmbhm1@gmail.com>
 
 theme:
   name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
   features:
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
     - navigation.indexes
     - navigation.instant
     - navigation.instant.progress
@@ -28,6 +48,8 @@ nav:
   - Examples:
     - FastAPI: examples/setup-fastapi.md
     - Setup a JSON API: examples/setup-jsonapi.md
+  - API:
+    - Command Line Interface: api/cli.md
 
 plugins:
   - search
@@ -42,3 +64,18 @@ markdown_extensions:
       toc_depth: 1
   - pymdownx.snippets:
       check_paths: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      options:
+        custom_icons:
+          - overrides/.icons
+  - attr_list
+  - mkdocs-click

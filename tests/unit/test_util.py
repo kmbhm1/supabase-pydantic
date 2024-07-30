@@ -14,6 +14,7 @@ from supabase_pydantic.util.util import (
     get_enum_member_from_string,
     get_standard_jobs,
     get_working_directories,
+    local_default_env_configuration,
     to_pascal_case,
 )
 
@@ -265,3 +266,14 @@ def test_get_standard_jobs_returns_jobs():
     jobs = get_standard_jobs(models, frameworks, dirs)
 
     assert all([isinstance(job, WriterConfig) for job in jobs.values()])
+
+
+def test_local_default_env_configuration():
+    env_vars = local_default_env_configuration()
+    assert env_vars == {
+        'DB_NAME': 'postgres',
+        'DB_USER': 'postgres',
+        'DB_PASS': 'postgres',
+        'DB_HOST': 'localhost',
+        'DB_PORT': '54322',
+    }

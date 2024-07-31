@@ -34,6 +34,7 @@ theme:
     - content.code.copy
     - content.code.select
     - content.code.annotate
+    - navigation.expand
     - navigation.indexes
     - navigation.instant
     - navigation.instant.progress
@@ -50,12 +51,12 @@ nav:
     - getting-started/installation.md
     - getting-started/contributing.md
     - Security: getting-started/security.md
-    - Changelog: getting-started/changelog.md
+    - Recent Changes: getting-started/changelog.md
   - Examples:
-    - FastAPI: examples/setup-fastapi.md
-    - Setup a JSON API: examples/setup-jsonapi.md
+    - Slack Clone: examples/setup-slack-simple-fastapi.md
   - API:
     - Command Line Interface: api/cli.md
+    - API Reference: api/api-reference.md
 
 plugins:
   - search
@@ -67,7 +68,7 @@ plugins:
 markdown_extensions:
   - toc:
       permalink: true
-      toc_depth: 1
+      toc_depth: 3
   - pymdownx.snippets:
       check_paths: true
   - pymdownx.highlight:

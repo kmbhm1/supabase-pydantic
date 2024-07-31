@@ -14,6 +14,10 @@
 - [Inspiration](https://github.com/yngvem/python-project-structure) for the project structure.
 - Github Actions [inspiration](https://endjin.com/blog/2023/02/how-to-implement-continuous-deployment-of-python-packages-with-github-actions) for CI/CD.
 
+## Testing
+
+- Sample [dbs](https://github.com/morenoh149/postgresDBSamples) & supabase sample [dbs](https://supabase.com/docs/guides/resources/examples)
+
 ## Fixes
 
 - App Runner [fix](https://github.com/orgs/community/discussions/25305#discussioncomment-8256560) for GitHub Actions branch ruleset

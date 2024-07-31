@@ -3,8 +3,8 @@
 - [x] Finalize JsonAPI writers as correct with FastAPI-JSONAPI lib
 - [x] README: change Supabase-Pydantic to `supabase-py`; change this description, "A project to translate Supabase schemas into Pydantic models"; add github link
 - [x] Add community health guidelines
-- [ ] Add better examples and usage in README
-- [ ] Add example Makefile command
+- ~~[ ] Add better examples and usage in README~~
+- [x] Add example Makefile command
 - [x] Integrate pyproject.toml
 - [x] Add linting with ruff and in actions
 - [x] Add tests with coverage and in actions
@@ -17,11 +17,11 @@
 - [ ] Explore SDK integrations, rather than CLI use
 - [ ] Test with other conn methods (e.g., supabase secret key)
 - [x] Separate nullable and non-nullable columns in models in a better way
-- [ ] Acquire test dbs for integration tests
+- [ ] Acquire [test dbs](https://github.com/morenoh149/postgresDBSamples) for integration tests
 - [x] Finish adding tests for writers and marshalers
 - [x] Add uploading of coverage report to codecov or somewhere
-- [ ] Add badges to README
-- [ ] polymorphism for Writer class; add interfaces?
+- [x] Add badges to README
+- [x] polymorphism for Writer class; add interfaces?
 
 - [x] Convert Writer to abstract class pattern
 - [x] Update CLI with behavior more like supabase-js type gen command
@@ -29,4 +29,4 @@
 - [ ] route generators? [flask](https://www.reddit.com/r/flask/comments/gyf22b/if_you_are_using_flask_you_should_start_using/), django-rest, fastapi, jsonapi, etc.
 - [ ] Revisit table relationship logic
 - [ ] Add to conda
-- [ ] Submit repo for reviews with Pydantic docs, Supabase docs, etc.
+- [ ] Submit repo for reviews with Pydantic docs, Supabase docs, Reddit boards, stackoverflow etc.

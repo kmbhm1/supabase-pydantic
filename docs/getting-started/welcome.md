@@ -1,6 +1,7 @@
 # Supabase Pydantic
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/supabase-pydantic)
+[![Pydantic v2](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json)](https://pydantic.dev)
 ![GitHub License](https://img.shields.io/github/license/kmbhm1/supabase-pydantic)
 [![codecov](https://codecov.io/github/kmbhm1/supabase-pydantic/graph/badge.svg?token=PYOJPJTOLM)](https://codecov.io/github/kmbhm1/supabase-pydantic)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/supabase-pydantic)
@@ -17,6 +18,14 @@ FastAPI Pydantic models generated successfully: /path/to/project/entities/fastap
 File formatted successfully: /path/to/project/entities/fastapi/schemas.py
 ```
 
+Some users may find it more convenient to integrate a Makefile command:
+
+``` bash title="Makefile"
+gen-types:
+    @echo "Generating FastAPI Pydantic models..."
+    @sb-pydantic gen --type pydantic --framework fastapi --dir <your path> --local
+```
+
 ## Why use supabase-pydantic?
 
 The [supabase-py](https://github.com/supabase-community/supabase-py) library currently lacks an automated system to enhance type safety and data validation in Python—a similar, but essential feature that is readily available and highly useful in the JavaScript/TypeScript library, as outlined in [Supabase's documentation](https://supabase.com/docs/reference/javascript/typescript-support#generating-typescript-types).
@@ -25,7 +34,7 @@ The [supabase-py](https://github.com/supabase-community/supabase-py) library cur
 
 This package aims to bridge the gap, delivering an enriched experience for Python developers with Supabase. It not only replicates the functionalities of the TypeScript library but is also finely tuned to the diverse tools and landscape of the Python community. Moreover, it's designed to turbocharge your workflow, making rapid prototyping not just faster but also a delightful adventure in development.
 
-## Bennies
+## The Bennies
 
 1. ***Automated* enhanced type safety**: supabase-pydantic generates Pydantic models for Supabase without the hassle of manual setup, ensuring that your data is validated and structured correctly, requiring less oversight. This feature significantly enhances the robustness of deployment pipelines and clarity of your code, making it easier for you to focus on building your application.
 

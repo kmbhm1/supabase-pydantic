@@ -27,6 +27,7 @@ Generate Pydantic models for FastAPI:
 
 ```bash
 $ sb-pydantic gen --type pydantic --framework fastapi --local
+
 PostGres connection is open.
 PostGres connection is closed.
 Generating FastAPI Pydantic models...

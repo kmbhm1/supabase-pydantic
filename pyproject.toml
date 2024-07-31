@@ -5,6 +5,7 @@ description = "A Pydantic(+) model generator for Supabase"
 authors = ["K Boehm <kmbhm1@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/kmbhm1/supabase-pydantic"
+homepage = "https://kmbhm1.github.io/supabase-pydantic"
 readme = "README.md"
 classifiers = [
     "Development Status :: 1 - Planning",

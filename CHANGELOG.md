@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.9.0 (2024-07-31)
+
+### Feature
+
+* feat: add homepage (#32)
+
+* chore: add homepage
+* docs: update README ([`6407452`](https://github.com/kmbhm1/supabase-pydantic/commit/6407452d68ed6c4e7e4f5228996fba783bd31feb))
+
 ## v0.8.4 (2024-07-31)
 
 ### Fix

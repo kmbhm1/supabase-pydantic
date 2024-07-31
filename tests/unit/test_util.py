@@ -122,8 +122,12 @@ def test_clean_directories_ignores_non_directories():
 
         # Check if the correct print statements were called
         expected_print_calls = [
-            call('Directory temp_directory does not exist. Skipping ...'),
-            call('Directory log_directory does not exist. Skipping ...'),
+            call('Checking for directory: temp_directory'),
+            call('Directory "temp_directory" does not exist. Skipping ...'),
+            call('Checking for directory: log_directory'),
+            call('Directory "log_directory" does not exist. Skipping ...'),
+            call('Removing default directory default_directory ...'),
+            call('Default directory removed.'),
         ]
         mock_print.assert_has_calls(expected_print_calls, any_order=True)
 

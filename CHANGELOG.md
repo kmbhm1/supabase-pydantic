@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.8.3 (2024-07-31)
+
+### Fix
+
+* fix: remove mkdocs-click (#30) ([`79f6783`](https://github.com/kmbhm1/supabase-pydantic/commit/79f678328db072b4a9c7e9a645349f5eeed8e288))
+
 ## v0.8.2 (2024-07-31)
 
 ### Fix

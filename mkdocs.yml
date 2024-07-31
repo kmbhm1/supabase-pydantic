@@ -64,6 +64,7 @@ plugins:
   - redirects:
       redirect_maps:
         'index.md': 'getting-started/welcome.md'
+        'examples/index.md': 'examples/setup-slack-simple-fastapi.md'
 
 markdown_extensions:
   - toc:
@@ -83,3 +84,13 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
   - mkdocs-click
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kmbhm1/supabase-pydantic
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/kevin-b-stl
+  generator: false
+
+copyright: Copyright &copy; 2024 <a href="https://github.com/kmbhm1/" target="_blank" rel="noopener">kmbhm1</a>

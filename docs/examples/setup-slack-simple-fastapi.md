@@ -223,10 +223,11 @@ Keep your local Supabase instance running.
 
 What makes the `supabase-pydantic` package so powerful is its ability to translate schema changes quickly, while developing your data layer, into Pydantic schemas. To do this, you will need to install the package in any project, then run the `generate` command:
 
-```bash
+```bash title="Generate Schemas"
 $ cd /path/to/your/project
 $ pip install supabase-pydantic
 $ sb-pydantic gen --type pydantic --framework fastapi --local
+
 PostGres connection is open.
 PostGres connection is closed.
 Generating FastAPI Pydantic models...

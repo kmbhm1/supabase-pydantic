@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.8.2 (2024-07-31)
+
+### Fix
+
+* fix: mkdocs deploy 2 (#29) ([`4aaf224`](https://github.com/kmbhm1/supabase-pydantic/commit/4aaf2246f659d2dfbcdb4c5bee7e100910ec4950))
+
 ## v0.8.1 (2024-07-31)
 
 ### Fix

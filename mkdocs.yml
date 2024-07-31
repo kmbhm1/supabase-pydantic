@@ -1,0 +1,96 @@
+site_name: Supabase Pydantic
+site_url: https://kmbhm1.github.io/supabase-pydantic/
+repo_url: https://github.com/kmbhm1/supabase-pydantic
+repo_name: kmbhm1/supabase-pydantic
+site_description: Supabase Pydantic is a tool for generating ORM constructs for rapid prototyping and deployment with Supabase.
+site_author: KB <kmbhm1@gmail.com>
+
+theme:
+  name: material
+  logo: assets/otter-solid.svg
+  palette:
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: pink
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github-alt
+  font:
+    text: Roboto
+  features:
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - navigation.expand
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.tabs
+    - navigation.top
+    - toc.follow
+    - toc.integrate
+
+nav:
+  - Getting Started:
+    - Welcome: getting-started/welcome.md
+    - Help with sb-pydantic: getting-started/getting-help.md
+    - getting-started/installation.md
+    - getting-started/contributing.md
+    - Security: getting-started/security.md
+    - Recent Changes: getting-started/changelog.md
+  - Examples:
+    - Slack Clone: examples/setup-slack-simple-fastapi.md
+  - API:
+    - Command Line Interface: api/cli.md
+    - API Reference: api/api-reference.md
+
+plugins:
+  - search
+  - mkdocstrings
+  - redirects:
+      redirect_maps:
+        'index.md': 'getting-started/welcome.md'
+        'examples/index.md': 'examples/setup-slack-simple-fastapi.md'
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - mkdocs-click
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kmbhm1/supabase-pydantic
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/kevin-b-stl
+  generator: false
+
+copyright: Copyright &copy; 2024 <a href="https://github.com/kmbhm1/" target="_blank" rel="noopener">kmbhm1</a>

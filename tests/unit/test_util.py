@@ -14,6 +14,7 @@ from supabase_pydantic.util.util import (
     get_enum_member_from_string,
     get_standard_jobs,
     get_working_directories,
+    local_default_env_configuration,
     to_pascal_case,
 )
 
@@ -121,8 +122,12 @@ def test_clean_directories_ignores_non_directories():
 
         # Check if the correct print statements were called
         expected_print_calls = [
-            call('Directory temp_directory does not exist. Skipping ...'),
-            call('Directory log_directory does not exist. Skipping ...'),
+            call('Checking for directory: temp_directory'),
+            call('Directory "temp_directory" does not exist. Skipping ...'),
+            call('Checking for directory: log_directory'),
+            call('Directory "log_directory" does not exist. Skipping ...'),
+            call('Removing default directory default_directory ...'),
+            call('Default directory removed.'),
         ]
         mock_print.assert_has_calls(expected_print_calls, any_order=True)
 
@@ -265,3 +270,14 @@ def test_get_standard_jobs_returns_jobs():
     jobs = get_standard_jobs(models, frameworks, dirs)
 
     assert all([isinstance(job, WriterConfig) for job in jobs.values()])
+
+
+def test_local_default_env_configuration():
+    env_vars = local_default_env_configuration()
+    assert env_vars == {
+        'DB_NAME': 'postgres',
+        'DB_USER': 'postgres',
+        'DB_PASS': 'postgres',
+        'DB_HOST': 'localhost',
+        'DB_PORT': '54322',
+    }

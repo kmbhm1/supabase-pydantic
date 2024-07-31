@@ -16,6 +16,7 @@ from supabase_pydantic.util import (
     format_with_ruff,
     get_standard_jobs,
     get_working_directories,
+    local_default_env_configuration,
     run_isort,
 )
 
@@ -24,13 +25,6 @@ pp = pprint.PrettyPrinter(indent=4)
 
 # Load environment variables from .env file
 load_dotenv(find_dotenv())
-
-# Replace these variables with your database connection details
-db_name = os.environ.get('DB_NAME')
-user = os.environ.get('DB_USER')
-password = os.environ.get('DB_PASS')
-host = os.environ.get('DB_HOST')
-port = os.environ.get('DB_PORT')
 
 # Standard choices
 model_choices = ['pydantic', 'sqlalchemy']
@@ -102,7 +96,7 @@ def cli(ctx: Any, debug: bool) -> None:
     help='The directory to clear of generated files and directories. Defaults to "entities".',
 )
 def clean(ctx: Any, directory: str) -> None:
-    """This command cleans the project directory by removing generated files and clearing caches."""
+    """Clean the project directory by removing generated files and clearing caches."""
     click.echo('Cleaning up the project...')
     try:
         directories = get_working_directories(directory, tuple(framework_choices), auto_create=False)
@@ -116,6 +110,12 @@ def clean(ctx: Any, directory: str) -> None:
     else:
         click.echo('Project cleaned.')
 
+
+# @cli.command('init', short_help='Initializes the project for supabase-pydantic.')
+# def init_project() -> None:
+#     """This command initializes the project for supabase-pydantic."""
+#     click.echo('Initializing the project...')
+#     pass
 
 generator_config = OptionGroup('Generator Options', help='Options for generating code.')
 connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration', help='The sources of the input data')
@@ -190,20 +190,35 @@ def gen(
     # if dburl is None and project_id is None and not local and not linked:
     #     print('Please provide a connection source. Exiting...')
     #     return
+
+    # Load environment variables from .env file & check if they are set correctly
     if not local:
         print('Only local connection is supported at the moment. Exiting...')
         return
 
-    # Load environment variables from .env file & check if they are set correctly
     load_dotenv(find_dotenv())
-    env_vars = {'DB_NAME': db_name, 'DB_USER': user, 'DB_PASS': password, 'DB_HOST': host, 'DB_PORT': port}
+    env_vars: dict[str, str | None] = {
+        'DB_NAME': os.environ.get('DB_NAME', None),
+        'DB_USER': os.environ.get('DB_USER', None),
+        'DB_PASS': os.environ.get('DB_PASS', None),
+        'DB_HOST': os.environ.get('DB_HOST', None),
+        'DB_PORT': os.environ.get('DB_PORT', None),
+    }
+    if any([v is None for v in env_vars.values()]) and local:
+        print(f'Critical environment variables not set: {", ".join([k for k, v in env_vars.items() if v is None])}.')
+        print('Using default local values...')
+        env_vars = local_default_env_configuration()
+
+    # Check if environment variables are set correctly
     assert check_readiness(env_vars)
 
     # Get the directories for the generated files
     dirs = get_working_directories(default_directory, frameworks, auto_create=True)
 
     # Get the database schema details
-    tables = construct_table_info_from_postgres(db_name, user, password, host, port)
+    tables = construct_table_info_from_postgres(
+        env_vars['DB_NAME'], env_vars['DB_USER'], env_vars['DB_PASS'], env_vars['DB_HOST'], env_vars['DB_PORT']
+    )
 
     # Configure the writer jobs
     jobs = {k: v for k, v in get_standard_jobs(models, frameworks, dirs).items() if v.enabled}

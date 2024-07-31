@@ -27,6 +27,7 @@ from .util import (
     create_directories_if_not_exist,
     get_standard_jobs,
     get_working_directories,
+    local_default_env_configuration,
     to_pascal_case,
 )
 from .writers import FileWriterFactory, generate_unique_filename
@@ -61,6 +62,7 @@ __all__ = [
     'generate_unique_filename',
     'get_standard_jobs',
     'get_working_directories',
+    'local_default_env_configuration',
     'query_database',
     'run_isort',
     'to_pascal_case',

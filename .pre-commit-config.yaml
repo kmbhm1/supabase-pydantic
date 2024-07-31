@@ -12,6 +12,7 @@ repos:
         stages: [commit]
       - id: check-yaml
         stages: [commit]
+        exclude: mkdocs.yml
       - id: sort-simple-yaml
         stages: [commit]
       - id: check-added-large-files

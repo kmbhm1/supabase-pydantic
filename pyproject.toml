@@ -37,6 +37,12 @@ isort = "^5.13.2"
 python-dotenv = "^1.0.1"
 click = "^8.1.7"
 toml = "^0.10.2"
+mkdocs = "^1.6.0"
+mkdocs-material = "^9.5.30"
+mkdocstrings = {extras = ["python"], version = "^0.25.1"}
+mkdocs-redirects = "^1.2.1"
+mkdocs-click = "^0.8.1"
+pymdown-extensions = "^10.8.1"
 ruff = "^0.4.1"
 click-option-group = "^0.5.6"
 

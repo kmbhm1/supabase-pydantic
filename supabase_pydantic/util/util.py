@@ -115,7 +115,7 @@ def clean_directories(directories: dict[str, str | None]) -> None:
 
         print(f'Checking for directory: {d}')
         if not os.path.isdir(d):
-            print(f'Directory {d} does not exist. Skipping ...')
+            print(f'Directory "{d}" does not exist. Skipping ...')
             continue
 
         print(f'Directory found. Removing {d} and files...')
@@ -203,3 +203,14 @@ def get_standard_jobs(
         )
 
     return jobs
+
+
+def local_default_env_configuration() -> dict[str, str | None]:
+    """Get the environment variables for a local connection."""
+    return {
+        'DB_NAME': 'postgres',
+        'DB_USER': 'postgres',
+        'DB_PASS': 'postgres',
+        'DB_HOST': 'localhost',
+        'DB_PORT': '54322',
+    }

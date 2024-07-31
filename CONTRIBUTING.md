@@ -2,7 +2,7 @@
 
 *Pull requests, bug reports, and all other forms of contribution are welcomed and highly encouraged!* :penguin:
 
-We need volunteer developers to help this project come to fruition! This project is a community effort, and we are grateful for your help.
+We need volunteers to help this project come to fruition! This project is a community effort, and we are grateful for your help.
 
 ### Contents
 

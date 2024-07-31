@@ -6,7 +6,7 @@ If you have any issues with supabase-pydantic, feel free to [open an issue](http
 
 ## Need help?
 
-The API [documents](../api/cli.md) & [examples](../examples/setup-slack-simple-fastapi.md) are the best source reference documentation for supabase-pydantic.
+The API [documents](../api/api-reference.md) & [examples](../examples/setup-slack-simple-fastapi.md) are the best source reference documentation for supabase-pydantic.
 
 ## Stack Overflow
 

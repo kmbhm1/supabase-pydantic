@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.8.4 (2024-07-31)
+
+### Fix
+
+* fix: rm reference to mkdocs-click (#31) ([`4ae71f2`](https://github.com/kmbhm1/supabase-pydantic/commit/4ae71f26fbfd0dafe58bd107fc5a7f17449a3afd))
+
 ## v0.8.3 (2024-07-31)
 
 ### Fix

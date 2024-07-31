@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## v0.8.0 (2024-07-31)
+
+### Ci
+
+* ci: fix codecov upload (#26) ([`e4551e8`](https://github.com/kmbhm1/supabase-pydantic/commit/e4551e84636dd680df1a1608370bcebcfafd4b11))
+
+### Feature
+
+* feat: add github pages site with mkdocs (#27)
+
+* feat(docs): add mkdocs
+* feat(docs): add basic nav structure and starter docs
+* feat(docs): integrate reading from root changelog
+* feat(docs): add purpose statement
+* chore: update poetry lock
+* feat(docs): add automatic cli docs, updates for code blocks
+* feat(local-option): enable automatic env variables for local connections
+* feat(docs): add logo and new styling to light/dark
+* feat(docs): completed getting started section
+* feat(docs): complete examples and API
+* feat(docs): styling changes and add mkdocs deploy action
+* test: fix clean_directories test ([`ee9eba7`](https://github.com/kmbhm1/supabase-pydantic/commit/ee9eba7e549bc35684eaf6ba4daf1d6489611cc8))
+
 ## v0.7.0 (2024-07-29)
 
 ### Feature
@@ -103,6 +126,11 @@
 ### Feature
 
 * feat(add-writer): updates to rerun pipeline (#14) ([`c7be9e5`](https://github.com/kmbhm1/supabase-pydantic/commit/c7be9e5a4970ed3f669078cf67d2b648700b5099))
+
+### Unknown
+
+* Add writer class and FastAPI-JSONAPI writing (#13)
+
 * feat(add-writer): add first FileWriter and ClassWriter classes
 * feat(add-writer): cleanup for writer classes, add sqlalchemy class writing, add nullable base schema, update cli args
 * feat(add-writer): integrate fastapi-jsonapi writing into writer classes, add job configuration for cli
@@ -148,7 +176,9 @@
 
 ## v0.1.0 (2024-07-09)
 
-### Feature
+### Unknown
+
+* Initialize project (#1)
 
 * feat(init): add poetry
 * feat(init): add example schema query and conn

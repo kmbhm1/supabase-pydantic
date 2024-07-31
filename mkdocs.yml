@@ -55,7 +55,6 @@ nav:
   - Examples:
     - Slack Clone: examples/setup-slack-simple-fastapi.md
   - API:
-    - Command Line Interface: api/cli.md
     - API Reference: api/api-reference.md
 
 plugins:
@@ -83,7 +82,6 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
-  - mkdocs-click
 
 extra:
   social:

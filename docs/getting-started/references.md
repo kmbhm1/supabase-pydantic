@@ -7,6 +7,7 @@
 - [Publishing](https://github.com/pypa/gh-action-pypi-publish) to PyPi using GitHub Actions
 - [Community Guidelines](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file) & [Example](https://github.com/jessesquires/.github/tree/main?tab=readme-ov-file) project
 - [How to](https://www.youtube.com/watch?v=Q-YA_dA8C20) with mkdocs
+- [Adding](https://conda-forge.org/docs/maintainer/adding_pkgs/#step-by-step-instructions) to conda-forge
 
 ## Inspiration
 

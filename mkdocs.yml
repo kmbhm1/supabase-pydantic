@@ -46,10 +46,10 @@ theme:
 nav:
   - Getting Started:
     - Welcome: getting-started/welcome.md
-    - Why use sb-pydantic?: getting-started/purpose.md
     - Help with sb-pydantic: getting-started/getting-help.md
     - getting-started/installation.md
     - getting-started/contributing.md
+    - Security: getting-started/security.md
     - Changelog: getting-started/changelog.md
   - Examples:
     - FastAPI: examples/setup-fastapi.md

@@ -12,7 +12,7 @@ theme:
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: teal
+      primary: purple
       accent: pink
       toggle:
         icon: material/brightness-7
@@ -53,7 +53,7 @@ nav:
     - Security: getting-started/security.md
     - Recent Changes: getting-started/changelog.md
   - Examples:
-    - Slack Clone: examples/setup-slack-simple-fastapi.md
+    - Create a Slack Clone: examples/setup-slack-simple-fastapi.md
   - API:
     - API Reference: api/api-reference.md
 
@@ -82,6 +82,8 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
+  - admonition
+  - pymdownx.details
 
 extra:
   social:

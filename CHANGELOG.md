@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.10.0 (2024-08-01)
+
+### Documentation
+
+* docs: update light mode styling and code block in example (#34) ([`0e0b160`](https://github.com/kmbhm1/supabase-pydantic/commit/0e0b1609595ee7a33e18f00e1064d0dafe109bf7))
+
+* docs: rm invalid refs (#33) ([`e8c8717`](https://github.com/kmbhm1/supabase-pydantic/commit/e8c87177979b2b6300cbbf326f0cdb1add10e1d9))
+
+### Feature
+
+* feat: update sqlalchemy writer for v2 (#35)
+
+- feat: ref https://docs.sqlalchemy.org/en/20/orm/declarative_tables.html ([`1c5b9a5`](https://github.com/kmbhm1/supabase-pydantic/commit/1c5b9a519a0211e1d1bcf674f51504ff7f044995))
+
 ## v0.9.0 (2024-07-31)
 
 ### Feature

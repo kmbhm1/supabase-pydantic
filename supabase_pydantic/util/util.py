@@ -5,6 +5,7 @@ from typing import Any
 from supabase_pydantic.util.constants import (
     PYDANTIC_TYPE_MAP,
     SQLALCHEMY_TYPE_MAP,
+    SQLALCHEMY_V2_TYPE_MAP,
     FrameWorkType,
     OrmType,
     WriterConfig,
@@ -58,7 +59,9 @@ def get_enum_member_from_string(cls: Any, value: str) -> Any:
 
 
 def adapt_type_map(
-    postgres_type: str, default_type: tuple[str, str | None], type_map: dict[str, tuple[str, str | None]]
+    postgres_type: str,
+    default_type: tuple[str, str | None],
+    type_map: dict[str, tuple[str, str | None]],
 ) -> tuple[str, str | None]:
     """Adapt a PostgreSQL data type to a Pydantic and SQLAlchemy type."""
     array_suffix = '[]'
@@ -76,10 +79,19 @@ def adapt_type_map(
 
 
 def get_sqlalchemy_type(
-    postgres_type: str, default: tuple[str, str | None] = ('String', None)
+    postgres_type: str, default: tuple[str, str | None] = ('String', 'from sqlalchemy import String')
 ) -> tuple[str, str | None]:
     """Get the SQLAlchemy type from the PostgreSQL type."""
     return adapt_type_map(postgres_type, default, SQLALCHEMY_TYPE_MAP)
+
+
+def get_sqlalchemy_v2_type(
+    postgres_type: str, default: tuple[str, str | None] = ('String,str', 'from sqlalchemy import String')
+) -> tuple[str, str, str | None]:
+    """Get the SQLAlchemy v2 type from the PostgreSQL type."""
+    both_types, imports = adapt_type_map(postgres_type, default, SQLALCHEMY_V2_TYPE_MAP)
+    sql, py = both_types.split(',')
+    return (sql, py, imports)
 
 
 def get_pydantic_type(postgres_type: str, default: tuple[str, str | None] = ('Any', None)) -> tuple[str, str | None]:

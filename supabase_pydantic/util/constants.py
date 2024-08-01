@@ -88,6 +88,7 @@ PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'serial': ('int', None),
     'bigserial': ('int', None),
     'money': ('Decimal', 'from decimal import Decimal'),
+    'character varying': ('str', None),
     'character varying(n)': ('str', None),
     'varchar(n)': ('str', None),
     'character(n)': ('str', None),
@@ -137,6 +138,7 @@ SQLALCHEMY_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'serial': ('Integer', 'from sqlalchemy import Integer'),  # Auto increment in context
     'bigserial': ('BigInteger', 'from sqlalchemy import BigInteger'),  # Auto increment in context
     'money': ('Numeric', 'from sqlalchemy import Numeric'),  # No specific Money type in SQLAlchemy
+    'character varying': ('String', 'from sqlalchemy import String'),
     'character varying(n)': ('String', 'from sqlalchemy import String'),
     'varchar(n)': ('String', 'from sqlalchemy import String'),
     'character(n)': ('String', 'from sqlalchemy import String'),
@@ -172,6 +174,77 @@ SQLALCHEMY_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'json': ('JSON', 'from sqlalchemy import JSON'),
     'jsonb': ('JSONB', 'from sqlalchemy.dialects.postgresql import JSONB'),
     'ARRAY': ('ARRAY', 'from sqlalchemy.dialects.postgresql import ARRAY'),  # Generic ARRAY; specify further
+}
+
+
+SQLALCHEMY_V2_TYPE_MAP: dict[str, tuple[str, str | None]] = {
+    'integer': ('Integer,int', 'from sqlalchemy import Integer'),
+    'bigint': ('BigInteger,int', 'from sqlalchemy import BigInteger'),
+    'smallint': ('SmallInteger,int', 'from sqlalchemy import SmallInteger'),
+    'numeric': ('Numeric,float', 'from sqlalchemy import Numeric'),
+    'decimal': ('Numeric,float', 'from sqlalchemy import Numeric'),
+    'real': ('Float,float', 'from sqlalchemy import Float'),
+    'double precision': ('Float,float', 'from sqlalchemy import Float'),
+    'serial': ('Integer,int', 'from sqlalchemy import Integer'),  # Auto increment in context
+    'bigserial': ('BigInteger,int', 'from sqlalchemy import BigInteger'),  # Auto increment in context
+    'money': (
+        'Numeric,Decimal',
+        'from sqlalchemy import Numeric\nfrom decimal import Decimal',
+    ),  # No specific Money type in SQLAlchemy
+    'character varying': ('String,str', 'from sqlalchemy import String'),
+    'character varying(n)': ('String,str', 'from sqlalchemy import String'),
+    'varchar(n)': ('String,str', 'from sqlalchemy import String'),
+    'character(n)': ('String,str', 'from sqlalchemy import String'),
+    'char(n)': ('String,str', 'from sqlalchemy import String'),
+    'text': ('Text,str', 'from sqlalchemy import Text'),
+    'bytea': ('LargeBinary,bytes', 'from sqlalchemy import LargeBinary'),
+    'timestamp': ('DateTime,datetime', 'from sqlalchemy import DateTime\nfrom datetime import datetime'),
+    'timestamp with time zone': (
+        'DateTime,datetime',
+        'from sqlalchemy.dialects.postgresql import TIMESTAMP\nfrom datetime import datetime',
+    ),
+    'timestamp without time zone': (
+        'DateTime,datetime',
+        'from sqlalchemy import DateTime\nfrom datetime import datetime',
+    ),
+    'date': ('Date,date', 'from sqlalchemy import Date\nfrom datetime import date'),
+    'time': ('Time,time', 'from sqlalchemy import Time\nfrom datetime import time'),
+    'time with time zone': (
+        'Time,datetime.time',
+        'from sqlalchemy.dialects.postgresql import TIME\nfrom datetime import time',
+    ),
+    'interval': ('Interval,timedelta', 'from sqlalchemy import Interval\nfrom datetime import timedelta'),
+    'boolean': ('Boolean,bool', 'from sqlalchemy import Boolean'),
+    'enum': ('Enum,str', 'from sqlalchemy import Enum'),  # Enums need specific handling based on defined values
+    'point': (
+        'PickleType,Tuple[float, float]',
+        'from sqlalchemy import PickleType\nfrom typeing import Tuple',
+    ),  # No direct mapping, custom handling
+    'line': ('PickleType,Any', 'from sqlalchemy import PickleType\nfrom typing import Any'),
+    'lseg': ('PickleType,Any', 'from sqlalchemy import PickleType\nfrom typing import Any'),
+    'box': ('PickleType,Any', 'from sqlalchemy import PickleType\nfrom typing import Any'),
+    'path': ('PickleType,Any', 'from sqlalchemy import PickleType\nfrom typing import Any'),
+    'polygon': ('PickleType,Any', 'from sqlalchemy import PickleType\nfrom typing import Any'),
+    'circle': ('PickleType,Any', 'from sqlalchemy import PickleType\nfrom typing import Any'),
+    'cidr': (
+        'CIDR,IPv4Network',
+        'from sqlalchemy.dialects.postgresql import CIDR\nfrom ipaddress import IPv4Network',
+    ),
+    'inet': (
+        'INET,IPv4Address | IPv6Address',
+        'from sqlalchemy.dialects.postgresql import INET\nfrom ipaddress import IPv4Address, IPv6Address',
+    ),
+    'macaddr': ('MACADDR,str', 'from sqlalchemy.dialects.postgresql import MACADDR'),
+    'macaddr8': ('MACADDR8,str', 'from sqlalchemy.dialects.postgresql import MACADDR8'),
+    'bit': ('BIT,str', 'from sqlalchemy.dialects.postgresql import BIT'),
+    'bit varying': ('BIT,str', 'from sqlalchemy.dialects.postgresql import BIT'),
+    'tsvector': ('TSVECTOR,str', 'from sqlalchemy.dialects.postgresql import TSVECTOR'),
+    'tsquery': ('TSQUERY,str', 'from sqlalchemy.dialects.postgresql import TSQUERY'),
+    'uuid': ('UUID,UUID4', 'from sqlalchemy.dialects.postgresql import UUID\nfrom pydantic import UUID4'),
+    'xml': ('Text,str', 'from sqlalchemy import Text'),  # XML handled as Text for simplicity
+    'json': ('JSON,dict | Json', 'from sqlalchemy import JSON\nfrom pydantic import Json'),
+    'jsonb': ('JSONB,dict | Json', 'from sqlalchemy.dialects.postgresql import JSONB\nfrom pydantic import Json'),
+    'ARRAY': ('ARRAY,list', 'from sqlalchemy.dialects.postgresql import ARRAY'),  # Generic ARRAY; specify further
 }
 
 

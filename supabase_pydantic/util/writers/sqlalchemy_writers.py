@@ -2,7 +2,7 @@ from typing import Any
 
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, SortedColumns, TableInfo
-from supabase_pydantic.util.util import get_sqlalchemy_type, to_pascal_case
+from supabase_pydantic.util.util import get_sqlalchemy_v2_type, to_pascal_case
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
 from supabase_pydantic.util.writers.util import get_section_comment
 
@@ -33,17 +33,16 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
     def write_column(self, c: ColumnInfo) -> str:
         """Method to generate column definition for the class."""
         # base type
-        base_type = get_sqlalchemy_type(c.post_gres_datatype)[0]
+        base_type, pyth_type, _ = get_sqlalchemy_v2_type(c.post_gres_datatype)
         if base_type.lower() == 'uuid':
             base_type = 'UUID(as_uuid=True)'
         if 'time zone' in c.post_gres_datatype.lower():
             base_type = 'TIMESTAMP(timezone=True)'
+        col_dtype = f'{pyth_type}' + (' | None' if c.is_nullable else '')
 
         # field values
         field_values = dict()
         field_values_list_first = list()
-        if c.is_nullable:
-            field_values['nullable'] = 'True'
         if c.primary:
             field_values['primary_key'] = 'True'
         if c.is_unique:
@@ -51,13 +50,14 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
         for fk in self.table.foreign_keys:
             if c.name == fk.column_name:
                 field_values_list_first.append(f'ForeignKey("{fk.foreign_table_name}.{fk.foreign_column_name}")')
+
         field_values_string = ', '.join(field_values_list_first) if len(field_values_list_first) > 0 else ''
         if len(field_values) > 0:
             if len(field_values_list_first) > 0:
                 field_values_string += ', '
             field_values_string += ', '.join([f'{k}={v}' for k, v in field_values.items()])
 
-        return f'{c.name} = Column({base_type}{", " + field_values_string if (field_values_string is not None and bool(field_values_string)) else ""})'  # noqa: E501
+        return f'{c.name}: Mapped[{col_dtype}] = mapped_column({base_type}{", " + field_values_string if (field_values_string is not None and bool(field_values_string)) else ""})'  # noqa: E501
 
     def write_primary_keys(self) -> str | None:
         """Method to generate primary key definitions for the class."""
@@ -106,12 +106,12 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         super().__init__(tables, file_path, writer)
 
     def _dt_imports(
-        self, imports: set, default_import: tuple[Any, Any | None] = ('String', 'from sqlalchemy import String')
+        self, imports: set, default_import: tuple[Any, Any | None] = ('String,str', 'from sqlalchemy import String')
     ) -> None:
         """Update the imports with the necessary data types."""
 
         def _pyi(c: ColumnInfo) -> str | None:  # pyi = pydantic import  # noqa
-            return get_sqlalchemy_type(c.post_gres_datatype, default_import)[1]
+            return get_sqlalchemy_v2_type(c.post_gres_datatype, default_import)[2]
 
         # column data types
         imports.update(filter(None, map(_pyi, (c for t in self.tables for c in t.columns))))
@@ -120,9 +120,10 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         """Method to generate the imports for the file."""
         # standard
         imports = {
-            'from sqlalchemy.ext.declarative import declarative_base',
-            'from sqlalchemy import Column',
             'from sqlalchemy import ForeignKey',
+            'from sqlalchemy.orm import DeclarativeBase',
+            'from sqlalchemy.orm import Mapped',
+            'from sqlalchemy.orm import mapped_column',
         }
         if any([len(t.primary_key()) > 0 for t in self.tables]):
             imports.add('from sqlalchemy import PrimaryKeyConstraint')
@@ -130,7 +131,11 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         # column data types
         self._dt_imports(imports)
 
-        return '\n'.join(sorted(imports))
+        new_imports = set()
+        for i in imports:
+            new_imports.update(i.split('\n'))
+
+        return '\n'.join(sorted(new_imports))
 
     def _class_writer_helper(
         self,
@@ -157,9 +162,15 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
 
     def write_custom_classes(self, add_fk: bool = False) -> str:
         """Method to write the complete class definition."""
+        declarative_base_class = (
+            'class Base(DeclarativeBase):\n\t'
+            '"""Declarative Base Class."""\n\t'
+            '# type_annotation_map = {}\n\n\t'
+            'pass'
+        )
         return self._class_writer_helper(
             comment_title='Declarative Base',
-            classes_override=['Base = declarative_base()'],
+            classes_override=[declarative_base_class],
         )
 
     def write_base_classes(self) -> str:

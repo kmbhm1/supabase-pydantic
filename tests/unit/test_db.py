@@ -1,9 +1,14 @@
+import psycopg2
 import pytest
 from psycopg2 import connect
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+from supabase_pydantic.util.constants import DatabaseConnectionType
+from supabase_pydantic.util.exceptions import ConnectionError
 from supabase_pydantic.util.db import (
-    construct_table_info_from_postgres,
+    DBConnection,
+    construct_tables,
     create_connection,
+    create_connection_from_db_url,
     check_connection,
     query_database,
 )
@@ -26,6 +31,25 @@ def test_create_connection(mock_psycopg2):
     mock_connect, _, _ = mock_psycopg2
     conn = create_connection('dbname', 'user', 'password', 'host', '5432')
     mock_connect.assert_called_once_with(dbname='dbname', user='user', password='password', host='host', port='5432')
+    assert conn is mock_psycopg2[1]
+
+
+def test_create_connection_operational_error():
+    """Test that OperationalError is caught and re-raised as ConnectionError."""
+    error_message = 'unable to connect to the database'
+    with patch('psycopg2.connect', side_effect=psycopg2.OperationalError(error_message)):
+        with pytest.raises(ConnectionError) as exc_info:
+            create_connection('mydb', 'user', 'pass', 'localhost', '5432')
+        assert str(exc_info.value) == f'Error connecting to database: {error_message}'
+
+
+def test_create_connection_from_db_url(mock_psycopg2):
+    """Test that create_connection_from_db_url correctly initializes a psycopg2 connection."""
+    mock_connect, _, _ = mock_psycopg2
+    conn = create_connection_from_db_url('postgresql://user:password@localhost:5432/dbname')
+    mock_connect.assert_called_once_with(
+        dbname='dbname', user='user', password='password', host='localhost', port='5432'
+    )
     assert conn is mock_psycopg2[1]
 
 
@@ -88,24 +112,106 @@ def mock_construct_table_info(monkeypatch):
     return mock_function
 
 
-def test_construct_table_info_from_postgres_success(mock_database, mock_construct_table_info):
-    """Test successful construction of table info from PostgreSQL."""
-    db_name, user, password, host, port = 'testdb', 'user', 'password', 'localhost', '5432'
-    result = construct_table_info_from_postgres(db_name, user, password, host, port)
+def test_construct_tables_local_success(mock_database, mock_construct_table_info):
+    """Test successful construction of tables."""
+    db_name, user, password, host, port = 'testdb', 'user', 'password', 'localhost', 5432
+    result = construct_tables(
+        DatabaseConnectionType.LOCAL,
+        **{
+            'DB_NAME': db_name,
+            'DB_USER': user,
+            'DB_PASS': password,
+            'DB_HOST': host,
+            'DB_PORT': port,
+        },
+    )
     assert result == {'info': 'sample data'}
     mock_construct_table_info.assert_called_once()  # Optionally check it was called correctly
 
 
-def test_construct_table_info_from_postgres_failure(mock_database):
+def test_construct_tables_local_failure(mock_database):
     """Test failure due to invalid connection parameters."""
     with pytest.raises(AssertionError):
-        construct_table_info_from_postgres(None, None, None, None, None)
+        construct_tables(DatabaseConnectionType.LOCAL)
 
 
-def test_construct_table_info_from_postgres_query_failure(mock_database):
-    """Test handling of a query execution failure."""
-    _, _, mock_cursor = mock_database
-    mock_cursor.execute.side_effect = Exception('Query failed')
+def test_construct_tables_db_url_success(mock_database, mock_construct_table_info):
+    """Test successful construction of tables."""
+    db_url = 'postgresql://user:password@localhost:5432/testdb'
+    result = construct_tables(DatabaseConnectionType.DB_URL, DB_URL=db_url)
+    assert result == {'info': 'sample data'}
+    mock_construct_table_info.assert_called_once()  # Optionally check it was called correctly
+
+
+def test_construct_tables_db_url_failure(mock_database):
+    """Test failure due to invalid connection parameters."""
+    with pytest.raises(AssertionError):
+        construct_tables(DatabaseConnectionType.DB_URL)
+
+
+@pytest.fixture
+def mock_construct_table_info_raises_exception(monkeypatch):
+    # Mock construct_table_info and configure it to raise an exception
+    mock_function = MagicMock(side_effect=Exception('Failed to construct table info'))
+    monkeypatch.setattr('supabase_pydantic.util.db.construct_table_info', mock_function)
+    return mock_function
+
+
+def test_construct_tables_exception(mock_database, mock_construct_table_info_raises_exception):
+    """Test that construct_tables handles exceptions when constructing table info."""
+    db_name, user, password, host, port = 'test', 'user', 'password', 'localhost', 5432
     with pytest.raises(Exception) as exc_info:
-        construct_table_info_from_postgres('testdb', 'user', 'pass', 'localhost', '5432')
-    assert 'Query failed' in str(exc_info.value)
+        construct_tables(
+            DatabaseConnectionType.LOCAL,
+            **{
+                'DB_NAME': db_name,
+                'DB_USER': user,
+                'DB_PASS': password,
+                'DB_HOST': host,
+                'DB_PORT': port,
+            },
+        )
+
+
+@pytest.fixture
+def mock_create_connection(monkeypatch):
+    mock_conn = MagicMock()
+    mock_create_conn = MagicMock(return_value=mock_conn)
+    monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)
+    return mock_create_conn
+
+
+def test_DBConnection_create_connection(mock_create_connection):
+    """Test that DBConnection.create_connection correctly initializes a psycopg2 connection."""
+    # Raises value error with incorrect key (KeyError)
+    with pytest.raises(ValueError):
+        conn = DBConnection(
+            DatabaseConnectionType.LOCAL,
+            DB_NAM='dbname',
+            DB_USER='user',
+            DB_PASS='password',
+            DB_HOST='host',
+            DB_PORT=5432,
+        )
+
+    assert (
+        DBConnection(
+            DatabaseConnectionType.LOCAL,
+            DB_NAME='dbname',
+            DB_USER='user',
+            DB_PASS='password',
+            DB_HOST='host',
+            DB_PORT=5432,
+        ).conn
+        is mock_create_connection.return_value
+    )
+
+    with pytest.raises(ValueError):
+        DBConnection(1)
+    with pytest.raises(AttributeError):
+        DBConnection(DatabaseConnectionType.INVAID)
+
+    assert (
+        DBConnection(DatabaseConnectionType.DB_URL, DB_URL='postgresql://user:password@localhost:5432/dbname').conn
+        is mock_create_connection.return_value
+    )

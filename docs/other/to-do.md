@@ -15,7 +15,7 @@
 - [x] Integrate mkdocs, mkdocs-material, mkdocstrings, mkdocstrings-python
 - [x] Explore security scanners in pipelines
 - [ ] Explore SDK integrations, rather than CLI use
-- [ ] Test with other conn methods (e.g., supabase secret key)
+- [x] Test with other conn methods (e.g., supabase secret key)
 - [x] Separate nullable and non-nullable columns in models in a better way
 - [ ] Acquire [test dbs](https://github.com/morenoh149/postgresDBSamples) for integration tests
 - [x] Finish adding tests for writers and marshalers
@@ -32,3 +32,5 @@
 - [ ] Add to conda
 - [ ] Marketing: Submit repo for reviews with Pydantic docs, Supabase docs, Reddit boards, stackoverflow etc.
 - [ ] Add fake generator for inserts and seed data
+- [ ] Add supabase_secret key connection method
+- [ ] Add mysql and other conns ...

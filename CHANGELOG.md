@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v0.11.0 (2024-08-04)
+
+### Documentation
+
+* docs: correct linkedin url (#36) ([`d55991d`](https://github.com/kmbhm1/supabase-pydantic/commit/d55991dd4fe6cc48e65a9e3d63783e4e8313181f))
+
+### Feature
+
+* feat: add db-url connector (#37)
+
+* feat: add db-url connector ([`42fe787`](https://github.com/kmbhm1/supabase-pydantic/commit/42fe787628ba802f398bae94b41006b7db6c7918))
+
 ## v0.10.0 (2024-08-01)
 
 ### Documentation

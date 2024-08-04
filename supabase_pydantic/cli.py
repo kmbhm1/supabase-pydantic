@@ -1,5 +1,6 @@
 import os
 import pprint
+import re
 from typing import Any
 
 import click
@@ -8,11 +9,13 @@ from click_option_group import OptionGroup, RequiredMutuallyExclusiveOptionGroup
 from dotenv import find_dotenv, load_dotenv
 
 from supabase_pydantic.util import (
+    POSTGRES_SQL_CONN_REGEX,
     AppConfig,
+    DatabaseConnectionType,
     FileWriterFactory,
     ToolConfig,
     clean_directories,
-    construct_table_info_from_postgres,
+    construct_tables,
     format_with_ruff,
     get_standard_jobs,
     get_working_directories,
@@ -126,11 +129,7 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
 #     is_flag=True,
 #     help='Use linked database connection.',
 # )
-# @connect_sources.option(
-#     '--dburl',
-#     type=str,
-#     help='Use database URL for connection.',
-# )
+
 # @connect_sources.option(
 #     '--project-id',
 #     type=str,
@@ -164,6 +163,11 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     is_flag=True,
     help='Use local database connection.',
 )
+@connect_sources.option(
+    '--db-url',
+    type=str,
+    help='Use database URL for connection.',
+)
 @click.option(
     '-d',
     '--dir',
@@ -182,7 +186,7 @@ def gen(
     overwrite: bool,
     local: bool = False,
     # linked: bool = False,
-    # dburl: str | None = None,
+    db_url: str | None = None,
     # project_id: str | None = None,
 ) -> None:
     """Generate models from a PostgreSQL database."""
@@ -192,33 +196,44 @@ def gen(
     #     return
 
     # Load environment variables from .env file & check if they are set correctly
-    if not local:
-        print('Only local connection is supported at the moment. Exiting...')
+    if not local and db_url is None:
+        print('Please provide a connection source. Exiting...')
         return
 
-    load_dotenv(find_dotenv())
-    env_vars: dict[str, str | None] = {
-        'DB_NAME': os.environ.get('DB_NAME', None),
-        'DB_USER': os.environ.get('DB_USER', None),
-        'DB_PASS': os.environ.get('DB_PASS', None),
-        'DB_HOST': os.environ.get('DB_HOST', None),
-        'DB_PORT': os.environ.get('DB_PORT', None),
-    }
-    if any([v is None for v in env_vars.values()]) and local:
-        print(f'Critical environment variables not set: {", ".join([k for k, v in env_vars.items() if v is None])}.')
-        print('Using default local values...')
-        env_vars = local_default_env_configuration()
-
-    # Check if environment variables are set correctly
-    assert check_readiness(env_vars)
+    conn_type: DatabaseConnectionType = DatabaseConnectionType.LOCAL
+    env_vars: dict[str, str | None] = dict()
+    if db_url is not None:
+        print('Checking local database connection.' + db_url)
+        if re.match(POSTGRES_SQL_CONN_REGEX, db_url) is None:
+            print(f'Invalid database URL: "{db_url}". Exiting.')
+            return
+        conn_type = DatabaseConnectionType.DB_URL
+        env_vars['DB_URL'] = db_url
+    else:
+        load_dotenv(find_dotenv())
+        env_vars.update(
+            **{
+                'DB_NAME': os.environ.get('DB_NAME', None),
+                'DB_USER': os.environ.get('DB_USER', None),
+                'DB_PASS': os.environ.get('DB_PASS', None),
+                'DB_HOST': os.environ.get('DB_HOST', None),
+                'DB_PORT': os.environ.get('DB_PORT', None),
+            }
+        )
+        if any([v is None for v in env_vars.values()]) and local:
+            print(
+                f'Critical environment variables not set: {", ".join([k for k, v in env_vars.items() if v is None])}.'
+            )
+            print('Using default local values...')
+            env_vars = local_default_env_configuration()
+        # Check if environment variables are set correctly
+        assert check_readiness(env_vars)
 
     # Get the directories for the generated files
     dirs = get_working_directories(default_directory, frameworks, auto_create=True)
 
     # Get the database schema details
-    tables = construct_table_info_from_postgres(
-        env_vars['DB_NAME'], env_vars['DB_USER'], env_vars['DB_PASS'], env_vars['DB_HOST'], env_vars['DB_PORT']
-    )
+    tables = construct_tables(conn_type, **env_vars)
 
     # Configure the writer jobs
     jobs = {k: v for k, v in get_standard_jobs(models, frameworks, dirs).items() if v.enabled}

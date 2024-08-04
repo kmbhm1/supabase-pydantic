@@ -4,6 +4,13 @@ from enum import Enum
 from typing import TypedDict
 
 
+class DatabaseConnectionType(Enum):
+    """Enum for database connection types."""
+
+    LOCAL = 'local'
+    DB_URL = 'db_url'
+
+
 class AppConfig(TypedDict, total=False):
     default_directory: str
     overwrite_existing_files: bool
@@ -313,3 +320,10 @@ GROUP BY
 ORDER BY
     conrelid::regclass::text, contype DESC;
 """
+
+
+# Regex
+
+POSTGRES_SQL_CONN_REGEX = (
+    r'(postgresql|postgres)://([^:@\s]*(?::[^@\s]*)?@)?(?P<server>[^/\?\s:]+)(:\d+)?(/[^?\s]*)?(\?[^\s]*)?$'
+)

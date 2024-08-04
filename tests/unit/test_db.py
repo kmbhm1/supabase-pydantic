@@ -47,7 +47,9 @@ def test_create_connection_from_db_url(mock_psycopg2):
     """Test that create_connection_from_db_url correctly initializes a psycopg2 connection."""
     mock_connect, _, _ = mock_psycopg2
     conn = create_connection_from_db_url('postgresql://user:password@localhost:5432/dbname')
-    mock_connect.assert_called_once_with(dbname='dbname', user='user', password='password', host='localhost', port=5432)
+    mock_connect.assert_called_once_with(
+        dbname='dbname', user='user', password='password', host='localhost', port='5432'
+    )
     assert conn is mock_psycopg2[1]
 
 

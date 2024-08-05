@@ -12,7 +12,12 @@ A project for generating Pydantic (& other) models from Supabase (& other) datab
 ## Installation
 
 ```bash
-$ pip install supabase-pydantic                 # install
+$ pip install supabase-pydantic
+```
+
+## Configuration
+
+```bash
 $ touch .env                                    # create .env file
 $ echo "DB_NAME=<your_db_name>" >> .env         # add your postgres db name
 $ echo "DB_USER=<your_db_user>" >> .env         # add your postgres db user

@@ -183,7 +183,14 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     help='The directory to save files',
     required=False,
 )
-@click.option('--overwrite/--no-overwrite', default=True, help='Overwrite existing files. Defaults to overwrite.')
+@click.option(
+    '--no-overwrite',
+    'overwrite',
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help='Overwrite existing files. Defaults to overwrite.',
+)
 @click.option(
     '--null-parent-classes',
     is_flag=True,
@@ -204,10 +211,6 @@ def gen(
 ) -> None:
     """Generate models from a PostgreSQL database."""
     # pp.pprint(locals())
-    # if dburl is None and project_id is None and not local and not linked:
-    #     print('Please provide a connection source. Exiting...')
-    #     return
-
     # Load environment variables from .env file & check if they are set correctly
     if not local and db_url is None:
         print('Please provide a connection source. Exiting...')
@@ -256,10 +259,10 @@ def gen(
     factory = FileWriterFactory()
     for job, c in jobs.items():  # c = config
         print(f'Generating {job} models...')
-        p = factory.get_file_writer(
+        p, vf = factory.get_file_writer(
             tables, c.fpath(), c.file_type, c.framework_type, add_null_parent_classes=null_parent_classes
         ).save(overwrite)
-        paths.append(p)
+        paths += [p, vf] if vf is not None else [p]
         print(f'{job} models generated successfully: {p}')
 
     # Format the generated files

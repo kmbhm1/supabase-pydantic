@@ -1,23 +1,29 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX
+from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
 from supabase_pydantic.util.dataclasses import TableInfo
 from supabase_pydantic.util.util import to_pascal_case
 from supabase_pydantic.util.writers.util import generate_unique_filename
 
 
 class AbstractClassWriter(ABC):
-    def __init__(self, table: TableInfo, nullify_base_schema_class: bool = False):
+    def __init__(
+        self, table: TableInfo, class_type: WriterClassType = WriterClassType.BASE, null_defaults: bool = False
+    ):
         self.table = table
-        self.nullify_base_schema_class = nullify_base_schema_class
+        self.class_type = class_type
+        self._null_defaults = null_defaults
         self.name = to_pascal_case(self.table.name)
 
     @staticmethod
     def _proper_name(name: str, use_base: bool = False) -> str:
         return to_pascal_case(name) + (BASE_CLASS_POSTFIX if use_base else '')
 
-    def write_class(self, add_fk: bool = False) -> str:
+    def write_class(
+        self,
+        add_fk: bool = False,
+    ) -> str:
         """Method to write the complete class definition."""
         return self.write_definition() + self.write_docs() + self.write_columns(add_fk)
 
@@ -77,9 +83,16 @@ class AbstractClassWriter(ABC):
 
 
 class AbstractFileWriter(ABC):
-    def __init__(self, tables: list[TableInfo], file_path: str, writer: type[AbstractClassWriter]):
+    def __init__(
+        self,
+        tables: list[TableInfo],
+        file_path: str,
+        writer: type[AbstractClassWriter],
+        add_null_parent_classes: bool = False,
+    ):
         self.tables = tables
         self.file_path = file_path
+        self.add_null_parent_classes = add_null_parent_classes
         self.writer = writer
         self.jstr = '\n\n\n'
 

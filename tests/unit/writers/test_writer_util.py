@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch
+from supabase_pydantic.util.constants import WriterClassType
 from supabase_pydantic.util.writers.util import (
     get_base_class_post_script,
     generate_unique_filename,
@@ -8,16 +9,16 @@ from supabase_pydantic.util.writers.util import (
 
 
 @pytest.mark.parametrize(
-    'table_type, nullable, expected_output',
+    'table_type, class_type, expected_output',
     [
-        ('VIEW', True, 'ViewBaseSchemaNullable'),
-        ('VIEW', False, 'ViewBaseSchema'),
-        ('TABLE', True, 'BaseSchemaNullable'),
-        ('TABLE', False, 'BaseSchema'),
+        ('VIEW', WriterClassType.PARENT, 'ViewBaseSchemaParent'),
+        ('VIEW', WriterClassType.BASE, 'ViewBaseSchema'),
+        ('TABLE', WriterClassType.PARENT, 'BaseSchemaParent'),
+        ('TABLE', WriterClassType.BASE, 'BaseSchema'),
     ],
 )
-def test_get_base_class_post_script(table_type, nullable, expected_output):
-    assert get_base_class_post_script(table_type, nullable) == expected_output
+def test_get_base_class_post_script(table_type, class_type, expected_output):
+    assert get_base_class_post_script(table_type, class_type) == expected_output
 
 
 def test_generate_unique_filename():

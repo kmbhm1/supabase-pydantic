@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.13.0 (2024-08-05)
+
+### Feature
+
+* feat: update version logic to dts and latest schema (#39)
+
+* feat: add ability to inherit from all-null parent classes in pydantic fastapi models
+* feat: change versioning to datetime ([`06193cb`](https://github.com/kmbhm1/supabase-pydantic/commit/06193cb0b8c7d9bd599f5e8198912e64a0499836))
+
 ## v0.12.0 (2024-08-05)
 
 ### Feature

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 
 from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
 from supabase_pydantic.util.util import chunk_text
@@ -23,15 +24,17 @@ def generate_unique_filename(base_name: str, extension: str, directory: str = '.
 
     """
     extension = extension.lstrip('.')
-    file_name = f'{base_name}.{extension}'
-    file_path = os.path.join(directory, file_name)
-    i = 1
-    while os.path.exists(file_path):
-        file_name = f'{base_name}_{i}.{extension}'
-        file_path = os.path.join(directory, file_name)
-        i += 1
+    dt_str = datetime.now(tz=timezone.utc).strftime('%Y%m%d%H%M%S%f')
+    file_name = f'{base_name}_{dt_str}.{extension}'
 
-    return file_path
+    # file_path = os.path.join(directory, file_name)
+    # i = 1
+    # while os.path.exists(file_path):
+    #     file_name = f'{base_name}_{i}.{extension}'
+    #     file_path = os.path.join(directory, file_name)
+    #     i += 1
+
+    return os.path.join(directory, file_name)
 
 
 def get_section_comment(comment_title: str, notes: list[str] | None = None) -> str:

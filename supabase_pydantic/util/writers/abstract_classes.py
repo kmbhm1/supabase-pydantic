@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -109,15 +110,22 @@ class AbstractFileWriter(ABC):
         # filter None and join parts
         return self.jstr.join(p for p in parts if p is not None) + '\n'
 
-    def save(self, overwrite: bool = False) -> str:
+    def save(self, overwrite: bool = False) -> tuple[str, str | None]:
         """Method to save the file."""
         fp = Path(self.file_path)
         base, ext, directory = fp.stem, fp.suffix, str(fp.parent)
-        p = generate_unique_filename(base, ext, directory) if not overwrite and fp.exists() else self.file_path
-        with open(p, 'w') as f:
+        latest_file = os.path.join(directory, f'{base}_latest{ext}')
+        with open(latest_file, 'w') as f:
             f.write(self.write())
 
-        return p
+        if overwrite:
+            versioned_file = generate_unique_filename(base, ext, directory)
+            with open(versioned_file, 'w') as f:
+                f.write(self.write())
+
+            return latest_file, versioned_file
+
+        return latest_file, None
 
     def join(self, strings: list[str]) -> str:
         """Method to join strings."""

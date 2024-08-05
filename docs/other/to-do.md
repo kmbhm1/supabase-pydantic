@@ -34,3 +34,5 @@
 - [ ] Add fake generator for inserts and seed data
 - [ ] Add supabase_secret key connection method
 - [ ] Add mysql and other conns ...
+- [x] Add option for nullified parent classe
+- [ ] Change versioning to timestamp and latest

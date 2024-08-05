@@ -12,6 +12,7 @@ class FileWriterFactory:
         file_path: str,
         file_type: OrmType = OrmType.PYDANTIC,
         framework_type: FrameWorkType = FrameWorkType.FASTAPI,
+        add_null_parent_classes: bool = False,
     ) -> AbstractFileWriter:
         """Get the file writer based on the provided parameters.
 
@@ -20,6 +21,7 @@ class FileWriterFactory:
             file_path (str): The file path.
             file_type (OrmType, optional): The ORM type. Defaults to OrmType.PYDANTIC.
             framework_type (FrameWorkType, optional): The framework type. Defaults to FrameWorkType.FASTAPI.
+            add_null_parent_classes (bool, optional): Add null parent classes for base classes. Defaults to False.
 
         Returns:
             The file writer instance.
@@ -30,7 +32,7 @@ class FileWriterFactory:
             case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI:
                 return SqlAlchemyJSONAPIWriter(tables, file_path)
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI:
-                return PydanticFastAPIWriter(tables, file_path)
+                return PydanticFastAPIWriter(tables, file_path, add_null_parent_classes=add_null_parent_classes)
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI_JSONAPI:
                 return PydanticJSONAPIWriter(tables, file_path)
             case _:

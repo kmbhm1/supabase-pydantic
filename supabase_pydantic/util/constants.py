@@ -4,6 +4,14 @@ from enum import Enum
 from typing import TypedDict
 
 
+class WriterClassType(Enum):
+    """Enum for writer class types."""
+
+    BASE = 'base'
+    BASE_WITH_PARENT = 'base_with_parent'
+    PARENT = 'parent'
+
+
 class DatabaseConnectionType(Enum):
     """Enum for database connection types."""
 

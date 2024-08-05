@@ -1,6 +1,6 @@
 from typing import Any
 
-from supabase_pydantic.util.constants import RelationType
+from supabase_pydantic.util.constants import RelationType, WriterClassType
 from supabase_pydantic.util.dataclasses import ColumnInfo, SortedColumns, TableInfo
 from supabase_pydantic.util.util import get_sqlalchemy_v2_type, to_pascal_case
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
@@ -10,8 +10,10 @@ from supabase_pydantic.util.writers.util import get_section_comment
 
 
 class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
-    def __init__(self, table: TableInfo, nullify_base_schema_class: bool = False):
-        super().__init__(table, nullify_base_schema_class)
+    def __init__(
+        self, table: TableInfo, class_type: WriterClassType = WriterClassType.BASE, null_defaults: bool = False
+    ):
+        super().__init__(table, class_type, null_defaults)
         self._tname = to_pascal_case(self.table.name)
         self.separated_columns: SortedColumns = self.table.sort_and_separate_columns(
             separate_nullable=True, separate_primary_key=True
@@ -27,7 +29,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
 
     def write_docs(self) -> str:
         """Method to generate the docstrings for the class."""
-        qualifier = 'Nullable Base' if self.nullify_base_schema_class else 'Base'
+        qualifier = 'Nullable Base' if self._null_defaults else 'Base'
         return f'\n\t"""{self._tname} {qualifier}."""\n\n\t__tablename__ = "{self.table.name}"\n\n'
 
     def write_column(self, c: ColumnInfo) -> str:
@@ -101,9 +103,13 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
 
 class SqlAlchemyFastAPIWriter(AbstractFileWriter):
     def __init__(
-        self, tables: list[TableInfo], file_path: str, writer: type[AbstractClassWriter] = SqlAlchemyFastAPIClassWriter
+        self,
+        tables: list[TableInfo],
+        file_path: str,
+        writer: type[AbstractClassWriter] = SqlAlchemyFastAPIClassWriter,
+        add_null_parent_classes: bool = False,
     ):
-        super().__init__(tables, file_path, writer)
+        super().__init__(tables, file_path, writer, add_null_parent_classes)
 
     def _dt_imports(
         self, imports: set, default_import: tuple[Any, Any | None] = ('String,str', 'from sqlalchemy import String')
@@ -186,8 +192,10 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
 
 
 class SqlAlchemyJSONAPIClassWriter(SqlAlchemyFastAPIClassWriter):
-    def __init__(self, table: TableInfo, nullify_base_schema_class: bool = False):
-        super().__init__(table, nullify_base_schema_class)
+    def __init__(
+        self, table: TableInfo, class_type: WriterClassType = WriterClassType.BASE, null_defaults: bool = False
+    ):
+        super().__init__(table, class_type, null_defaults)
 
     def write_foreign_columns(self, use_base: bool = False) -> str | None:
         """Method to generate foreign column definitions for the class."""
@@ -211,9 +219,13 @@ class SqlAlchemyJSONAPIClassWriter(SqlAlchemyFastAPIClassWriter):
 
 class SqlAlchemyJSONAPIWriter(SqlAlchemyFastAPIWriter):
     def __init__(
-        self, tables: list[TableInfo], file_path: str, writer: type[AbstractClassWriter] = SqlAlchemyJSONAPIClassWriter
+        self,
+        tables: list[TableInfo],
+        file_path: str,
+        writer: type[AbstractClassWriter] = SqlAlchemyJSONAPIClassWriter,
+        add_null_parent_classes: bool = False,
     ):
-        super().__init__(tables, file_path, writer)
+        super().__init__(tables, file_path, writer, add_null_parent_classes)
 
     def write_imports(self) -> str:
         """Method to generate the imports for the file."""

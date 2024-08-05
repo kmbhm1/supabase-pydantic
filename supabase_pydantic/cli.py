@@ -30,8 +30,10 @@ pp = pprint.PrettyPrinter(indent=4)
 load_dotenv(find_dotenv())
 
 # Standard choices
-model_choices = ['pydantic', 'sqlalchemy']
-framework_choices = ['fastapi', 'fastapi-jsonapi']
+# model_choices = ['pydantic', 'sqlalchemy']
+# framework_choices = ['fastapi', 'fastapi-jsonapi']
+model_choices = ['pydantic']
+framework_choices = ['fastapi']
 
 
 def check_readiness(env_vars: dict[str, str | None]) -> bool:
@@ -144,6 +146,7 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     'models',
     multiple=True,
     default=['pydantic'],
+    show_default=True,
     type=click.Choice(model_choices, case_sensitive=False),
     required=False,
     help='The model type to generate. This can be a space separated list of valid model types. Default is "pydantic".',
@@ -154,6 +157,7 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     'frameworks',
     multiple=True,
     default=['fastapi'],
+    show_default=True,
     type=click.Choice(framework_choices, case_sensitive=False),
     required=False,
     help='The framework to generate code for. This can be a space separated list of valid frameworks. Default is "fastapi".',  # noqa: E501
@@ -174,16 +178,25 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     'default_directory',
     multiple=False,
     default='entities',
+    show_default=True,
     type=click.Path(exists=False, file_okay=False, dir_okay=True, resolve_path=True),
-    help='The directory to save files. Defaults to "entities".',
+    help='The directory to save files',
     required=False,
 )
 @click.option('--overwrite/--no-overwrite', default=True, help='Overwrite existing files. Defaults to overwrite.')
+@click.option(
+    '--null-parent-classes',
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help='In addition to the generated base classes, generate null parent classes for those base classes. For Pydantic models only.',  # noqa: E501
+)
 def gen(
     models: tuple[str],
     frameworks: tuple[str],
     default_directory: str,
     overwrite: bool,
+    null_parent_classes: bool,
     local: bool = False,
     # linked: bool = False,
     db_url: str | None = None,
@@ -243,7 +256,9 @@ def gen(
     factory = FileWriterFactory()
     for job, c in jobs.items():  # c = config
         print(f'Generating {job} models...')
-        p = factory.get_file_writer(tables, c.fpath(), c.file_type, c.framework_type).save(overwrite)
+        p = factory.get_file_writer(
+            tables, c.fpath(), c.file_type, c.framework_type, add_null_parent_classes=null_parent_classes
+        ).save(overwrite)
         paths.append(p)
         print(f'{job} models generated successfully: {p}')
 

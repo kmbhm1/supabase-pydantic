@@ -1,13 +1,13 @@
 import os
 
-from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX
+from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
 from supabase_pydantic.util.util import chunk_text
 
 
-def get_base_class_post_script(table_type: str, nullable: bool) -> str:
+def get_base_class_post_script(table_type: str, class_type: WriterClassType) -> str:
     """Method to generate the header for the base class."""
     post = 'View' + BASE_CLASS_POSTFIX if table_type == 'VIEW' else BASE_CLASS_POSTFIX
-    return post + 'Nullable' if nullable else post
+    return post + 'Parent' if class_type == WriterClassType.PARENT else post
 
 
 def generate_unique_filename(base_name: str, extension: str, directory: str = '.') -> str:

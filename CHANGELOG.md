@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.12.0 (2024-08-05)
+
+### Feature
+
+* feat: add ability to inherit from all-null parent classes in pydantic fastapi models (#38) ([`6c6c673`](https://github.com/kmbhm1/supabase-pydantic/commit/6c6c67320b701c3208775a620f2fc46a89d65380))
+
 ## v0.11.0 (2024-08-04)
 
 ### Documentation

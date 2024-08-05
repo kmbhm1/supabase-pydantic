@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
 import os
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType

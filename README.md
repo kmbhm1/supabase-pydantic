@@ -11,8 +11,16 @@ A project for generating Pydantic (& other) models from Supabase (& other) datab
 
 ## Installation
 
+We recommend installing the package using pip:
+
 ```bash
 $ pip install supabase-pydantic
+```
+
+Installing with conda is also available:
+
+```bash
+conda install -c conda-forge supabase-pydantic
 ```
 
 ## Configuration

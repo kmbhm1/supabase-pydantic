@@ -15,7 +15,7 @@ There are a few evolving dependencies that will need to be installed as well & t
 
 If you have Python 3.10+ installed, you should be fine, but please [report](https://github.com/kmbhm1/supabase-pydantic/issues/new/choose) any issues you encounter.
 
-The package will (soon, tbd) be available in [conda](https://docs.conda.io/en/latest/) under [conda-forge](https://conda-forge.org/): 
+The package is also available on [conda](https://docs.conda.io/en/latest/) under the [conda-forge](https://conda-forge.org/) channel: 
 
 ```bash
 conda install -c conda-forge supabase-pydantic

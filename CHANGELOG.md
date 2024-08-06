@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.13.1 (2024-08-06)
+
+### Documentation
+
+* docs: update conda install instructions (#41) ([`8846811`](https://github.com/kmbhm1/supabase-pydantic/commit/884681173067f45444eb366086d0ebc0efee65f5))
+
+* docs: update README (#40) ([`2487307`](https://github.com/kmbhm1/supabase-pydantic/commit/2487307896bcace748d75b0c6635c179e45dfdf5))
+
 ## v0.13.0 (2024-08-05)
 
 ### Feature

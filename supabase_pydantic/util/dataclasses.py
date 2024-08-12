@@ -1,12 +1,8 @@
 import json
 from dataclasses import asdict, dataclass, field
-from random import random
-from typing import Any, Literal
-
-from faker import Faker
+from typing import Literal
 
 from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, OrmType, RelationType
-from supabase_pydantic.util.fake import generate_fake_data
 from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type
 
 
@@ -179,17 +175,3 @@ class TableInfo(AsDictParent):
             result.remaining = []
 
         return result
-
-    def generate_fake_row(self) -> dict[str, Any]:
-        """Generate a dictionary with column names as keys and fake data as values."""
-        row: dict[str, Any] = {}
-        fake = Faker()
-        for column in self.columns:
-            if column.is_nullable and random() < 0.1:
-                row[column.name] = None
-            else:
-                is_nullable = column.is_nullable if column.is_nullable is not None else False
-                row[column.name] = generate_fake_data(
-                    column.post_gres_datatype, is_nullable, column.max_length, column.name, fake
-                )
-        return row

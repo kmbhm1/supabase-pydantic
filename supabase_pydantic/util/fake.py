@@ -21,22 +21,26 @@ def generate_fake_data(
     if datatype in ['integer', 'bigint']:
         return fake.random_number(digits=(max_length if max_length else 5))
     elif datatype == 'text' or 'varchar' in datatype or datatype == 'character varying':
+        out = 'NULL'
         if name.lower() == 'email':
-            return f'{fake.email()}'
-        return f'{fake.text(max_nb_chars=max_length if max_length else 20)}'
+            out = fake.email()
+        else:
+            out = fake.text(max_nb_chars=max_length if max_length else 100).replace("'", r'\'')  # noqa: Q004
+        return f"'{out}'"
     elif datatype == 'boolean':
         return fake.boolean()
     elif datatype == 'date':
-        return f'{fake.date()}'
+        return f"'{str(fake.date())}'"
     elif datatype == 'timestamp':
-        return f'{fake.date_time()}'
+        return f"'{str(fake.date_time())}'"
     elif datatype == 'timestamp with time zone':
-        return f'{fake.date_time()}'
+        return f"'{str(fake.date_time())}'"
     elif datatype == 'timestamp without time zone':
-        return f'{fake.date_time()}'
+        return f"'{str(fake.date_time())}'"
     elif datatype == 'uuid':
-        return f'{fake.uuid4()}'
+        return f"'{str(fake.uuid4())}'"
     elif datatype in ['json', 'jsonb']:
-        return f"'{json.dumps(fake.profile(), cls=CustomJsonEncoder)}'"
+        out = json.dumps(fake.profile(), cls=CustomJsonEncoder).replace("'", '')
+        return f"'{out}'"  # noqa: Q004
     else:
         return 'NULL'

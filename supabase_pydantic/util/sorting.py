@@ -78,8 +78,8 @@ def reorganize_tables_by_relationships(sorted_tables: list[str], relationships: 
     """Reorganize the initial sorted list of tables based on relationships."""
     new_sorted_tables = sorted_tables.copy()
     for relationship in relationships:
-        table = relationship.table_name[1]
-        foreign_table = relationship.related_table_name[1]
+        table = relationship.table_name
+        foreign_table = relationship.related_table_name
         relation_type = relationship.relation_type
 
         # Only consider non-many-to-many relationships

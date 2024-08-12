@@ -118,7 +118,7 @@ class AbstractFileWriter(ABC):
         with open(latest_file, 'w') as f:
             f.write(self.write())
 
-        if overwrite:
+        if not overwrite:
             versioned_file = generate_unique_filename(base, ext, directory)
             with open(versioned_file, 'w') as f:
                 f.write(self.write())

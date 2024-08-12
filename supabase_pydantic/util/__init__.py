@@ -22,7 +22,14 @@ from .db import (
 )
 from .fake import generate_fake_data
 from .json import CustomJsonEncoder
-from .sorting import format_with_ruff, run_isort
+from .sorting import (
+    build_dependency_graph,
+    format_with_ruff,
+    generate_seed_data,
+    run_isort,
+    sort_tables_for_insert,
+    topological_sort,
+)
 from .util import (
     adapt_type_map,
     clean_directories,
@@ -32,7 +39,7 @@ from .util import (
     local_default_env_configuration,
     to_pascal_case,
 )
-from .writers import FileWriterFactory, generate_unique_filename
+from .writers import FileWriterFactory, generate_unique_filename, write_seed_file
 
 __all__ = [
     'AppConfig',
@@ -56,6 +63,7 @@ __all__ = [
     'ToolConfig',
     'WriterConfig',
     'adapt_type_map',
+    'build_dependency_graph',
     'check_connection',
     'clean_directories',
     'construct_tables',
@@ -63,11 +71,15 @@ __all__ = [
     'create_directories_if_not_exist',
     'format_with_ruff',
     'generate_fake_data',
+    'generate_seed_data',
     'generate_unique_filename',
     'get_standard_jobs',
     'get_working_directories',
     'local_default_env_configuration',
     'query_database',
     'run_isort',
+    'sort_tables_for_insert',
     'to_pascal_case',
+    'topological_sort',
+    'write_seed_file',
 ]

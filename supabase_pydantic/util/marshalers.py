@@ -4,7 +4,7 @@ import pprint
 import re
 
 from supabase_pydantic.util.constants import PYDANTIC_TYPE_MAP, RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -110,6 +110,46 @@ def add_constraints_to_table_details(tables: dict, constraints: list) -> None:
                 constraint_definition=constraint_definition,
             )
             tables[table_key].add_constraint(constraint)
+
+
+def add_relationships_to_table_details(tables: dict, fk_details: list) -> None:
+    """Add relationships to the table details."""
+    for row in fk_details:
+        (
+            table_schema,
+            table_name,
+            column_name,
+            foreign_table_schema,
+            foreign_table_name,
+            foreign_column_name,
+            constraint_name,
+        ) = row
+        table_key = (table_schema, table_name)
+        foreign_table_key = (foreign_table_schema, foreign_table_name)
+        fk_columns = [fk for fk in tables[table_key].foreign_keys if fk.foreign_table_name == foreign_table_name]
+        if len(fk_columns) == 1:
+            # One-to-Many or One-to-One
+            related_table_columns = [c.name for c in tables[foreign_table_key].columns]
+            if fk_columns[0].foreign_column_name in related_table_columns:
+                relation_type = RelationType.ONE_TO_ONE
+            else:
+                relation_type = RelationType.ONE_TO_MANY
+        else:
+            # Many-to-Many
+            relation_type = RelationType.MANY_TO_MANY
+
+        if table_key in tables:
+            tables[table_key].relationships.append(
+                RelationshipInfo(
+                    **{
+                        'table_name': table_key[1],
+                        'related_table_name': foreign_table_key[1],
+                        'relation_type': relation_type,
+                    }
+                )
+            )
+        else:
+            print('Table key not found in tables', table_key)
 
 
 def update_columns_with_constraints(tables: dict) -> None:
@@ -223,6 +263,7 @@ def construct_table_info(column_details: list, fk_details: list, constraints: li
     tables = get_table_details_from_columns(column_details)
     add_foreign_key_info_to_table_details(tables, fk_details)
     add_constraints_to_table_details(tables, constraints)
+    add_relationships_to_table_details(tables, fk_details)
 
     # updating
     update_columns_with_constraints(tables)

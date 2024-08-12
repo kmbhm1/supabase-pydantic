@@ -17,11 +17,13 @@ from supabase_pydantic.util import (
     clean_directories,
     construct_tables,
     format_with_ruff,
+    generate_seed_data,
     get_standard_jobs,
     get_working_directories,
     local_default_env_configuration,
     run_isort,
 )
+from supabase_pydantic.util.writers.util import write_seed_file
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)
@@ -162,6 +164,14 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     required=False,
     help='The framework to generate code for. This can be a space separated list of valid frameworks. Default is "fastapi".',  # noqa: E501
 )
+@generator_config.option(
+    '--seed',
+    'create_seed_data',
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help='Generate seed data for the tables if possible.',
+)
 @connect_sources.option(
     '--local',
     is_flag=True,
@@ -188,8 +198,8 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     'overwrite',
     is_flag=True,
     show_default=True,
-    default=False,
-    help='Overwrite existing files. Defaults to overwrite.',
+    default=True,
+    help='Overwrite existing files.',
 )
 @click.option(
     '--null-parent-classes',
@@ -204,6 +214,7 @@ def gen(
     default_directory: str,
     overwrite: bool,
     null_parent_classes: bool,
+    create_seed_data: bool,
     local: bool = False,
     # linked: bool = False,
     db_url: str | None = None,
@@ -274,6 +285,18 @@ def gen(
     except Exception as e:
         print('An error occurred while running isort and ruff: ')
         print(e)
+
+    # Generate seed data
+    if create_seed_data:
+        print('Generating seed data...')
+        try:
+            seed_data = generate_seed_data(tables)
+            d = dirs.get('default')
+            fname = os.path.join(d if d is not None else 'entities', 'seed.sql')
+            fpaths = write_seed_file(seed_data, fname, overwrite)
+            print(f'Seed data generated successfully: {", ".join(fpaths)}')
+        except Exception as e:
+            print('Error:', e)
 
 
 if __name__ == '__main__':

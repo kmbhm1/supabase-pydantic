@@ -78,6 +78,13 @@ class SortedColumns:
 
 
 @dataclass
+class RelationshipInfo(AsDictParent):
+    table_name: str
+    related_table_name: str
+    relation_type: RelationType | None = None  # E.g., "One-to-One", "One-to-Many"
+
+
+@dataclass
 class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
@@ -86,6 +93,7 @@ class TableInfo(AsDictParent):
     columns: list[ColumnInfo] = field(default_factory=list)
     foreign_keys: list[ForeignKeyInfo] = field(default_factory=list)
     constraints: list[ConstraintInfo] = field(default_factory=list)
+    relationships: list[RelationshipInfo] = field(default_factory=list)
     generated_data: list[dict] = field(default_factory=list)
 
     def add_column(self, column: ColumnInfo) -> None:

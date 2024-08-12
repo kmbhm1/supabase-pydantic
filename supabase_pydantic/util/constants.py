@@ -3,6 +3,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TypedDict
 
+STD_PYDANTIC_FILENAME = 'schemas.py'
+STD_SQLALCHEMY_FILENAME = 'database.py'
+STD_SEED_DATA_FILENAME = 'seed.sql'
+
 
 class WriterClassType(Enum):
     """Enum for writer class types."""

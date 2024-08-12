@@ -79,6 +79,15 @@ class RelationshipInfo(AsDictParent):
     related_table_name: str
     relation_type: RelationType | None = None  # E.g., "One-to-One", "One-to-Many"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RelationshipInfo):
+            return NotImplemented
+        return (
+            self.table_name == other.table_name
+            and self.related_table_name == other.related_table_name
+            and self.relation_type == other.relation_type
+        )
+
 
 @dataclass
 class TableInfo(AsDictParent):

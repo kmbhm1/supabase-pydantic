@@ -296,7 +296,7 @@ def gen(
             fpaths = write_seed_file(seed_data, fname, overwrite)
             print(f'Seed data generated successfully: {", ".join(fpaths)}')
         except Exception as e:
-            print('Error:', e)
+            print('Error creating seed data:', e)
 
 
 if __name__ == '__main__':

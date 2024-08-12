@@ -1,10 +1,11 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.marshalers import (
     add_constraints_to_table_details,
     add_foreign_key_info_to_table_details,
+    add_relationships_to_table_details,
     analyze_bridge_tables,
     analyze_table_relationships,
     column_name_is_reserved,
@@ -474,3 +475,31 @@ def test_construct_table_info(
     assert isinstance(tables[0], TableInfo) and isinstance(
         tables[1], TableInfo
     ), 'Output should be a list of TableInfo objects'
+
+
+def test_add_relationships_to_table_details():
+    # Mocking the table structures
+    table1 = MagicMock()
+    table1.foreign_keys = [MagicMock(foreign_table_name='related_table', foreign_column_name='id')]
+    table1.columns = [MagicMock(name='id'), MagicMock(name='column1')]
+
+    related_table = MagicMock()
+    related_table.columns = [MagicMock(name='id'), MagicMock(name='column2')]
+
+    tables = {('schema1', 'table1'): table1, ('schema1', 'related_table'): related_table}
+
+    fk_details = [('schema1', 'table1', 'column1', 'schema1', 'related_table', 'id', 'fk1')]
+
+    # Mock the relationships list where relationships will be added
+    table1.relationships = []
+
+    # Call the function
+    add_relationships_to_table_details(tables, fk_details)
+
+    # Assert that the relationship was correctly added
+    expected_relationship = RelationshipInfo(
+        table_name='table1', related_table_name='related_table', relation_type=RelationType.ONE_TO_MANY
+    )
+
+    assert len(table1.relationships) == 1
+    assert table1.relationships[0] == expected_relationship

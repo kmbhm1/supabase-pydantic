@@ -435,6 +435,7 @@ def test_reciprocal_foreign_keys(setup_analyze_tables):
 @patch('supabase_pydantic.util.marshalers.get_table_details_from_columns')
 @patch('supabase_pydantic.util.marshalers.add_foreign_key_info_to_table_details')
 @patch('supabase_pydantic.util.marshalers.add_constraints_to_table_details')
+@patch('supabase_pydantic.util.marshalers.add_relationships_to_table_details')
 @patch('supabase_pydantic.util.marshalers.update_columns_with_constraints')
 @patch('supabase_pydantic.util.marshalers.analyze_bridge_tables')
 @patch('supabase_pydantic.util.marshalers.analyze_table_relationships')
@@ -443,6 +444,7 @@ def test_construct_table_info(
     mock_analyze_bridges,
     mock_update_constraints,
     mock_add_constraints,
+    mock_add_relationships,
     mock_add_fk,
     mock_get_details,
     column_construct_test_details,
@@ -451,8 +453,8 @@ def test_construct_table_info(
 ):
     # Setup mocks
     mock_get_details.return_value = {
-        'public.users': MagicMock(spec=TableInfo),
-        'public.orders': MagicMock(spec=TableInfo),
+        ('public', 'users'): MagicMock(spec=TableInfo),
+        ('public', 'orders'): MagicMock(spec=TableInfo),
     }
 
     # Call the function
@@ -464,6 +466,7 @@ def test_construct_table_info(
     mock_add_constraints.assert_called_once()
     mock_update_constraints.assert_called_once()
     mock_analyze_bridges.assert_called_once()
+    mock_add_relationships.assert_called_once()
     assert mock_analyze_relationships.call_count == 2, 'analyze_table_relationships should be called twice'
 
     # Assert the output

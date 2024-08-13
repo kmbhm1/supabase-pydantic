@@ -15,8 +15,8 @@ $ sb-pydantic gen --type pydantic --framework fastapi --local
 PostGres connection is open.
 PostGres connection is closed.
 Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/project/entities/fastapi/schemas.py
-File formatted successfully: /path/to/project/entities/fastapi/schemas.py
+FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
 ```
 
 Some users may find it more convenient to integrate a Makefile command:

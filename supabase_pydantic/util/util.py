@@ -6,6 +6,8 @@ from supabase_pydantic.util.constants import (
     PYDANTIC_TYPE_MAP,
     SQLALCHEMY_TYPE_MAP,
     SQLALCHEMY_V2_TYPE_MAP,
+    STD_PYDANTIC_FILENAME,
+    STD_SQLALCHEMY_FILENAME,
     FrameWorkType,
     OrmType,
     WriterConfig,
@@ -179,7 +181,7 @@ def get_standard_jobs(
     models: tuple[str], frameworks: tuple[str], dirs: dict[str, str | None]
 ) -> dict[str, WriterConfig]:
     """Get the standard jobs for the writer."""
-    pydantic_fname, sqlalchemy_fname = 'schemas.py', 'database.py'
+    pydantic_fname, sqlalchemy_fname = STD_PYDANTIC_FILENAME, STD_SQLALCHEMY_FILENAME
 
     jobs: dict[str, WriterConfig] = {}
     if 'fastapi' in dirs and dirs['fastapi'] is not None:

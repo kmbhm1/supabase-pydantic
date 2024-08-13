@@ -96,6 +96,8 @@ def mock_database(monkeypatch):
         [('table1', 'column1', 'type1')],  # Simulated response for table and column details
         [('table1', 'column1', 'fk_table1', 'fk_column1')],  # Simulated foreign key details
         [('constraint1', 'type1', 'details1')],  # Simulated constraints details
+        [('table1', 'column1', 'enum1')],  # Simulated response for enum types
+        [('table1', 'column1', 'enum1', 'enum2')],  # Simulated response for enum type mapping to columns
     ]
     mock_create_conn = MagicMock(return_value=mock_conn)
     monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)

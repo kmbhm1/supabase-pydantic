@@ -190,14 +190,13 @@ def test_save_method():
         result = writer.save(overwrite=False)
 
         # Assert the generate_unique_filename was called correctly
-        # mock_unique_filename.assert_called_once_with('test_file', '.py', 'directory')
-        mock_unique_filename.assert_not_called()
+        mock_unique_filename.assert_called_once_with('test_file', '.py', 'directory')
 
         # Assert the file was opened with the correct filename and mode
-        mock_open.assert_called_once_with('directory/test_file_latest.py', 'w')
+        mock_open.assert_called_with('test_file_unique.py', 'w')
 
         # Assert the correct path is returned
-        assert result == ('directory/test_file_latest.py', None)
+        assert result == ('directory/test_file_latest.py', 'test_file_unique.py')
 
 
 def test_abstract_file_writer_type_error_on_implementation():

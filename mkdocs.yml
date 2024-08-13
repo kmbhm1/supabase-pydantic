@@ -54,6 +54,7 @@ nav:
     - Recent Changes: getting-started/changelog.md
   - Examples:
     - Create a Slack Clone: examples/setup-slack-simple-fastapi.md
+    - Add seed.sql Data: examples/add-seed-sql-data.md
   - API:
     - API Reference: api/api-reference.md
 

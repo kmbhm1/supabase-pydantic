@@ -25,9 +25,9 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Lint checking
-        run: poetry run ruff check -v --output-format=github .
+        run: poetry run ruff check -v --output-format=github --exclude=poc .
       - name: Type checking
-        run: poetry run mypy -v .
+        run: poetry run mypy -v --exclude='^poc/' .
       - name: Test with Pytest
         run: poetry run pytest -v -s --cov=supabase_pydantic --cov-report=term-missing
       - name: Coverage check
@@ -93,11 +93,9 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-
       #----------------------------------------------
       #   Run Tests & Upload Coverage
       #----------------------------------------------
-
       - name: Run tests and collect coverage
         run: poetry run pytest -v -s --cov=supabase_pydantic --cov-report=xml
       - name: Upload coverage to Codecov

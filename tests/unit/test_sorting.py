@@ -1,7 +1,24 @@
-import pytest
+from math import inf
+from unittest.mock import patch
 import subprocess
-from supabase_pydantic.util.sorting import format_with_ruff, run_isort, get_graph_from_tables, topological_sort
-from supabase_pydantic.util.dataclasses import ForeignKeyInfo, TableInfo
+
+import pytest
+from supabase_pydantic.util.constants import RelationType
+from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.sorting import (
+    build_dependency_graph,
+    format_with_ruff,
+    generate_seed_data,
+    get_max_rows,
+    get_num_unique_rows,
+    get_unique_data,
+    reorganize_tables_by_relationships,
+    run_isort,
+    separate_tables_list_by_type,
+    sort_tables_by_in_degree,
+    sort_tables_for_insert,
+    topological_sort,
+)
 
 
 def test_run_isort_success(mocker, capsys):
@@ -50,142 +67,383 @@ def test_format_with_ruff_failure_fails_silently(mocker, capsys):
     assert error_output not in err
 
 
-def test_get_graph_from_tables_empty():
-    """Test with no tables."""
-    tables = []
-    graph, indegree = get_graph_from_tables(tables)
-    assert graph == {}
-    assert indegree == {}
+def test_build_dependency_graph():
+    table_a = TableInfo(name='A')
+    table_b = TableInfo(
+        name='B',
+        foreign_keys=[
+            ForeignKeyInfo(foreign_table_name='A', constraint_name='foo', column_name='id', foreign_column_name='baz')
+        ],
+    )
+    table_c = TableInfo(
+        name='C',
+        foreign_keys=[
+            ForeignKeyInfo(foreign_table_name='B', constraint_name='foo', column_name='id', foreign_column_name='baz')
+        ],
+    )
+    table_d = TableInfo(
+        name='D',
+        foreign_keys=[
+            ForeignKeyInfo(foreign_table_name='A', constraint_name='foo', column_name='id', foreign_column_name='baz')
+        ],
+    )
+
+    tables = [table_a, table_b, table_c, table_d]
+
+    graph, in_degree = build_dependency_graph(tables)
+
+    expected_graph = {'A': ['B', 'D'], 'B': ['C']}
+
+    expected_in_degree = {'A': 0, 'B': 1, 'C': 1, 'D': 1}
+
+    assert graph == expected_graph
+    assert in_degree == expected_in_degree
 
 
-def test_get_graph_from_tables():
-    """Test normal functionality."""
-    tables = [
-        TableInfo(
-            name='table1',
-            foreign_keys=[
-                ForeignKeyInfo(
-                    constraint_name='fk_table1_table2',
-                    column_name='table1_id',
-                    foreign_table_name='table2',
-                    foreign_column_name='table2_id',
-                )
-            ],
-        ),
-        TableInfo(name='table2', foreign_keys=[]),
+def test_topological_sort():
+    table_a = TableInfo(name='A')
+    table_b = TableInfo(
+        name='B',
+        foreign_keys=[
+            ForeignKeyInfo(foreign_table_name='A', constraint_name='foo', column_name='id', foreign_column_name='baz')
+        ],
+    )
+    table_c = TableInfo(
+        name='C',
+        foreign_keys=[
+            ForeignKeyInfo(foreign_table_name='B', constraint_name='foo', column_name='id', foreign_column_name='baz')
+        ],
+    )
+    table_d = TableInfo(
+        name='D',
+        foreign_keys=[
+            ForeignKeyInfo(foreign_table_name='A', constraint_name='foo', column_name='id', foreign_column_name='baz')
+        ],
+    )
+
+    tables = [table_a, table_b, table_c, table_d]
+
+    in_degree, graph = topological_sort(tables)
+
+    expected_graph = {'A': ['B', 'D'], 'B': ['C']}
+
+    expected_in_degree = {'A': 0, 'B': 1, 'C': 1, 'D': 1}
+
+    assert graph == expected_graph
+    assert in_degree == expected_in_degree
+
+
+def test_sort_tables_by_in_degree():
+    in_degree = {'A': 0, 'B': 1, 'C': 2, 'D': 1}
+
+    sorted_tables = sort_tables_by_in_degree(in_degree)
+
+    expected_sorted_tables = ['A', 'B', 'D', 'C']
+
+    assert sorted_tables == expected_sorted_tables
+
+
+def test_reorganize_tables_by_relationships_no_reordering_needed():
+    sorted_tables = ['A', 'B', 'C']
+    relationships = [
+        RelationshipInfo(table_name='B', related_table_name='A', relation_type=RelationType.ONE_TO_MANY),
+        RelationshipInfo(table_name='C', related_table_name='B', relation_type=RelationType.ONE_TO_ONE),
     ]
-    graph, indegree = get_graph_from_tables(tables)
-    assert graph == {'table2': ['table1']}
-    assert indegree == {'table1': 1, 'table2': 0}
+
+    result = reorganize_tables_by_relationships(sorted_tables, relationships)
+
+    # No reordering needed because foreign tables are already before the dependent tables
+    expected_result = ['A', 'B', 'C']
+    assert result == expected_result
 
 
-def test_topological_sort_no_cycle():
-    """Test sorting without a cycle."""
-    tables = [
-        TableInfo(
-            name='table1',
-            foreign_keys=[
-                ForeignKeyInfo(
-                    constraint_name='fk_table1_table2',
-                    column_name='table1_id',
-                    foreign_table_name='table2',
-                    foreign_column_name='table2_id',
-                )
-            ],
-        ),
-        TableInfo(name='table2', foreign_keys=[]),
+def test_reorganize_tables_by_relationships_reordering_needed():
+    sorted_tables = ['A', 'B', 'C']
+    relationships = [
+        RelationshipInfo(table_name='A', related_table_name='B', relation_type=RelationType.ONE_TO_MANY),
+        RelationshipInfo(table_name='B', related_table_name='C', relation_type=RelationType.ONE_TO_ONE),
     ]
 
-    result = topological_sort(tables)
-    assert [table.name for table in result] == ['table2', 'table1']
+    result = reorganize_tables_by_relationships(sorted_tables, relationships)
+
+    # Reordering needed: "C" should come before "B" and "B" before "A"
+    expected_result = ['C', 'B', 'A']
+    assert result == expected_result
 
 
-def test_topological_sort_with_cycle_causes_error():
-    """Test detection of cycle."""
-    tables = [
-        TableInfo(
-            name='table1',
-            foreign_keys=[
-                ForeignKeyInfo(
-                    constraint_name='fk_table1_table2',
-                    column_name='table1_id',
-                    foreign_table_name='table2',
-                    foreign_column_name='table2_id',
-                )
-            ],
-        ),
-        TableInfo(
-            name='table2',
-            foreign_keys=[
-                ForeignKeyInfo(
-                    constraint_name='fk_table2_table1',
-                    column_name='table2_id',
-                    foreign_table_name='table1',
-                    foreign_column_name='table1_id',
-                )
-            ],
-        ),
+def test_reorganize_tables_by_relationships_many_to_many_ignored():
+    sorted_tables = ['A', 'B', 'C']
+    relationships = [
+        RelationshipInfo(table_name='A', related_table_name='B', relation_type=RelationType.MANY_TO_MANY),
+        RelationshipInfo(table_name='B', related_table_name='C', relation_type=RelationType.ONE_TO_ONE),
     ]
-    with pytest.raises(ValueError) as excinfo:
-        topological_sort(tables)
-    assert 'Cycle detected in the graph' in str(excinfo.value)
+
+    result = reorganize_tables_by_relationships(sorted_tables, relationships)
+
+    # MANY_TO_MANY relationship should be ignored, so no reordering based on A-B
+    expected_result = ['A', 'C', 'B']
+    assert result == expected_result
 
 
-def test_topological_sort_success():
-    """Test topological sort successfully orders tables without a cycle."""
+def test_reorganize_tables_by_relationships_complex_case():
+    sorted_tables = ['A', 'B', 'C', 'D']
+    relationships = [
+        RelationshipInfo(table_name='B', related_table_name='A', relation_type=RelationType.ONE_TO_ONE),
+        RelationshipInfo(table_name='C', related_table_name='B', relation_type=RelationType.ONE_TO_ONE),
+        RelationshipInfo(table_name='D', related_table_name='A', relation_type=RelationType.ONE_TO_ONE),
+    ]
+
+    result = reorganize_tables_by_relationships(sorted_tables, relationships)
+
+    # Expected reordering based on relationships
+    expected_result = ['A', 'B', 'C', 'D']
+    assert result == expected_result
+
+
+def test_separate_tables_list_by_type_mixed():
     tables = [
+        TableInfo(name='A', table_type='BASE_TABLE'),
+        TableInfo(name='B', table_type='VIEW'),
+        TableInfo(name='C', table_type='BASE_TABLE'),
+        TableInfo(name='D', table_type='VIEW'),
+    ]
+    table_list = ['A', 'B', 'C', 'D']
+
+    base_tables, views = separate_tables_list_by_type(tables, table_list)
+
+    assert base_tables == ['A', 'C']
+    assert views == ['B', 'D']
+
+
+def test_separate_tables_list_by_type_all_views():
+    tables = [TableInfo(name='A', table_type='VIEW'), TableInfo(name='B', table_type='VIEW')]
+    table_list = ['A', 'B']
+
+    base_tables, views = separate_tables_list_by_type(tables, table_list)
+
+    assert base_tables == []
+    assert views == ['A', 'B']
+
+
+def test_separate_tables_list_by_type_all_base_tables():
+    tables = [TableInfo(name='A', table_type='BASE_TABLE'), TableInfo(name='B', table_type='BASE_TABLE')]
+    table_list = ['A', 'B']
+
+    base_tables, views = separate_tables_list_by_type(tables, table_list)
+
+    assert base_tables == ['A', 'B']
+    assert views == []
+
+
+def test_separate_tables_list_by_type_table_not_found():
+    tables = [TableInfo(name='A', table_type='BASE_TABLE'), TableInfo(name='B', table_type='VIEW')]
+    table_list = ['A', 'B', 'C']  # "C" is not in tables
+
+    base_tables, views = separate_tables_list_by_type(tables, table_list)
+
+    assert base_tables == ['A']
+    assert views == ['B']
+
+
+def test_sort_tables_for_insert_simple():
+    tables = [
+        TableInfo(name='A', table_type='BASE_TABLE'),
         TableInfo(
-            name='table1',
+            name='B',
+            table_type='BASE_TABLE',
             foreign_keys=[
                 ForeignKeyInfo(
-                    constraint_name='fk_table1_table3',
-                    column_name='table1_id',
-                    foreign_table_name='table3',
-                    foreign_column_name='table3_id',
+                    foreign_table_name='A', constraint_name='foo', column_name='id', foreign_column_name='baz'
                 )
             ],
         ),
-        TableInfo(name='table2', foreign_keys=[]),
         TableInfo(
-            name='table3',
+            name='C',
+            table_type='BASE_TABLE',
             foreign_keys=[
                 ForeignKeyInfo(
-                    constraint_name='fk_table3_table2',
-                    column_name='table3_id',
-                    foreign_table_name='table2',
-                    foreign_column_name='table2_id',
+                    foreign_table_name='B', constraint_name='foo', column_name='id', foreign_column_name='baz'
                 )
             ],
         ),
+        TableInfo(name='D', table_type='VIEW'),
     ]
-    sorted_tables = topological_sort(tables)
-    # Verify that tables are sorted in a valid topological order
-    sorted_table_names = [table.name for table in sorted_tables]
-    assert sorted_table_names == [
-        'table2',
-        'table3',
-        'table1',
-    ], f"Expected ['table2', 'table3', 'table1'], got {sorted_table_names}"
+
+    base_tables, views = sort_tables_for_insert(tables)
+
+    # "C" depends on "B", and "B" depends on "A", so the order should be A, B, C
+    assert base_tables == ['A', 'B', 'C']
+    assert views == ['D']
 
 
-def test_topological_sort_multiple_trees():
-    """Test topological sort with multiple independent dependency trees."""
+def test_sort_tables_for_insert_complex():
     tables = [
-        TableInfo(name='table1', foreign_keys=[]),
+        TableInfo(name='A', table_type='BASE_TABLE'),
         TableInfo(
-            name='table2',
-            foreign_keys=[ForeignKeyInfo('fk_table2_table4', 'id', 'table4', 'id')],
+            name='B',
+            table_type='BASE_TABLE',
+            foreign_keys=[
+                ForeignKeyInfo(
+                    foreign_table_name='A', constraint_name='foo', column_name='id', foreign_column_name='baz'
+                )
+            ],
         ),
-        TableInfo(name='table3', foreign_keys=[]),
-        TableInfo(name='table4', foreign_keys=[]),
+        TableInfo(
+            name='C',
+            table_type='BASE_TABLE',
+            foreign_keys=[
+                ForeignKeyInfo(
+                    foreign_table_name='B', constraint_name='foo', column_name='id', foreign_column_name='baz'
+                )
+            ],
+        ),
+        TableInfo(
+            name='D',
+            table_type='BASE_TABLE',
+            relationships=[
+                RelationshipInfo(table_name='D', related_table_name='A', relation_type=RelationType.ONE_TO_ONE)
+            ],
+        ),
+        TableInfo(name='E', table_type='VIEW'),
     ]
-    sorted_tables = topological_sort(tables)
-    # This test may have multiple valid outputs due to independent trees
-    assert set(table.name for table in sorted_tables) == {'table1', 'table2', 'table3', 'table4'}
+
+    base_tables, views = sort_tables_for_insert(tables)
+
+    # Expected order should consider foreign keys and relationships
+    assert base_tables == ['A', 'D', 'B', 'C']
+    assert views == ['E']
 
 
-def test_topological_sort_single_table():
-    """Test topological sort with a single table, no dependencies."""
-    tables = [TableInfo(name='table1', foreign_keys=[])]
-    sorted_tables = topological_sort(tables)
-    assert sorted_tables == tables  # The single table remains in its position
+# Test case for generate_seed_data
+@patch('random.random', return_value=0.5)  # Control the number of rows
+@patch('random.choice', side_effect=lambda x: x[0])  # Control choice function
+@patch(
+    'supabase_pydantic.util.fake.generate_fake_data',
+    side_effect=lambda datatype, nullable, max_length, name: f'fake_{name}',
+)
+def test_generate_seed_data(mock_generate_fake_data, mock_choice, mock_random):
+    # Define the columns and foreign keys
+    columns_a = [
+        ColumnInfo(name='id', post_gres_datatype='integer', datatype='int4', primary=True),
+        ColumnInfo(name='name', post_gres_datatype='text', datatype='str', is_unique=True),
+    ]
+
+    columns_b = [
+        ColumnInfo(name='id', post_gres_datatype='integer', datatype='int4', primary=True),
+        ColumnInfo(name='a_id', post_gres_datatype='integer', datatype='int4', is_foreign_key=True),
+    ]
+
+    foreign_keys_b = [
+        ForeignKeyInfo(column_name='a_id', foreign_table_name='A', foreign_column_name='id', constraint_name='foo')
+    ]
+
+    # Define the tables
+    table_a = TableInfo(name='A', columns=columns_a)
+    table_b = TableInfo(name='B', columns=columns_b, foreign_keys=foreign_keys_b)
+
+    tables = [table_a, table_b]
+
+    # Call the function
+    seed_data = generate_seed_data(tables)
+
+    # Expected seed data structure
+    expected_seed_data = {
+        'A': [['id', 'name'], ['fake_id', 'fake_name'], ['fake_id', 'fake_name']],
+        'B': [['id', 'a_id'], ['fake_id', 'fake_id'], ['fake_id', 'fake_id']],
+    }
+
+    # assert seed_data == expected_seed_data
+    assert seed_data.keys() == expected_seed_data.keys()
+    assert seed_data['A'][0] == expected_seed_data['A'][0]
+    assert seed_data['B'][0] == expected_seed_data['B'][0]
+
+    for i in range(1, len(seed_data['A'])):
+        assert str(seed_data['A'][i][0]).isnumeric() or seed_data['A'][i][0] == 'NULL'
+        assert str(seed_data['A'][i][1]).isalpha or seed_data['A'][i][0] == 'NULL'
+
+    for i in range(1, len(seed_data['B'])):
+        assert str(seed_data['B'][i][0]).isnumeric() or seed_data['B'][i][0] == 'NULL'
+        assert str(seed_data['B'][i][1]).isnumeric() or seed_data['B'][i][1] == 'NULL'
+
+
+@pytest.fixture
+def table_with_unique_columns():
+    return TableInfo(
+        name='C',
+        columns=[
+            ColumnInfo(
+                name='id',
+                user_defined_values=['1', '2', '3'],
+                is_unique=True,
+                datatype='int4',
+                post_gres_datatype='integer',
+            ),
+            ColumnInfo(
+                name='type', user_defined_values=['A', 'B'], is_unique=True, datatype='str', post_gres_datatype='text'
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def table_with_infinite_possible_values():
+    return TableInfo(
+        name='A',
+        columns=[
+            ColumnInfo(
+                name='id', user_defined_values=None, is_unique=True, datatype='int4', post_gres_datatype='integer'
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def table_with_no_unique_constraints():
+    return TableInfo(
+        name='B',
+        columns=[
+            ColumnInfo(
+                name='id',
+                user_defined_values=['1', '2', '3'],
+                is_unique=False,
+                datatype='int4',
+                post_gres_datatype='integer',
+            )
+        ],
+    )
+
+
+# Tests
+def test_get_num_unique_rows_finite(table_with_unique_columns):
+    assert get_num_unique_rows(table_with_unique_columns) == 6
+
+
+def test_get_num_unique_rows_infinite(table_with_infinite_possible_values):
+    assert get_num_unique_rows(table_with_infinite_possible_values) == inf
+
+
+def test_get_num_unique_rows_one_unique(table_with_no_unique_constraints):
+    assert get_num_unique_rows(table_with_no_unique_constraints) == 1
+
+
+def test_get_max_rows_has_unique(table_with_unique_columns, mocker):
+    mocker.patch('supabase_pydantic.util.sorting.get_num_unique_rows', return_value=6)
+    mocker.patch.object(TableInfo, 'has_unique_constraint', return_value=True)
+    assert get_max_rows(table_with_unique_columns) == 6
+
+
+def test_get_max_rows_no_unique(table_with_no_unique_constraints, mocker):
+    mocker.patch('supabase_pydantic.util.sorting.get_num_unique_rows', return_value=inf)
+    mocker.patch.object(TableInfo, 'has_unique_constraint', return_value=False)
+    result = get_max_rows(table_with_no_unique_constraints)
+    assert 5 <= result <= 15
+
+
+def test_get_unique_data_none(table_with_no_unique_constraints):
+    assert get_unique_data(table_with_no_unique_constraints) is None
+
+
+def test_get_unique_data_valid(table_with_unique_columns):
+    result = get_unique_data(table_with_unique_columns)
+    expected = [{'id': ['1', '2', '3']}, {'id': ['A', 'B']}]
+    assert result == expected

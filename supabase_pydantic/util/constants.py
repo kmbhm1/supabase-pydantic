@@ -3,6 +3,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TypedDict
 
+STD_PYDANTIC_FILENAME = 'schemas.py'
+STD_SQLALCHEMY_FILENAME = 'database.py'
+STD_SEED_DATA_FILENAME = 'seed.sql'
+
 
 class WriterClassType(Enum):
     """Enum for writer class types."""
@@ -85,12 +89,19 @@ class ModelGenerationType(str, Enum):
     MAIN = 'MAIN'
 
 
+class DatabaseUserDefinedType(str, Enum):
+    DOMAIN = 'DOMAIN'
+    COMPOSITE = 'COMPOSITE'
+    ENUM = 'ENUM'
+    RANGE = 'RANGE'
+
+
 CUSTOM_MODEL_NAME = 'CustomModel'
 CUSTOM_JSONAPI_META_MODEL_NAME = 'PydanticBaseModel'
 BASE_CLASS_POSTFIX = 'BaseSchema'
 
 CONSTRAINT_TYPE_MAP = {'p': 'PRIMARY KEY', 'f': 'FOREIGN KEY', 'u': 'UNIQUE', 'c': 'CHECK', 'x': 'EXCLUDE'}
-
+USER_DEFINED_TYPE_MAP = {'d': 'DOMAIN', 'c': 'COMPOSITE', 'e': 'ENUM', 'r': 'RANGE'}
 
 PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'integer': ('int', None),
@@ -327,6 +338,64 @@ GROUP BY
     conname, conrelid, contype, oid
 ORDER BY
     conrelid::regclass::text, contype DESC;
+"""
+
+GET_USER_DEFINED_TYPES = """
+SELECT typname AS type_name,
+       typnamespace::regnamespace AS namespace,
+       typowner::regrole AS owner,
+       typcategory AS category,
+       typisdefined AS is_defined,
+       typtype AS type,
+       typinput::regproc AS input_function,
+       typoutput::regproc AS output_function,
+       typreceive::regproc AS receive_function,
+       typsend::regproc AS send_function,
+       typlen AS length,
+       typbyval AS by_value,
+       typalign AS alignment,
+       typdelim AS delimiter,
+       typrelid::regclass AS related_table,
+       typelem::regtype AS element_type,
+       typcollation::regcollation AS collation
+FROM pg_type
+WHERE typtype IN ('d', 'c', 'e', 'r')  -- d: domain, c: composite, e: enum, r: range
+ORDER BY typnamespace, typname;
+"""
+
+GET_ENUM_TYPES = """
+SELECT t.typname AS type_name,
+       t.typnamespace::regnamespace AS namespace,
+       t.typowner::regrole AS owner,
+       t.typcategory AS category,
+       t.typisdefined AS is_defined,
+       t.typtype AS type,
+       array_agg(e.enumlabel ORDER BY e.enumsortorder) AS enum_values
+FROM pg_type t
+LEFT JOIN pg_enum e ON t.oid = e.enumtypid
+WHERE t.typtype IN ('d', 'c', 'e', 'r')
+GROUP BY t.typname, t.typnamespace, t.typowner, t.typcategory, t.typisdefined, t.typtype
+ORDER BY t.typnamespace, t.typname;
+"""
+
+GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING = """
+SELECT a.attname AS column_name,
+       c.relname AS table_name,
+       t.typnamespace::regnamespace AS namespace,
+       t.typname AS type_name,
+       t.typtype AS type_category,
+       CASE t.typtype
+         WHEN 'd' THEN 'Domain'
+         WHEN 'c' THEN 'Composite'
+         WHEN 'e' THEN 'Enum'
+         WHEN 'r' THEN 'Range'
+         ELSE 'Other'
+       END AS type_description
+FROM pg_attribute a
+JOIN pg_class c ON a.attrelid = c.oid
+JOIN pg_type t ON a.atttypid = t.oid
+WHERE c.relkind = 'r' -- Only look at ordinary tables
+  AND NOT a.attisdropped; -- Skip dropped (deleted) columns
 """
 
 

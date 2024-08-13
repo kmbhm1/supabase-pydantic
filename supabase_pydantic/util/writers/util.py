@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
 from supabase_pydantic.util.util import chunk_text
@@ -27,19 +28,12 @@ def generate_unique_filename(base_name: str, extension: str, directory: str = '.
     dt_str = datetime.now(tz=timezone.utc).strftime('%Y%m%d%H%M%S%f')
     file_name = f'{base_name}_{dt_str}.{extension}'
 
-    # file_path = os.path.join(directory, file_name)
-    # i = 1
-    # while os.path.exists(file_path):
-    #     file_name = f'{base_name}_{i}.{extension}'
-    #     file_path = os.path.join(directory, file_name)
-    #     i += 1
-
     return os.path.join(directory, file_name)
 
 
 def get_section_comment(comment_title: str, notes: list[str] | None = None) -> str:
     """Method to generate a section of columns."""
-    comment = '#' * 30 + f' {comment_title}'
+    comment = f'# {comment_title.upper()}'
     if notes is not None and len(notes) > 0:
         chunked_notes = [chunk_text(n, 70) for n in notes]
         for cn in chunked_notes:
@@ -47,3 +41,37 @@ def get_section_comment(comment_title: str, notes: list[str] | None = None) -> s
             comment += '\n# '.join(cn)
 
     return comment
+
+
+def get_latest_filename(file_path: str) -> str:
+    """Get the latest filename for a given file path."""
+    fp = Path(file_path)
+    base, ext, directory = fp.stem, fp.suffix, str(fp.parent)
+    latest_file = os.path.join(directory, f'{base}_latest{ext}')
+
+    return latest_file
+
+
+def write_seed_file(seed_data: dict[str, list[list[str]]], file_path: str, overwrite: bool = False) -> list[str]:
+    """Write seed data to a file."""
+
+    fp = Path(file_path)
+    base, ext, directory = fp.stem, fp.suffix, str(fp.parent)
+    file_paths = [get_latest_filename(file_path)]
+
+    if not overwrite and os.path.exists(file_path):
+        file_paths.append(generate_unique_filename(base, ext, directory))
+
+    for fpath in file_paths:
+        with open(fpath, 'w') as f:
+            for table_name, data in seed_data.items():
+                f.write(f'-- {table_name}\n')
+                headers = data[0]
+                data = data[1:]
+                for row in data:
+                    f.write(
+                        f'INSERT INTO {table_name} ({", ".join(headers)}) VALUES ({", ".join([str(r) for r in row])});\n'  # noqa: E501
+                    )
+                f.write('\n')
+
+    return file_paths

@@ -1,12 +1,8 @@
 import json
 from dataclasses import asdict, dataclass, field
-from random import random
-from typing import Any, Literal
-
-from faker import Faker
+from typing import Literal
 
 from supabase_pydantic.util.constants import CONSTRAINT_TYPE_MAP, OrmType, RelationType
-from supabase_pydantic.util.fake import generate_fake_data
 from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type
 
 
@@ -14,6 +10,48 @@ from supabase_pydantic.util.util import get_pydantic_type, get_sqlalchemy_type
 class AsDictParent:
     def __str__(self) -> str:
         return json.dumps(asdict(self), indent=4)
+
+
+@dataclass
+class UserDefinedType(AsDictParent):
+    type_name: str
+    namespace: str
+    owner: str
+    category: str
+    is_defined: bool
+    type: str
+    input_function: str
+    output_function: str
+    receive_function: str
+    send_function: str
+    length: int
+    by_value: bool
+    alignment: str
+    delimiter: str
+    related_table: str
+    element_type: str
+    collation: str
+
+
+@dataclass
+class UserEnumType(AsDictParent):
+    type_name: str
+    namespace: str
+    owner: str
+    category: str
+    is_defined: bool
+    type: str
+    enum_values: list[str] = field(default_factory=list)
+
+
+@dataclass
+class UserTypeMapping(AsDictParent):
+    column_name: str
+    table_name: str
+    namespace: str
+    type_name: str
+    type_category: str
+    type_description: str
 
 
 @dataclass
@@ -33,6 +71,8 @@ class ColumnInfo(AsDictParent):
     name: str
     post_gres_datatype: str
     datatype: str
+    user_defined_values: list[str] | None = field(default_factory=list)
+    unique_partners: list[str] | None = field(default_factory=list)
     alias: str | None = None
     default: str | None = None
     max_length: int | None = None
@@ -58,6 +98,10 @@ class ColumnInfo(AsDictParent):
 
         return get_pydantic_type(self.post_gres_datatype)[0]
 
+    def is_user_defined_type(self) -> bool:
+        """Check if the column is a user-defined type."""
+        return self.post_gres_datatype == 'USER-DEFINED'
+
 
 @dataclass
 class ForeignKeyInfo(AsDictParent):
@@ -78,6 +122,22 @@ class SortedColumns:
 
 
 @dataclass
+class RelationshipInfo(AsDictParent):
+    table_name: str
+    related_table_name: str
+    relation_type: RelationType | None = None  # E.g., "One-to-One", "One-to-Many"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RelationshipInfo):
+            return NotImplemented
+        return (
+            self.table_name == other.table_name
+            and self.related_table_name == other.related_table_name
+            and self.relation_type == other.relation_type
+        )
+
+
+@dataclass
 class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
@@ -86,6 +146,7 @@ class TableInfo(AsDictParent):
     columns: list[ColumnInfo] = field(default_factory=list)
     foreign_keys: list[ForeignKeyInfo] = field(default_factory=list)
     constraints: list[ConstraintInfo] = field(default_factory=list)
+    relationships: list[RelationshipInfo] = field(default_factory=list)
     generated_data: list[dict] = field(default_factory=list)
 
     def add_column(self, column: ColumnInfo) -> None:
@@ -172,16 +233,6 @@ class TableInfo(AsDictParent):
 
         return result
 
-    def generate_fake_row(self) -> dict[str, Any]:
-        """Generate a dictionary with column names as keys and fake data as values."""
-        row: dict[str, Any] = {}
-        fake = Faker()
-        for column in self.columns:
-            if column.is_nullable and random() < 0.1:
-                row[column.name] = None
-            else:
-                is_nullable = column.is_nullable if column.is_nullable is not None else False
-                row[column.name] = generate_fake_data(
-                    column.post_gres_datatype, is_nullable, column.max_length, column.name, fake
-                )
-        return row
+    def has_unique_constraint(self) -> bool:
+        """Check if the table has unique constraints."""
+        return any(c.constraint_type() == 'UNIQUE' for c in self.constraints)

@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.14.0 (2024-08-13)
+
+### Feature
+
+* feat: add seed data generator for models (#42)
+
+* feat: add poc of seed data generator
+* chore: add poc file for relationship viz generators and other functions
+* feat: fix fake data formatting for final sql file
+* test: corrected existing tests for fake data generator
+* test: add tests for new fake generation methods
+* feat: add seed.sql generator for models
+* ci: exclude poc folder fo checking ([`cd7c97b`](https://github.com/kmbhm1/supabase-pydantic/commit/cd7c97bcee6d52d0bbdb36b8c58ceb45e0131707))
+
 ## v0.13.1 (2024-08-06)
 
 ### Documentation

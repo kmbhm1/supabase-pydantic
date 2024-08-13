@@ -10,7 +10,12 @@ faker = Faker()
 
 
 def generate_fake_data(
-    post_gres_datatype: str, is_nullable: bool, max_length: int | None, name: str, fake: Faker = faker
+    post_gres_datatype: str,
+    is_nullable: bool,
+    max_length: int | None,
+    name: str,
+    user_defined_values: list[str] | None = None,
+    fake: Faker = faker,
 ) -> Any:
     """Generate fake data based on the column datatype."""
     datatype = post_gres_datatype.lower()
@@ -42,5 +47,10 @@ def generate_fake_data(
     elif datatype in ['json', 'jsonb']:
         out = json.dumps(fake.profile(), cls=CustomJsonEncoder).replace("'", '')
         return f"'{out}'"  # noqa: Q004
+    elif datatype == 'user-defined':
+        if user_defined_values:
+            return f"'{fake.random_element(user_defined_values)}'"
+        else:
+            return "'foo'"
     else:
         return 'NULL'

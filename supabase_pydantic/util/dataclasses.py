@@ -13,6 +13,48 @@ class AsDictParent:
 
 
 @dataclass
+class UserDefinedType(AsDictParent):
+    type_name: str
+    namespace: str
+    owner: str
+    category: str
+    is_defined: bool
+    type: str
+    input_function: str
+    output_function: str
+    receive_function: str
+    send_function: str
+    length: int
+    by_value: bool
+    alignment: str
+    delimiter: str
+    related_table: str
+    element_type: str
+    collation: str
+
+
+@dataclass
+class UserEnumType(AsDictParent):
+    type_name: str
+    namespace: str
+    owner: str
+    category: str
+    is_defined: bool
+    type: str
+    enum_values: list[str] = field(default_factory=list)
+
+
+@dataclass
+class UserTypeMapping(AsDictParent):
+    column_name: str
+    table_name: str
+    namespace: str
+    type_name: str
+    type_category: str
+    type_description: str
+
+
+@dataclass
 class ConstraintInfo(AsDictParent):
     constraint_name: str
     raw_constraint_type: str
@@ -29,6 +71,8 @@ class ColumnInfo(AsDictParent):
     name: str
     post_gres_datatype: str
     datatype: str
+    user_defined_values: list[str] | None = field(default_factory=list)
+    unique_partners: list[str] | None = field(default_factory=list)
     alias: str | None = None
     default: str | None = None
     max_length: int | None = None
@@ -53,6 +97,10 @@ class ColumnInfo(AsDictParent):
             return get_sqlalchemy_type(self.post_gres_datatype)[0]
 
         return get_pydantic_type(self.post_gres_datatype)[0]
+
+    def is_user_defined_type(self) -> bool:
+        """Check if the column is a user-defined type."""
+        return self.post_gres_datatype == 'USER-DEFINED'
 
 
 @dataclass
@@ -184,3 +232,7 @@ class TableInfo(AsDictParent):
             result.remaining = []
 
         return result
+
+    def has_unique_constraint(self) -> bool:
+        """Check if the table has unique constraints."""
+        return any(c.constraint_type() == 'UNIQUE' for c in self.constraints)

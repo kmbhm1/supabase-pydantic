@@ -232,8 +232,8 @@ $ sb-pydantic gen --type pydantic --framework fastapi --local
 PostGres connection is open.
 PostGres connection is closed.
 Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schemas.py
+FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
 ```
 
 ... and that's it. You now have a `schemas.py` file in your project that contains the Pydantic models for the Slack database:
@@ -387,3 +387,5 @@ Please note some of the following features which will be created in future relea
 ## Conclusion
 
 This example demonstrates how to generate FastAPI schemas from the Slack clone database using the `supabase-pydantic` package. By following the steps outlined in this example, you can quickly generate Pydantic schemas for your FastAPI application and start building your data layer in an automated and efficient manner.
+
+<br><br><br>

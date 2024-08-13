@@ -5,7 +5,9 @@ import psycopg2
 
 from supabase_pydantic.util.constants import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
+    GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
     GET_CONSTRAINTS,
+    GET_ENUM_TYPES,
     GET_TABLE_COLUMN_DETAILS,
     DatabaseConnectionType,
 )
@@ -95,6 +97,7 @@ class DBConnection:
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         self.conn.close()
+        print('PostGres connection is closed.')
         return False
 
 
@@ -111,7 +114,10 @@ def construct_tables(conn_type: DatabaseConnectionType, **kwargs: Any) -> list[T
             column_details = query_database(conn, GET_ALL_PUBLIC_TABLES_AND_COLUMNS)
             fk_details = query_database(conn, GET_TABLE_COLUMN_DETAILS)
             constraints = query_database(conn, GET_CONSTRAINTS)
+            # user_defined_types = query_database(conn, GET_USER_DEFINED_TYPES)
+            enum_types = query_database(conn, GET_ENUM_TYPES)
+            enum_type_mapping = query_database(conn, GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING)
 
-            return construct_table_info(column_details, fk_details, constraints)
+            return construct_table_info(column_details, fk_details, constraints, enum_types, enum_type_mapping)
         except Exception as e:
             raise e

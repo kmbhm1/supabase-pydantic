@@ -2,9 +2,18 @@ import builtins
 import keyword
 import pprint
 import re
+from typing import Any
 
 from supabase_pydantic.util.constants import PYDANTIC_TYPE_MAP, RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.dataclasses import (
+    ColumnInfo,
+    ConstraintInfo,
+    ForeignKeyInfo,
+    RelationshipInfo,
+    TableInfo,
+    UserEnumType,
+    UserTypeMapping,
+)
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -67,6 +76,8 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
             is_nullable=is_nullable == 'YES',
             max_length=max_length,
         )
+        # if column_info.name == 'permission':
+        #     print(str(column_info))
         tables[table_key].add_column(column_info)
 
     return tables
@@ -152,6 +163,93 @@ def add_relationships_to_table_details(tables: dict, fk_details: list) -> None:
             print('Table key not found in tables', table_key)
 
 
+def get_enum_types(enum_types: list) -> list[UserEnumType]:
+    """Get enum types."""
+    enums = []
+    for row in enum_types:
+        (
+            type_name,
+            namespace,
+            owner,
+            category,
+            is_defined,
+            t,  # type, typtype
+            enum_values,
+        ) = row
+        if t == 'e' and namespace == 'public':
+            enums.append(
+                UserEnumType(
+                    type_name,
+                    namespace,
+                    owner,
+                    category,
+                    is_defined,
+                    t,
+                    enum_values,
+                )
+            )
+    return enums
+
+
+def get_user_type_mappings(enum_type_mapping: list) -> list[UserTypeMapping]:
+    """Get user type mappings."""
+    mappings = []
+    for row in enum_type_mapping:
+        (
+            column_name,
+            table_name,
+            namespace,
+            type_name,
+            type_category,
+            type_description,
+        ) = row
+        if namespace == 'public':
+            mappings.append(
+                UserTypeMapping(
+                    column_name,
+                    table_name,
+                    namespace,
+                    type_name,
+                    type_category,
+                    type_description,
+                )
+            )
+    return mappings
+
+
+def add_user_defined_types_to_tables(
+    tables: dict[tuple[str, str], TableInfo], enum_types: list, enum_type_mapping: list
+) -> None:
+    """Get user defined types and add them to ColumnInfo."""
+    enums = get_enum_types(enum_types)
+    mappings = get_user_type_mappings(enum_type_mapping)
+
+    for mapping in mappings:
+        table_key = ('public', mapping.table_name)
+        enum_values = next((e.enum_values for e in enums if e.type_name == mapping.type_name), None)
+        if table_key in tables:
+            if mapping.column_name in [c.name for c in tables[table_key].columns]:
+                for col in tables[table_key].columns:
+                    if col.name == mapping.column_name:
+                        col.user_defined_values = enum_values
+                        break
+            else:
+                print('Column name not found in table columns for adding user defined values: ', mapping.column_name)
+        else:
+            print('Table key not found in tables for adding user defined values: ', tables[table_key])
+
+
+def get_unique_columns_from_constraints(constraint: ConstraintInfo) -> list[str | Any]:
+    """Get unique columns from constraints."""
+    unique_columns = []
+    if constraint.constraint_type() == 'UNIQUE':
+        match = re.match(r'UNIQUE \(([^)]+)\)', constraint.constraint_definition)
+        if match:
+            columns = match.group(1).split(',')
+            unique_columns = [c.strip() for c in columns]
+    return unique_columns
+
+
 def update_columns_with_constraints(tables: dict) -> None:
     """Update columns with constraints."""
     for table in tables.values():
@@ -169,6 +267,7 @@ def update_columns_with_constraints(tables: dict) -> None:
                             column.primary = True
                         if constraint.constraint_type() == 'UNIQUE':
                             column.is_unique = True
+                            column.unique_partners = get_unique_columns_from_constraints(constraint)
                         if constraint.constraint_type() == 'FOREIGN KEY':
                             column.is_foreign_key = True
 
@@ -257,13 +356,21 @@ def analyze_bridge_tables(tables: dict) -> None:
         table.is_bridge = is_bridge_table(table)
 
 
-def construct_table_info(column_details: list, fk_details: list, constraints: list) -> list[TableInfo]:
+def construct_table_info(
+    column_details: list,
+    fk_details: list,
+    constraints: list,
+    # user_defined_types: list,
+    enum_types: list,
+    enum_type_mapping: list,
+) -> list[TableInfo]:
     """Construct TableInfo objects from column and foreign key details."""
     # construction
     tables = get_table_details_from_columns(column_details)
     add_foreign_key_info_to_table_details(tables, fk_details)
     add_constraints_to_table_details(tables, constraints)
     add_relationships_to_table_details(tables, fk_details)
+    add_user_defined_types_to_tables(tables, enum_types, enum_type_mapping)
 
     # updating
     update_columns_with_constraints(tables)

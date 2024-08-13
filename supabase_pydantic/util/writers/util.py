@@ -33,7 +33,7 @@ def generate_unique_filename(base_name: str, extension: str, directory: str = '.
 
 def get_section_comment(comment_title: str, notes: list[str] | None = None) -> str:
     """Method to generate a section of columns."""
-    comment = '#' * 30 + f' {comment_title}'
+    comment = f'# {comment_title.upper()}'
     if notes is not None and len(notes) > 0:
         chunked_notes = [chunk_text(n, 70) for n in notes]
         for cn in chunked_notes:

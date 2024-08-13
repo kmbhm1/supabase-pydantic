@@ -44,7 +44,7 @@ def test_generate_unique_filename():
 
 def test_get_section_comment_without_notes():
     comment_title = 'Test Section'
-    expected_output = '############################## Test Section'
+    expected_output = '# TEST SECTION'
     assert get_section_comment(comment_title) == expected_output
 
 
@@ -52,7 +52,7 @@ def test_get_section_comment_with_notes():
     comment_title = 'Test Section'
     notes = ['This is a very long note that should be chunked into multiple lines to fit the width restriction.']
     expected_output = (
-        '############################## Test Section\n# Note: This is a '
+        '# TEST SECTION\n# Note: This is a '
         'very long note that should be chunked into multiple lines to\n'
         '# fit the width restriction.'
     )

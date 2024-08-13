@@ -1,12 +1,17 @@
+from math import inf
 from unittest.mock import patch
-import pytest
 import subprocess
+
+import pytest
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.sorting import (
     build_dependency_graph,
     format_with_ruff,
     generate_seed_data,
+    get_max_rows,
+    get_num_unique_rows,
+    get_unique_data,
     reorganize_tables_by_relationships,
     run_isort,
     separate_tables_list_by_type,
@@ -359,3 +364,86 @@ def test_generate_seed_data(mock_generate_fake_data, mock_choice, mock_random):
     for i in range(1, len(seed_data['B'])):
         assert str(seed_data['B'][i][0]).isnumeric() or seed_data['B'][i][0] == 'NULL'
         assert str(seed_data['B'][i][1]).isnumeric() or seed_data['B'][i][1] == 'NULL'
+
+
+@pytest.fixture
+def table_with_unique_columns():
+    return TableInfo(
+        name='C',
+        columns=[
+            ColumnInfo(
+                name='id',
+                user_defined_values=['1', '2', '3'],
+                is_unique=True,
+                datatype='int4',
+                post_gres_datatype='integer',
+            ),
+            ColumnInfo(
+                name='type', user_defined_values=['A', 'B'], is_unique=True, datatype='str', post_gres_datatype='text'
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def table_with_infinite_possible_values():
+    return TableInfo(
+        name='A',
+        columns=[
+            ColumnInfo(
+                name='id', user_defined_values=None, is_unique=True, datatype='int4', post_gres_datatype='integer'
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def table_with_no_unique_constraints():
+    return TableInfo(
+        name='B',
+        columns=[
+            ColumnInfo(
+                name='id',
+                user_defined_values=['1', '2', '3'],
+                is_unique=False,
+                datatype='int4',
+                post_gres_datatype='integer',
+            )
+        ],
+    )
+
+
+# Tests
+def test_get_num_unique_rows_finite(table_with_unique_columns):
+    assert get_num_unique_rows(table_with_unique_columns) == 6
+
+
+def test_get_num_unique_rows_infinite(table_with_infinite_possible_values):
+    assert get_num_unique_rows(table_with_infinite_possible_values) == inf
+
+
+def test_get_num_unique_rows_one_unique(table_with_no_unique_constraints):
+    assert get_num_unique_rows(table_with_no_unique_constraints) == 1
+
+
+def test_get_max_rows_has_unique(table_with_unique_columns, mocker):
+    mocker.patch('supabase_pydantic.util.sorting.get_num_unique_rows', return_value=6)
+    mocker.patch.object(TableInfo, 'has_unique_constraint', return_value=True)
+    assert get_max_rows(table_with_unique_columns) == 6
+
+
+def test_get_max_rows_no_unique(table_with_no_unique_constraints, mocker):
+    mocker.patch('supabase_pydantic.util.sorting.get_num_unique_rows', return_value=inf)
+    mocker.patch.object(TableInfo, 'has_unique_constraint', return_value=False)
+    result = get_max_rows(table_with_no_unique_constraints)
+    assert 5 <= result <= 15
+
+
+def test_get_unique_data_none(table_with_no_unique_constraints):
+    assert get_unique_data(table_with_no_unique_constraints) is None
+
+
+def test_get_unique_data_valid(table_with_unique_columns):
+    result = get_unique_data(table_with_unique_columns)
+    expected = [{'id': ['1', '2', '3']}, {'id': ['A', 'B']}]
+    assert result == expected

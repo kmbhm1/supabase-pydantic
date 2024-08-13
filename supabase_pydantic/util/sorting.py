@@ -1,7 +1,9 @@
 import pprint
 import subprocess
 from collections import defaultdict
-from random import choice, random
+from itertools import product
+from math import inf, prod
+from random import choice, randint, random
 from typing import Any
 
 from supabase_pydantic.util.constants import RelationType
@@ -126,6 +128,73 @@ def sort_tables_for_insert(tables: list[TableInfo]) -> tuple[list[str], list[str
     return separate_tables_list_by_type(tables, sorted_tables)
 
 
+def get_num_unique_rows(table: TableInfo) -> float | int:
+    """Get the number of maximum rows for a table based on the unique rows."""
+    unique_column_values = [c.user_defined_values for c in table.columns if c.is_unique]
+    possible_values = list(map(lambda x: inf if x is None or not bool(x) else len(x), unique_column_values))
+
+    if all([v != inf for v in possible_values]):
+        return int(prod(possible_values))
+    return inf
+
+
+def get_max_rows(table: TableInfo) -> int:
+    """Get the maximum number of rows for a table."""
+    if table.has_unique_constraint():
+        num_rows = get_num_unique_rows(table)
+        if num_rows != inf:
+            return int(num_rows)
+    return int(random() * 10 + 5)
+
+
+def get_unique_data(table: TableInfo) -> list[dict[str, list[str] | None]] | None:
+    """Get unique data for a table."""
+
+    unique_column_values = {
+        c.name: c.user_defined_values for c in table.columns if c.is_unique and len(c.user_defined_values or []) > 0
+    }
+    if not unique_column_values:
+        return None
+    combinations = product(list(unique_column_values.values()))
+    output_dicts = [
+        {column: value for column, value in zip(unique_column_values.keys(), combination)}
+        for combination in combinations
+    ]
+
+    return output_dicts
+
+
+def remove_non_unique_rows(data: list[list[Any]], target_headers: list[str]) -> list[list[Any]]:
+    """Modify the data to remove non-unique rows."""
+    if not data or not target_headers:
+        return data
+
+    # Get the indices of the headers we're interested in
+    header = data[0]
+    index_map = {header: index for index, header in enumerate(header)}
+    target_indices = [index_map[header] for header in target_headers if header in index_map]
+
+    # Collect all rows' values for these indices
+    combinations: dict = {}
+    for row in data[1:]:
+        key = tuple(row[index] for index in target_indices)
+        if key in combinations:
+            combinations[key].append(row)
+        else:
+            combinations[key] = [row]
+
+    # Find non-unique combinations
+    non_unique_rows = [row for key, rows in combinations.items() if len(rows) > 1 for row in rows]
+
+    # Remove non-unique rows from the original data
+    if non_unique_rows:
+        new_data = [data[0]]  # keep headers
+        new_data.extend(row for row in data[1:] if row not in non_unique_rows)
+        return new_data
+
+    return data
+
+
 def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
     """Generate seed data for the tables."""
     seed_data = {}
@@ -145,12 +214,16 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
             print(f'Could not find table {table_name}')
             continue
 
+        unique_values = get_unique_data(table) if table.has_unique_constraint() else None
+
         # Generate fake data for each column
         column_headers = [c.name for c in table.columns]
         fake_data = [column_headers]
-        num_rows = random() * 10 + 5
-        for _ in range(int(num_rows)):
+        num_rows = get_max_rows(table)
+        for i in range(int(num_rows)):
             row = []
+            # unique_columns = [c.name for c in table.columns if c.is_unique]
+
             for column in table.columns:
                 # Foreign keys
                 if column.is_foreign_key:
@@ -166,25 +239,47 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
 
                 # New data
                 nullabe = column.is_nullable if column.is_nullable is not None else False
-                data = generate_fake_data(column.post_gres_datatype, nullabe, column.max_length, column.name)
+                data = generate_fake_data(
+                    column.post_gres_datatype, nullabe, column.max_length, column.name, column.user_defined_values
+                )
 
                 # Unique values
                 if column.is_unique:
-                    values = memory.get(table_name, {}).get(column.name, set())
-                    if len(values) > 0:
-                        while data in values:
+                    if (
+                        unique_values is not None and column.name in unique_values[0]  # mypy: ignore
+                    ):  # use first row as reference
+                        idx = i if num_rows == len(unique_values) else randint(0, len(unique_values) - 1)
+                        data = f"'{unique_values[idx][column.name]}'"  # mypy: ignore
+                    else:
+                        values = memory.get(table_name, {}).get(column.name, set())
+                        if len(values) == 0:
                             data = generate_fake_data(
-                                column.post_gres_datatype, nullabe, column.max_length, column.name
+                                column.post_gres_datatype,
+                                nullabe,
+                                column.max_length,
+                                column.name,
+                                column.user_defined_values,
                             )
+                        else:
+                            if data in values:
+                                data = generate_fake_data(
+                                    column.post_gres_datatype,
+                                    nullabe,
+                                    column.max_length,
+                                    column.name,
+                                    column.user_defined_values,
+                                )
 
                 # Add to memory
-                if not column.is_nullable or column.primary or column.is_unique or column.is_foreign_key:
+                if not column.is_nullable or column.primary or column.is_foreign_key or column.is_unique:
                     _remember(table_name, column.name, data)
 
                 row.append(data)
             fake_data.append(row)
 
         # Add foreign keys
+        unique_row_headers = [c.name for c in table.columns if c.is_unique]
+        fake_data = remove_non_unique_rows(fake_data, unique_row_headers)
         seed_data[table_name] = fake_data
 
     return seed_data

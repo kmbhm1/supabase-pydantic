@@ -88,7 +88,7 @@ exclude = [
     "build",
     "dist",
     "docs",
-    "poc",
+    "poc/",
     # "notebooks",
     "**/*tests*",
     "scripts",

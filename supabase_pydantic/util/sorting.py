@@ -1,16 +1,19 @@
 import pprint
 import subprocess
 from collections import defaultdict
-from itertools import product
+from collections.abc import Callable
+from itertools import islice, product
 from math import inf, prod
-from random import choice, randint, random
+from random import choice, randint
 from typing import Any
 
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import RelationshipInfo, TableInfo
-from supabase_pydantic.util.fake import generate_fake_data
+from supabase_pydantic.util.fake import format_for_postgres, generate_fake_data
 
 pp = pprint.PrettyPrinter(indent=4)
+
+MAX_ROWS = 200
 
 
 def run_isort(file_path: str) -> None:
@@ -128,71 +131,106 @@ def sort_tables_for_insert(tables: list[TableInfo]) -> tuple[list[str], list[str
     return separate_tables_list_by_type(tables, sorted_tables)
 
 
-def get_num_unique_rows(table: TableInfo) -> float | int:
+def total_possible_combinations(table: TableInfo) -> float:
     """Get the number of maximum rows for a table based on the unique rows."""
-    unique_column_values = [c.user_defined_values for c in table.columns if c.is_unique]
-    possible_values = list(map(lambda x: inf if x is None or not bool(x) else len(x), unique_column_values))
+    if not table.has_unique_constraint():
+        return inf
 
-    if all([v != inf for v in possible_values]):
-        return int(prod(possible_values))
-    return inf
+    values = []
+    for c in table.columns:
+        if c.is_unique:
+            if c.user_defined_values:
+                values.append(len(c.user_defined_values))  # Only add the length if there are user defined values.
+            else:
+                return inf  # If any unique column doesn't have defined values, the possibilities are infinite.
 
-
-def get_max_rows(table: TableInfo) -> int:
-    """Get the maximum number of rows for a table."""
-    if table.has_unique_constraint():
-        num_rows = get_num_unique_rows(table)
-        if num_rows != inf:
-            return int(num_rows)
-    return int(random() * 10 + 5)
+    return float(prod(values))  # Ensure that the product is in float to handle large numbers properly.
 
 
-def get_unique_data(table: TableInfo) -> list[dict[str, list[str] | None]] | None:
-    """Get unique data for a table."""
-
-    unique_column_values = {
-        c.name: c.user_defined_values for c in table.columns if c.is_unique and len(c.user_defined_values or []) > 0
-    }
-    if not unique_column_values:
-        return None
-    combinations = product(list(unique_column_values.values()))
-    output_dicts = [
-        {column: value for column, value in zip(unique_column_values.keys(), combination)}
-        for combination in combinations
-    ]
-
-    return output_dicts
+def random_num_rows() -> int:
+    """Generate a random number of rows."""
+    return randint(10, MAX_ROWS)
 
 
-def remove_non_unique_rows(data: list[list[Any]], target_headers: list[str]) -> list[list[Any]]:
-    """Modify the data to remove non-unique rows."""
-    if not data or not target_headers:
-        return data
+def pick_random_foreign_key(column_name: str, table: TableInfo, remember_fn: Callable) -> Any:
+    """Pick a random foreign key value for a column."""
+    fk = next((fk for fk in table.foreign_keys if fk.column_name == column_name), None)
+    if fk is None:
+        print(f'Could not find foreign table for column {column_name}')
+        return 'NULL'
+    else:
+        try:
+            values = remember_fn(fk.foreign_table_name, fk.foreign_column_name)
+            return choice(list(values))
+        except KeyError:
+            print(f'Could not find foreign table for column {column_name}')
+            return 'NULL'
 
-    # Get the indices of the headers we're interested in
-    header = data[0]
-    index_map = {header: index for index, header in enumerate(header)}
-    target_indices = [index_map[header] for header in target_headers if header in index_map]
 
-    # Collect all rows' values for these indices
-    combinations: dict = {}
-    for row in data[1:]:
-        key = tuple(row[index] for index in target_indices)
-        if key in combinations:
-            combinations[key].append(row)
-        else:
-            combinations[key] = [row]
+def unique_data_rows(table: TableInfo, remember_fn: Callable) -> list[dict[str, Any]]:
+    """Generate unique data rows for a table based on the unique columns."""
+    if not table.has_unique_constraint():
+        return []
 
-    # Find non-unique combinations
-    non_unique_rows = [row for key, rows in combinations.items() if len(rows) > 1 for row in rows]
+    # Get the unique columns, in order
+    # names, values, columns = zip(*[(c.name, c.user_defined_values, c) for c in table.columns if c.is_unique])
+    names, values, columns = [], [], []
+    for c in table.columns:
+        if c.is_unique:
+            names.append(c.name)
+            values.append(c.user_defined_values)
+            columns.append(c)
 
-    # Remove non-unique rows from the original data
-    if non_unique_rows:
-        new_data = [data[0]]  # keep headers
-        new_data.extend(row for row in data[1:] if row not in non_unique_rows)
-        return new_data
+    # Get the total number of rows
+    possible_n = total_possible_combinations(table)
+    num_rows = int(possible_n) if possible_n <= MAX_ROWS else random_num_rows()
+    rows = []
 
-    return data
+    # If possible_n is not infinite, generate from finite combinations
+    # This point will only be hit if all unique columns have user-defined values
+    if possible_n != inf:
+        # Lazy iterator
+        all_combinations_iterator = product(*values)  # type: ignore
+
+        # TODO: since this is a lazy iterator, we value performance over memory
+        # However, in the future there may need to be a way to randomly sample
+        # from the iterator without exhausting it or exceeding memory limits
+        combinations = list(islice(all_combinations_iterator, num_rows))
+        rows = [
+            {n: format_for_postgres(v, col.post_gres_datatype) for n, v, col in zip(names, combo, columns)}
+            for combo in combinations
+        ]
+
+    # If there are no user-defined values for at least one unique column,
+    # generate random data from combination of unique values arrays and
+    # values that can be anything
+    else:
+        seen_combinations = set()  # Set to track unique combinations
+        i = 0
+        while len(rows) < num_rows:
+            if i >= MAX_ROWS:  # Break if the loop runs too long
+                break
+
+            row = {}
+            for name, val_list, col in zip(names, values, columns):
+                if bool(val_list):  # Pick a random value from the user-defined list (i.e., enums)
+                    row[name] = format_for_postgres(choice(val_list), col.post_gres_datatype)  # type: ignore
+                elif col.is_foreign_key:  # Pick a random foreign key value
+                    row[name] = pick_random_foreign_key(name, table, remember_fn)
+                else:  # Generate random data (e.g., a new username)
+                    row[name] = generate_fake_data(
+                        col.post_gres_datatype, col.nullable(), col.max_length, col.name, col.user_defined_values
+                    )
+            # Create a tuple of the row items sorted by key to ensure uniqueness is properly checked
+            row_tuple = tuple(row[name] for name in sorted(row))
+            if row_tuple not in seen_combinations:
+                seen_combinations.add(row_tuple)
+                rows.append(row)
+
+            # If the combination is not unique, the loop continues without adding the row
+            i += 1
+
+    return rows
 
 
 def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
@@ -201,12 +239,20 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
     memory: dict[str, dict[str, set[Any]]] = {}
     sorted_tables, _ = sort_tables_for_insert(tables)
 
-    def _remember(table_name: str, column_name: str, data: Any) -> None:
+    def _memorize(table_name: str, column_name: str, data: Any) -> None:
+        """Add data to memory."""
         if table_name not in memory:
             memory[table_name] = dict()
         if column_name not in memory[table_name]:
             memory[table_name][column_name] = set()
         memory[table_name][column_name].add(data)
+
+    def _remember(table_name: str, column_name: str) -> set[Any]:  # type: ignore
+        """Get data from memory."""
+        try:
+            return memory[table_name][column_name]
+        except KeyError:
+            print(f'Could not remember data for {table_name}.{column_name}')
 
     for table_name in sorted_tables:
         table = next((t for t in tables if t.name == table_name), None)
@@ -214,72 +260,41 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
             print(f'Could not find table {table_name}')
             continue
 
-        unique_values = get_unique_data(table) if table.has_unique_constraint() else None
+        unique_rows = unique_data_rows(table, _remember)
+        fake_data = [[c.name for c in table.columns]]  # Add headers first
+        num_rows = len(unique_rows) if unique_rows else random_num_rows()
+        # print(unique_rows, num_rows)
 
-        # Generate fake data for each column
-        column_headers = [c.name for c in table.columns]
-        fake_data = [column_headers]
-        num_rows = get_max_rows(table)
         for i in range(int(num_rows)):
             row = []
-            # unique_columns = [c.name for c in table.columns if c.is_unique]
-
             for column in table.columns:
-                # Foreign keys
-                if column.is_foreign_key:
-                    fk = next((fk for fk in table.foreign_keys if fk.column_name == column.name), None)
-                    if fk is None:
-                        print(f'Could not find foreign table for column {column.name}')
-                        row.append('NULL')
-                        continue
-                    values = memory[fk.foreign_table_name][fk.foreign_column_name]
-                    data = choice(list(values))
-                    row.append(data)
-                    continue
-
-                # New data
-                nullabe = column.is_nullable if column.is_nullable is not None else False
-                data = generate_fake_data(
-                    column.post_gres_datatype, nullabe, column.max_length, column.name, column.user_defined_values
-                )
-
-                # Unique values
+                # Use unique values already generated to coordinate data additions
+                # correctly.
                 if column.is_unique:
-                    if (
-                        unique_values is not None and column.name in unique_values[0]  # mypy: ignore
-                    ):  # use first row as reference
-                        idx = i if num_rows == len(unique_values) else randint(0, len(unique_values) - 1)
-                        data = f"'{unique_values[idx][column.name]}'"  # mypy: ignore
-                    else:
-                        values = memory.get(table_name, {}).get(column.name, set())
-                        if len(values) == 0:
-                            data = generate_fake_data(
-                                column.post_gres_datatype,
-                                nullabe,
-                                column.max_length,
-                                column.name,
-                                column.user_defined_values,
-                            )
-                        else:
-                            if data in values:
-                                data = generate_fake_data(
-                                    column.post_gres_datatype,
-                                    nullabe,
-                                    column.max_length,
-                                    column.name,
-                                    column.user_defined_values,
-                                )
+                    data = unique_rows[i][column.name]
+
+                # Choose a random foreign key value
+                elif column.is_foreign_key:
+                    data = pick_random_foreign_key(column.name, table, _remember)
+
+                # Else, generate new value
+                else:
+                    data = generate_fake_data(
+                        column.post_gres_datatype,
+                        column.nullable(),
+                        column.max_length,
+                        column.name,
+                        column.user_defined_values,
+                    )
 
                 # Add to memory
-                if not column.is_nullable or column.primary or column.is_foreign_key or column.is_unique:
-                    _remember(table_name, column.name, data)
+                if column.primary or column.is_unique or column.is_foreign_key:
+                    _memorize(table_name, column.name, data)
 
                 row.append(data)
             fake_data.append(row)
 
         # Add foreign keys
-        unique_row_headers = [c.name for c in table.columns if c.is_unique]
-        fake_data = remove_non_unique_rows(fake_data, unique_row_headers)
         seed_data[table_name] = fake_data
 
     return seed_data

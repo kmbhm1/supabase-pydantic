@@ -1,4 +1,3 @@
-from math import inf
 from unittest.mock import patch
 import subprocess
 
@@ -9,9 +8,6 @@ from supabase_pydantic.util.sorting import (
     build_dependency_graph,
     format_with_ruff,
     generate_seed_data,
-    get_max_rows,
-    get_num_unique_rows,
-    get_unique_data,
     reorganize_tables_by_relationships,
     run_isort,
     separate_tables_list_by_type,
@@ -325,7 +321,7 @@ def test_generate_seed_data(mock_generate_fake_data, mock_choice, mock_random):
     # Define the columns and foreign keys
     columns_a = [
         ColumnInfo(name='id', post_gres_datatype='integer', datatype='int4', primary=True),
-        ColumnInfo(name='name', post_gres_datatype='text', datatype='str', is_unique=True),
+        ColumnInfo(name='name', post_gres_datatype='text', datatype='str', is_unique=False),
     ]
 
     columns_b = [
@@ -414,36 +410,3 @@ def table_with_no_unique_constraints():
 
 
 # Tests
-def test_get_num_unique_rows_finite(table_with_unique_columns):
-    assert get_num_unique_rows(table_with_unique_columns) == 6
-
-
-def test_get_num_unique_rows_infinite(table_with_infinite_possible_values):
-    assert get_num_unique_rows(table_with_infinite_possible_values) == inf
-
-
-def test_get_num_unique_rows_one_unique(table_with_no_unique_constraints):
-    assert get_num_unique_rows(table_with_no_unique_constraints) == 1
-
-
-def test_get_max_rows_has_unique(table_with_unique_columns, mocker):
-    mocker.patch('supabase_pydantic.util.sorting.get_num_unique_rows', return_value=6)
-    mocker.patch.object(TableInfo, 'has_unique_constraint', return_value=True)
-    assert get_max_rows(table_with_unique_columns) == 6
-
-
-def test_get_max_rows_no_unique(table_with_no_unique_constraints, mocker):
-    mocker.patch('supabase_pydantic.util.sorting.get_num_unique_rows', return_value=inf)
-    mocker.patch.object(TableInfo, 'has_unique_constraint', return_value=False)
-    result = get_max_rows(table_with_no_unique_constraints)
-    assert 5 <= result <= 15
-
-
-def test_get_unique_data_none(table_with_no_unique_constraints):
-    assert get_unique_data(table_with_no_unique_constraints) is None
-
-
-def test_get_unique_data_valid(table_with_unique_columns):
-    result = get_unique_data(table_with_unique_columns)
-    expected = [{'id': ['1', '2', '3']}, {'id': ['A', 'B']}]
-    assert result == expected

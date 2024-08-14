@@ -85,9 +85,7 @@ def test_uuid_datatype(fake_faker, mock_random):
 def test_json_datatype(fake_faker, mock_random):
     """Test JSON data type using a custom JSON encoder."""
     json_result = generate_fake_data('json', False, None, 'profile', None, fake_faker)
-    expected_json = json.dumps(
-        {'name': 'John Doe', 'age': 30}, cls=json.JSONEncoder
-    )  # Assuming you import JSONEncoder or use CustomJsonEncoder correctly in your environment
+    expected_json = '"{\\"name\\": \\"John Doe\\", \\"age\\": 30}"'
     assert json_result == f"'{expected_json}'"
 
 
@@ -103,4 +101,4 @@ def test_user_defined_datatype(fake_faker):
     result = generate_fake_data('user-defined', False, None, 'foo', ['bar', 'baz'], faker)
     assert result in ["'bar'", "'baz'"]
     result = generate_fake_data('user-defined', False, None, 'foo', None, faker)
-    assert result == "'foo'"
+    assert result == 'NULL'

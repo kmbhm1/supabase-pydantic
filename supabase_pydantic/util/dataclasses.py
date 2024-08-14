@@ -102,6 +102,10 @@ class ColumnInfo(AsDictParent):
         """Check if the column is a user-defined type."""
         return self.post_gres_datatype == 'USER-DEFINED'
 
+    def nullable(self) -> bool:
+        """Check if the column is nullable."""
+        return self.is_nullable if self.is_nullable is not None else False
+
 
 @dataclass
 class ForeignKeyInfo(AsDictParent):

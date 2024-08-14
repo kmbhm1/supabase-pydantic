@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.14.1 (2024-08-14)
+
+### Fix
+
+* fix: refine fake data generator (#43) ([`873a4d6`](https://github.com/kmbhm1/supabase-pydantic/commit/873a4d651bae12a06ce6de163760471742d4c074))
+
 ## v0.14.0 (2024-08-13)
 
 ### Feature

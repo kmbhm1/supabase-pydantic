@@ -1,19 +1,22 @@
-from unittest.mock import patch
+from math import inf
+from unittest.mock import Mock, patch
 import subprocess
 
 import pytest
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.sorting import (
     build_dependency_graph,
     format_with_ruff,
     generate_seed_data,
+    pick_random_foreign_key,
     reorganize_tables_by_relationships,
     run_isort,
     separate_tables_list_by_type,
     sort_tables_by_in_degree,
     sort_tables_for_insert,
     topological_sort,
+    total_possible_combinations,
 )
 
 
@@ -409,4 +412,64 @@ def table_with_no_unique_constraints():
     )
 
 
-# Tests
+# Test for pick_random_foreign_key
+def test_pick_random_foreign_key():
+    # Mock the remember_fn
+    remember_fn = Mock()
+
+    # Create mock foreign key info
+    fk_info = ForeignKeyInfo(
+        constraint_name='fk_constraint',
+        column_name='fk_column',
+        foreign_table_name='foreign_table',
+        foreign_column_name='foreign_column',
+        foreign_table_schema='public',
+    )
+    table_info = TableInfo(name='table', foreign_keys=[fk_info])
+
+    # Set up the remember_fn to return a list of values for the foreign key
+    remember_fn.return_value = {1, 2, 3, 4}
+
+    # Test that a valid foreign key value is returned
+    result = pick_random_foreign_key('fk_column', table_info, remember_fn)
+    assert result in {1, 2, 3, 4}, 'Expected one of the foreign key values to be returned'
+
+    # Test for a column without a foreign key
+    result = pick_random_foreign_key('non_existing_column', table_info, remember_fn)
+    assert result == 'NULL', "Expected 'NULL' when no foreign key is found"
+
+    # Test when remember_fn raises KeyError
+    remember_fn.side_effect = KeyError
+    result = pick_random_foreign_key('fk_column', table_info, remember_fn)
+    assert result == 'NULL', "Expected 'NULL' when remember_fn raises KeyError"
+
+
+# Test for total_possible_combinations
+def test_total_possible_combinations():
+    # Test case where table has unique constraint with user-defined values
+    column_info_1 = ColumnInfo(
+        name='id', is_unique=True, user_defined_values=[1, 2, 3], datatype='int4', post_gres_datatype='integer'
+    )
+    column_info_2 = ColumnInfo(
+        name='type', datatype='str', post_gres_datatype='text', is_unique=True, user_defined_values=['a', 'b']
+    )
+    constraint = ConstraintInfo(raw_constraint_type='u', constraint_name='unique_constraint', constraint_definition='')
+    table_info = TableInfo(name='table', columns=[column_info_1, column_info_2], constraints=[constraint])
+
+    result = total_possible_combinations(table_info)
+    expected = float(3 * 2)  # 3 options for column 1, 2 options for column 2
+    assert result == expected, f'Expected {expected} but got {result}'
+
+    # Test case where table has a unique constraint but no user-defined values
+    column_info_3 = ColumnInfo(name='foo', is_unique=True, datatype='int4', post_gres_datatype='integer')
+    table_info_no_values = TableInfo(name='test', columns=[column_info_3])
+
+    result = total_possible_combinations(table_info_no_values)
+    assert result == inf, "Expected 'inf' when a unique column has no user-defined values"
+
+    # Test case where table has no unique constraint
+    column_info_4 = ColumnInfo(name='bar', is_unique=False, datatype='int4', post_gres_datatype='integer')
+    table_info_no_unique = TableInfo(name='test', columns=[column_info_4])
+
+    result = total_possible_combinations(table_info_no_unique)
+    assert result == inf, "Expected 'inf' when the table has no unique constraint"

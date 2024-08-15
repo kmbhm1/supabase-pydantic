@@ -351,7 +351,7 @@ INSERT INTO messages (id, inserted_at, message, user_id, channel_id) VALUES (886
 
 - Add support for more SQL databases.
 - Add support for more complex date setting (e.g., created_date vs last_updated).
-- Add support for more complex datatypes, for instance recognizing and mimicking emails or usernames.
+- ~~Add support for more complex datatypes, for instance recognizing and mimicking emails or usernames.~~
 
 ## Conclusion
 

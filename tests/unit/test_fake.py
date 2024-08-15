@@ -1,9 +1,15 @@
+from datetime import date, datetime, timedelta
 from faker import Faker
 import pytest
 from unittest.mock import patch
-import json
+from dateutil.parser import parse
 
-from supabase_pydantic.util.fake import generate_fake_data
+from supabase_pydantic.util.fake import (
+    generate_fake_data,
+    guess_and_generate_fake_data,
+    guess_datetime_order,
+    random_datetime_within_N_years,
+)
 
 
 @pytest.fixture
@@ -102,3 +108,76 @@ def test_user_defined_datatype(fake_faker):
     assert result in ["'bar'", "'baz'"]
     result = generate_fake_data('user-defined', False, None, 'foo', None, faker)
     assert result == 'NULL'
+
+
+# Test for random_datetime_within_N_years
+def test_random_datetime_within_N_years():
+    dt = random_datetime_within_N_years(2)
+    now = datetime.now()
+    max_date = now - timedelta(days=2 * 365)
+    end_date = now - timedelta(days=60)
+    assert max_date <= dt <= end_date, f'Generated datetime {dt} is not within the expected range.'
+
+
+def is_datetime_string(date_string: str) -> bool:
+    """Check if a string can be parsed as a datetime using dateutil."""
+    try:
+        parse(date_string)
+        return True
+    except ValueError:
+        return False
+
+
+def test_guess_datetime_order():
+    row = {
+        'created_at': (0, 'timestamp', datetime(2023, 8, 1)),
+        'updated_at': (1, 'timestamp', datetime(2024, 5, 1)),
+        'deleted_at': (2, 'timestamp', datetime(2023, 12, 1)),
+        'birthdate': (3, 'date', datetime(1985, 7, 1)),
+    }
+    ordered_row = guess_datetime_order(row)
+    assert len(ordered_row) == len(row)
+
+    check = [parse(item) for item in ordered_row]
+    assert check[0] < check[1] < check[2], 'Datetime order is incorrect'
+
+
+# Test for guess_and_generate_fake_data
+@pytest.mark.parametrize(
+    'column_name, expected_type',
+    [
+        ('username', str),
+        ('email', str),
+        ('created_at', datetime),
+        ('updated_at', datetime),
+        ('birthdate', date),
+        ('phone_number', str),
+    ],
+)
+def test_guess_and_generate_fake_data(column_name, expected_type):
+    result = guess_and_generate_fake_data(column_name)
+    assert isinstance(
+        result, expected_type
+    ), f'Expected {expected_type} but got {type(result)} for column {column_name}'
+
+
+# Test for generate_fake_data
+@pytest.mark.parametrize(
+    'data_type, nullable, max_length, name, expected_type',
+    [
+        ('integer', False, None, 'id', int),
+        ('text', False, 100, 'description', str),
+        ('date', False, None, 'birthdate', str),
+        ('timestamp', False, None, 'created_at', str),
+        ('uuid', False, None, 'uuid', str),
+        ('json', False, None, 'metadata', str),
+    ],
+)
+def test_generate_fake_data(data_type, nullable, max_length, name, expected_type):
+    result = generate_fake_data(data_type, nullable, max_length, name)
+    if nullable and result == 'NULL':
+        assert True
+    else:
+        assert isinstance(
+            result, expected_type
+        ), f'Expected {expected_type} but got {type(result)} for data type {data_type}'

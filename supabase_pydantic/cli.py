@@ -289,14 +289,14 @@ def gen(
     # Generate seed data
     if create_seed_data:
         print('Generating seed data...')
-        try:
-            seed_data = generate_seed_data(tables)
-            d = dirs.get('default')
-            fname = os.path.join(d if d is not None else 'entities', 'seed.sql')
-            fpaths = write_seed_file(seed_data, fname, overwrite)
-            print(f'Seed data generated successfully: {", ".join(fpaths)}')
-        except Exception as e:
-            print('Error creating seed data:', e)
+        # try:
+        seed_data = generate_seed_data(tables)
+        d = dirs.get('default')
+        fname = os.path.join(d if d is not None else 'entities', 'seed.sql')
+        fpaths = write_seed_file(seed_data, fname, overwrite)
+        print(f'Seed data generated successfully: {", ".join(fpaths)}')
+        # except Exception as e:
+        #     print('Error creating seed data:', e)
 
 
 if __name__ == '__main__':

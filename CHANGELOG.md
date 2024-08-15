@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.14.3 (2024-08-15)
+
+### Documentation
+
+* docs: update SQL example (#45) ([`5f8f84f`](https://github.com/kmbhm1/supabase-pydantic/commit/5f8f84ffdab21911725a4bdd632da7647b4e2eba))
+
 ## v0.14.2 (2024-08-15)
 
 ### Fix

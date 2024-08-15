@@ -1,15 +1,15 @@
 import pprint
 import subprocess
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from itertools import islice, product
 from math import inf, prod
 from random import choice, randint
 from typing import Any
 
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import RelationshipInfo, TableInfo
-from supabase_pydantic.util.fake import format_for_postgres, generate_fake_data
+from supabase_pydantic.util.dataclasses import ColumnInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.fake import format_for_postgres, generate_fake_data, guess_datetime_order
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -254,6 +254,31 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
         except KeyError:
             print(f'Could not remember data for {table_name}.{column_name}')
 
+    def _rows_for_datetime_parsing(
+        data: list[list[Any]], header: list[Any], columns: list[ColumnInfo]
+    ) -> Generator[dict[str, tuple[int, str, Any]], None, None]:
+        """Organize the rows for datetime parsing."""
+
+        # Ensure there is at least one row (the header row)
+        if not data or len(data) < 2:
+            raise ValueError('Data must contain at least one header row and one data row.')
+
+        # Get mapping of column names to postgres data types
+        column_types = {c.name: c.post_gres_datatype for c in columns}
+
+        # Iterate over each subsequent row
+        for row in data:
+            # Create a dictionary for the current row
+            row_dict = {}
+            for i, (key, value) in enumerate(zip(header, row)):
+                # Determine the type of the value
+                value_type = column_types[key]  # type(value).__name__
+                # Assign the (type, value) tuple to the corresponding key
+                row_dict[key] = (i, value_type, value)
+
+            # Yield the dictionary for the current row
+            yield row_dict
+
     for table_name in sorted_tables:
         table = next((t for t in tables if t.name == table_name), None)
         if table is None:
@@ -293,6 +318,13 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
 
                 row.append(data)
             fake_data.append(row)
+
+        # Modify fake data for datetime sequences
+        headers = fake_data[0]
+        fake_data = [
+            guess_datetime_order(row) for row in _rows_for_datetime_parsing(fake_data[1:], headers, table.columns)
+        ]
+        fake_data.insert(0, headers)
 
         # Add foreign keys
         seed_data[table_name] = fake_data

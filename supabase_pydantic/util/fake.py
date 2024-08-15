@@ -1,6 +1,7 @@
 import json
 import re
-from random import random
+from datetime import datetime, timedelta
+from random import randint, random
 from typing import Any, Literal
 
 from faker import Faker
@@ -60,6 +61,83 @@ def format_for_postgres(value: Any, data_type: str) -> str:
         # raise ValueError(f'Unsupported data type: {data_type}')
 
 
+def random_datetime_within_N_years(n: int = 2) -> Any:
+    """Generate a random datetime within the last N years."""
+    now = datetime.now()
+    max_date = now - timedelta(days=n * 365)
+    end_date = now - timedelta(days=60)
+    return faker.date_time_between(start_date=max_date, end_date=end_date)
+
+
+def guess_datetime_order(row: dict[str, tuple[int, str, Any]]) -> list[Any]:
+    """Guess the ordering of datetimes in a row and return a list of values.
+
+    The definition of the dictionary is column_name: (order in final list, data_type, value).
+
+    Args:
+        row (dict): A dictionary of column names and their values.
+
+    Returns:
+        list: A list of values ordered by their group and within each group.
+    """
+    postgres_date_datatypes = ['date', 'timestamp', 'timestamp with time zone', 'timestamp without time zone']
+
+    # Define grouped datetime columns in order of precedence
+    datetime_groups = [
+        (r'birthdate|dob', 'dob'),
+        (r'created_at|created_on|creation_date', 'created'),
+        (r'published_at|published_on|publish_date', 'published'),
+        (r'modified_at|modified_on|last_modified', 'modified'),
+        (r'accessed_at|accessed_on|last_accessed', 'accessed'),
+        (r'updated_at|updated_on|last_updated', 'updated'),
+        (r'inserted_at|inserted_on', 'inserted'),
+        (r'started_at|started_on|start_date', 'started'),
+        (r'completed_at|completed_on|completion_date', 'completed'),
+        (r'archived_at|archived_on|archived_on', 'archived'),
+        (r'timestamp|log_timestamp', 'logging'),
+        (r'deleted_at|deleted_on|removal_date', 'deleted'),
+        (r'expired_at|expired_on|expiry_date|expire_date', 'expired'),
+        (r'hire_date|hired_on|hired_at', 'hired'),
+        (r'termination_date|terminated_on|terminated_at', 'termination'),
+    ]
+
+    # Start with a base datetime for the sequence of fake timestamps
+    base_time = random_datetime_within_N_years(5)
+    dob_date = base_time - timedelta(days=365 * randint(18, 40))  # Subtract 18-40 years from the base time
+
+    def _time_step() -> timedelta:
+        return timedelta(  # Increment
+            days=randint(1, 4),
+            minutes=randint(1, 60) * randint(1, 10),
+            seconds=randint(1, 60),
+        )
+
+    # Create a dictionary to hold the ordered datetime values with modified timestamps
+    modified_datetimes = {}
+    for pattern, description in datetime_groups:
+        regex = re.compile(pattern)
+        for key, (order, dtype, value) in row.items():
+            if dtype in postgres_date_datatypes and regex.search(key):
+                if description == 'dob':
+                    modified_datetimes[key] = (order, dtype, format_for_postgres(dob_date, dtype))
+                else:
+                    # Assign a fake timestamp in order of the datetime groups
+                    modified_datetimes[key] = (order, dtype, format_for_postgres(base_time, dtype))
+                    base_time += _time_step()  # Move to the next timestamp
+
+    # Extract non-datetime fields
+    non_datetime_fields = {key: value for key, value in row.items() if key not in modified_datetimes}
+
+    # Reassemble the final list in the correct order
+    final_order = [None] * len(row)
+    for key, (order, _, value) in non_datetime_fields.items():
+        final_order[order] = value
+    for key, (order, _, value) in modified_datetimes.items():
+        final_order[order] = value
+
+    return final_order
+
+
 def guess_and_generate_fake_data(
     column_name: str, faker: Faker = faker, data_type: Literal['int', 'float', 'bool', 'str'] | None = None
 ) -> Any:
@@ -93,9 +171,9 @@ def guess_and_generate_fake_data(
         'ip_address': (r'ip.*address', faker.ipv4),
         'user_agent': (r'user.*agent', faker.user_agent),
         'user_id': (r'user.*id', faker.uuid4),
-        'created_at': (r'created.*at', faker.date_time),
-        'updated_at': (r'updated.*at', faker.date_time),
-        'deleted_at': (r'deleted.*at', faker.date_time),
+        'created_at': (r'created.*at', random_datetime_within_N_years),
+        'updated_at': (r'updated.*at', random_datetime_within_N_years),
+        'deleted_at': (r'deleted.*at', random_datetime_within_N_years),
         'is_': (r'^is_.*', lambda: faker.boolean(chance_of_getting_true=50)),
         'company_name': (r'company.*name', faker.company),
         'company_suffix': (r'company.*suffix', faker.company_suffix),
@@ -122,14 +200,11 @@ def guess_and_generate_fake_data(
         'time': (r'time', faker.time),
         'month': (r'month', faker.month_name),
         'year': (r'year', faker.year),
-        'date_time_this_century': (r'date.*time.*century', faker.date_time_this_century),
     }
 
     # Search for a matching pattern and generate data
     for _, (pattern, func) in patterns.items():
         if re.search(pattern, column_name, re.IGNORECASE):
-            if column_name == 'message':
-                print(column_name, pattern, func)
             data = func()
             if data_type:
                 try:
@@ -142,7 +217,9 @@ def guess_and_generate_fake_data(
                         return bool(data)
                     elif data_type == 'str':
                         return str(data)
-                except ValueError:
+                except ValueError as e:
+                    print(f'Error converting data_type "{data_type}" with data "{data}"')
+                    print(f'Error: {e}')
                     return data  # Return original data if conversion fails
             return data
 

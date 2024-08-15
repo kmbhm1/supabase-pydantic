@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.14.2 (2024-08-15)
+
+### Fix
+
+* fix: refine how dates are organized within a given row for a table (#44) ([`72927e7`](https://github.com/kmbhm1/supabase-pydantic/commit/72927e76dff853c13df7f6828006bd6890fc210d))
+
 ## v0.14.1 (2024-08-14)
 
 ### Fix

@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v0.14.4 (2024-08-22)
+
+### Refactor
+
+* refactor: update dependencies and dev status (#46)
+
+* refactor: update dependencies and dev status
+* refactor: update poetry.lock ([`6f16225`](https://github.com/kmbhm1/supabase-pydantic/commit/6f16225b35cc0d8d611756e249a1d5e7fbd7c29c))
+
 ## v0.14.3 (2024-08-15)
 
 ### Documentation

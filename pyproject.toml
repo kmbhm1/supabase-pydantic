@@ -8,7 +8,7 @@ repository = "https://github.com/kmbhm1/supabase-pydantic"
 homepage = "https://kmbhm1.github.io/supabase-pydantic"
 readme = "README.md"
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 2 - Pre-Alpha",
     "Environment :: Console",
     "Framework :: FastAPI",
     "Framework :: Pydantic",
@@ -38,12 +38,6 @@ isort = "^5.13.2"
 python-dotenv = "^1.0.1"
 click = "^8.1.7"
 toml = "^0.10.2"
-mkdocs = "^1.6.0"
-mkdocs-material = "^9.5.30"
-mkdocstrings = {extras = ["python"], version = "^0.25.1"}
-mkdocs-redirects = "^1.2.1"
-mkdocs-click = "^0.8.1"
-pymdown-extensions = "^10.8.1"
 ruff = "^0.4.1"
 click-option-group = "^0.5.6"
 
@@ -61,6 +55,12 @@ pytest-mock = "^3.14.0"
 types-toml = "^0.10.8.20240310"
 networkx = "^3.3"
 matplotlib = "^3.9.1.post1"
+mkdocs = "^1.6.0"
+mkdocs-material = "^9.5.30"
+mkdocstrings = {extras = ["python"], version = "^0.25.1"}
+mkdocs-redirects = "^1.2.1"
+mkdocs-click = "^0.8.1"
+pymdown-extensions = "^10.8.1"
 
 [tool.supabase_pydantic]
 overwrite_existing_files = true

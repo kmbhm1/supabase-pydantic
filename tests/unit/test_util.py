@@ -135,7 +135,7 @@ def test_clean_directories_ignores_non_directories():
 
 def test_get_working_directories_returns_correct_list():
     default_directory = 'default_directory'
-    frameworks = ('fastapi', 'fastapi-jsonapi')
+    frameworks = 'fastapi'
     for auto_create in [False, True]:
         with (
             patch('os.path.exists', return_value=False),
@@ -147,7 +147,6 @@ def test_get_working_directories_returns_correct_list():
             assert directories == {
                 'default': default_directory,
                 'fastapi': os.path.join(default_directory, 'fastapi'),
-                'fastapi-jsonapi': os.path.join(default_directory, 'fastapi_jsonapi'),
             }
 
             if auto_create:
@@ -255,17 +254,15 @@ def test_get_enum_member_from_string_and_enums():
         get_enum_member_from_string(OrmType, 'invalid')
 
     assert get_enum_member_from_string(FrameWorkType, 'fastapi') == FrameWorkType.FASTAPI
-    assert get_enum_member_from_string(FrameWorkType, 'fastapi-jsonapi') == FrameWorkType.FASTAPI_JSONAPI
     with pytest.raises(ValueError):
         get_enum_member_from_string(FrameWorkType, 'invalid')
 
 
 def test_get_standard_jobs_returns_jobs():
     models = ('pydantic', 'sqlalchemy')
-    frameworks = ('fastapi', 'fastapi-jsonapi')
+    frameworks = 'fastapi'
     dirs = {
         'fastapi': 'fastapi_directory',
-        'fastapi-jsonapi': 'fastapi_jsonapi_directory',
     }
 
     jobs = get_standard_jobs(models, frameworks, dirs)

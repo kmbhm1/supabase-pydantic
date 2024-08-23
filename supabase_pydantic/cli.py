@@ -32,8 +32,6 @@ pp = pprint.PrettyPrinter(indent=4)
 load_dotenv(find_dotenv())
 
 # Standard choices
-# model_choices = ['pydantic', 'sqlalchemy']
-# framework_choices = ['fastapi', 'fastapi-jsonapi']
 model_choices = ['pydantic']
 framework_choices = ['fastapi']
 

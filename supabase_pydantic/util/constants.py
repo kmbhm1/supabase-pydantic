@@ -44,7 +44,6 @@ class FrameWorkType(Enum):
     """Enum for framework types."""
 
     FASTAPI = 'fastapi'
-    FASTAPI_JSONAPI = 'fastapi-jsonapi'
 
 
 @dataclass
@@ -97,7 +96,6 @@ class DatabaseUserDefinedType(str, Enum):
 
 
 CUSTOM_MODEL_NAME = 'CustomModel'
-CUSTOM_JSONAPI_META_MODEL_NAME = 'PydanticBaseModel'
 BASE_CLASS_POSTFIX = 'BaseSchema'
 
 CONSTRAINT_TYPE_MAP = {'p': 'PRIMARY KEY', 'f': 'FOREIGN KEY', 'u': 'UNIQUE', 'c': 'CHECK', 'x': 'EXCLUDE'}

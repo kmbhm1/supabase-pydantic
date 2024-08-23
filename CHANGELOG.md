@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.14.5 (2024-08-23)
+
+### Fix
+
+* fix: remove out of scope code (#47) ([`1454654`](https://github.com/kmbhm1/supabase-pydantic/commit/1454654f921663ab12a4f19cc67c1932324efaec))
+
 ## v0.14.4 (2024-08-22)
 
 ### Refactor

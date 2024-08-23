@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "supabase-pydantic"
-version = "0.14.4"
+version = "0.14.5"
 description = "A Pydantic(+) model generator for Supabase"
 authors = ["K Boehm <kmbhm1@gmail.com>"]
 license = "MIT"

@@ -1,10 +1,8 @@
 import pytest
-from unittest.mock import patch
 from supabase_pydantic.util.constants import FrameWorkType, OrmType
 from supabase_pydantic.util.dataclasses import TableInfo
-from supabase_pydantic.util.writers.abstract_classes import AbstractFileWriter
-from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter, PydanticJSONAPIWriter
-from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter, SqlAlchemyJSONAPIWriter
+from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter
+from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
 from supabase_pydantic.util.writers.factories import FileWriterFactory  # Make sure the import path is correct
 
 
@@ -22,9 +20,7 @@ def file_path():
     'file_type,framework_type,expected_writer',
     [
         (OrmType.SQLALCHEMY, FrameWorkType.FASTAPI, SqlAlchemyFastAPIWriter),
-        (OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI, SqlAlchemyJSONAPIWriter),
         (OrmType.PYDANTIC, FrameWorkType.FASTAPI, PydanticFastAPIWriter),
-        (OrmType.PYDANTIC, FrameWorkType.FASTAPI_JSONAPI, PydanticJSONAPIWriter),
     ],
 )
 def test_get_file_writer_valid_cases(table_info, file_path, file_type, framework_type, expected_writer):

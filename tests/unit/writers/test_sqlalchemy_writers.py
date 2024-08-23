@@ -1,12 +1,7 @@
 import pytest
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ConstraintInfo, ForeignKeyInfo, TableInfo, ColumnInfo
-from supabase_pydantic.util.writers.sqlalchemy_writers import (
-    SqlAlchemyFastAPIClassWriter,
-    SqlAlchemyFastAPIWriter,
-    SqlAlchemyJSONAPIClassWriter,
-    SqlAlchemyJSONAPIWriter,
-)
+from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIClassWriter, SqlAlchemyFastAPIWriter
 
 
 @pytest.fixture
@@ -90,21 +85,9 @@ def fastapi_class_writer(table_info):
 
 
 @pytest.fixture
-def jsonapi_class_writer(table_info):
-    """Return a SqlAlchemyJSONAPIClassWriter instance."""
-    return SqlAlchemyJSONAPIClassWriter(table_info)
-
-
-@pytest.fixture
 def fastapi_writer(tables):
     """Return a SqlAlchemyFastAPIWriter instance."""
     return SqlAlchemyFastAPIWriter(tables, 'made-up-file-path.py')
-
-
-@pytest.fixture
-def jsonapi_writer(tables):
-    """Return a SqlAlchemyJSONAPIWriter instance."""
-    return SqlAlchemyJSONAPIWriter(tables, 'made-up-file-path.py')
 
 
 def test_SqlAlchemyFastAPIClassWriter_write_name(fastapi_class_writer):
@@ -318,29 +301,3 @@ def test_SqlAlchemyFastAPIWriter_write(fastapi_writer):
         '\t)\n\n'
     )
     assert fastapi_writer.write() == expected_value
-
-
-def test_SqlAlchemyJSONAPIClassWriter_write_foreign_columns(jsonapi_class_writer):
-    """Verify the foreign columns are written correctly."""
-    assert jsonapi_class_writer.write_foreign_columns() == (
-        '\t# Foreign Keys\n\tcompany: Mapped[Company] = relationship'
-        '("Company", back_populates="User")\n\n\t# Table Args\n\t'
-        "__table_args__ = (\n\t\tPrimaryKeyConstraint('id', name='User_pkey'),"
-        "\n\t\t{ 'schema': 'public' }\n\t)\n"
-    )
-
-
-def test_SqlAlchemyJSONAPIWriter_write_imports(jsonapi_writer):
-    """Verify the correct imports are written."""
-    expected_value = (
-        'from pydantic import Json\nfrom pydantic import UUID4\nfrom sqlalchemy import ForeignKey\n'
-        'from sqlalchemy import Integer\nfrom sqlalchemy import PrimaryKeyConstraint\n'
-        'from sqlalchemy import String\nfrom sqlalchemy.dialects.postgresql '
-        'import JSONB\nfrom sqlalchemy.dialects.postgresql import UUID\n'
-        'from sqlalchemy.orm import DeclarativeBase\n'
-        'from sqlalchemy.orm import Mapped\n'
-        'from sqlalchemy.orm import mapped_column\n'
-        'from __future__ import annotations\nfrom sqlalchemy.orm import Mapped\n'
-        'from sqlalchemy.orm import relationship'
-    )
-    assert jsonapi_writer.write_imports() == expected_value

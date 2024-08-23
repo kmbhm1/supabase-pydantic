@@ -152,9 +152,6 @@ def get_working_directories(
     directories = {
         'default': default_directory,
         'fastapi': None if 'fastapi' not in frameworks else os.path.join(default_directory, 'fastapi'),
-        'fastapi-jsonapi': None
-        if 'fastapi-jsonapi' not in frameworks
-        else os.path.join(default_directory, 'fastapi_jsonapi'),
     }
 
     if auto_create:
@@ -198,22 +195,6 @@ def get_standard_jobs(
             filename=sqlalchemy_fname,
             directory=dirs['fastapi'],
             enabled='sqlalchemy' in models and 'fastapi' in frameworks,
-        )
-
-    if 'fastapi-jsonapi' in dirs and dirs['fastapi-jsonapi'] is not None:
-        jobs['FastAPI-JSONAPI Pydantic'] = WriterConfig(
-            file_type=OrmType.PYDANTIC,
-            framework_type=FrameWorkType.FASTAPI_JSONAPI,
-            filename=pydantic_fname,
-            directory=dirs['fastapi-jsonapi'],
-            enabled='pydantic' in models and 'fastapi-jsonapi' in frameworks,
-        )
-        jobs['FastAPI-JSONAPI SQLAlchemy'] = WriterConfig(
-            file_type=OrmType.SQLALCHEMY,
-            framework_type=FrameWorkType.FASTAPI_JSONAPI,
-            filename=sqlalchemy_fname,
-            directory=dirs['fastapi-jsonapi'],
-            enabled='sqlalchemy' in models and 'fastapi-jsonapi' in frameworks,
         )
 
     return jobs

@@ -1,9 +1,7 @@
 from typing import Any
 
 from supabase_pydantic.util.constants import (
-    CUSTOM_JSONAPI_META_MODEL_NAME,
     CUSTOM_MODEL_NAME,
-    RelationType,
     WriterClassType,
 )
 from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
@@ -198,102 +196,3 @@ class PydanticFastAPIWriter(AbstractFileWriter):
     def write_operational_classes(self) -> str | None:
         """Method to generate the operational classes for the file."""
         return self._class_writer_helper('Operational Classes', is_base=False)
-
-
-# FastAPI-JSONAPI
-
-
-class PydanticJSONAPIClassWriter(PydanticFastAPIClassWriter):
-    def __init__(
-        self, table: TableInfo, class_type: WriterClassType = WriterClassType.BASE, null_defaults: bool = False
-    ):
-        super().__init__(table, class_type, null_defaults)
-
-    def write_foreign_columns(self, use_base: bool = True) -> str | None:
-        """Method to generate foreign column definitions for the class."""
-        if len(self.table.foreign_keys) == 0:
-            return None
-
-        _n = AbstractClassWriter._proper_name
-
-        def _names(name: str) -> tuple[str, str]:
-            return _n(name, use_base), name.lower()
-
-        def _base(name: str, is_list: bool) -> str:
-            return f'{f"list[{name}]" if is_list else name} | None'
-
-        fks = []
-        for fk in self.table.foreign_keys:
-            is_list = fk.relation_type != RelationType.ONE_TO_ONE
-            forn, coln = _names(fk.foreign_table_name)
-
-            fks.append(
-                f'{coln}: {_base(forn, is_list)} = Field('
-                + '\n\t\trelationsip=RelationshipInfo('
-                + f'\n\t\t\tresource_type="{coln}"'
-                + (',\n\t\t\tmany=True' if is_list else '')
-                + '\n\t\t),'
-                + '\n\t)'
-            )
-
-        return AbstractClassWriter.column_section('Relationships', fks) if len(fks) > 0 else None
-
-    def write_operational_class(self) -> str | None:
-        """Method to generate operational class definitions."""
-        class_types = ['Patch', 'Input', 'Item']
-        classes = [
-            '\n'.join(
-                [
-                    f'class {self.name}{t}Schema({self.write_name()}):',
-                    f'\t"""{self.name} {t.upper()} Schema."""',
-                    '\tpass',
-                ]
-            )
-            for t in class_types
-        ]
-
-        return '\n\n'.join(classes)
-
-    def write_columns(self, add_fk: bool = False) -> str:
-        """Method to generate column definitions for the class."""
-        keys = self.write_primary_keys()
-        cols = self.write_primary_columns()
-        fcols = self.write_foreign_columns()
-
-        columns = [x for x in [keys, cols, fcols] if x is not None]
-        return '\n\n'.join(columns)
-
-
-class PydanticJSONAPIWriter(PydanticFastAPIWriter):
-    def __init__(
-        self,
-        tables: list[TableInfo],
-        file_path: str,
-        writer: type[AbstractClassWriter] = PydanticJSONAPIClassWriter,
-        add_null_parent_classes: bool = False,
-    ):
-        super().__init__(tables, file_path, writer, add_null_parent_classes)
-
-    def write_imports(self) -> str:
-        """Method to generate the imports for the file."""
-        # standard
-        imports = {
-            'from fastapi_jsonapi.schema_base import Field, RelationshipInfo',
-            'from pydantic import BaseModel as PydanticBaseModel',
-        }
-        if any([len(t.table_dependencies()) > 0 for t in self.tables]):
-            imports.add('from __future__ import annotations')
-
-        # column data types
-        self._dt_imports(imports)
-
-        return '\n'.join(sorted(imports))
-
-    def write_custom_classes(self) -> str | None:
-        """Method to generate the custom classes for the file."""
-        b = CUSTOM_JSONAPI_META_MODEL_NAME
-        return self._class_writer_helper(
-            comment_title='Custom Classes',
-            comments=['This is a custom model class for defining common features among Pydantic Base Schema.'],
-            classes_override=[f'class {CUSTOM_MODEL_NAME}({b}):\n\tpass'],
-        )

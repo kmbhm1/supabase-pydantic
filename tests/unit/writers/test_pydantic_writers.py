@@ -4,8 +4,6 @@ from supabase_pydantic.util.dataclasses import ConstraintInfo, ForeignKeyInfo, T
 from supabase_pydantic.util.writers.pydantic_writers import (
     PydanticFastAPIClassWriter,
     PydanticFastAPIWriter,
-    PydanticJSONAPIClassWriter,
-    PydanticJSONAPIWriter,
 )
 
 
@@ -42,11 +40,6 @@ def table_info():
 @pytest.fixture
 def fastapi_class_writer(table_info):
     return PydanticFastAPIClassWriter(table_info)
-
-
-@pytest.fixture
-def jsonapi_class_writer(table_info):
-    return PydanticJSONAPIClassWriter(table_info)
 
 
 @pytest.fixture
@@ -127,11 +120,6 @@ def api_writer_tables():
 @pytest.fixture
 def fastapi_file_writer(api_writer_tables):
     return PydanticFastAPIWriter(api_writer_tables, 'dummy_path.py')
-
-
-@pytest.fixture
-def jsonapi_writer(api_writer_tables):
-    return PydanticJSONAPIWriter(api_writer_tables, 'dummy_path.py')
 
 
 def test_PydanticFastAPIClassWriter_write_name(fastapi_class_writer):
@@ -306,99 +294,3 @@ def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
         'from pydantic import UUID4'
     )
     assert fastapi_file_writer.write_imports() == expected_imports
-
-
-def test_PydanticJSONAPIClassWriter_write(jsonapi_class_writer):
-    """Validate the write method for Pydantic JSONAPI Class Writer."""
-    expected_output = (
-        'class UserBaseSchema(CustomModel):\n\t'
-        '"""User Base Schema."""\n\n\t# Primary Keys\n\t'
-        'id: int\n\n\t# Columns\n\tcompany_id: UUID4\n\t'
-        'email: str | None = Field(default=None)\n\n'
-        '\t# Relationships\n\tcompany: CompanyBaseSchema | None = Field('
-        '\n\t\trelationsip=RelationshipInfo(\n\t\t\tresource_type="company"'
-        '\n\t\t),\n\t)'
-    )
-
-    assert jsonapi_class_writer.write_class() == expected_output
-
-
-def test_PydanticJSONAPIClassWriter_write_foreign_columns_returns_none():
-    """Validate the write_foreign_columns method for Pydantic JSONAPI Class Writer returns None with no foreign tables."""
-    table_info = TableInfo(
-        name='User',
-        schema='public',
-        columns=[
-            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
-            ColumnInfo(name='email', post_gres_datatype='varchar', is_nullable=True, datatype='str'),
-            ColumnInfo(
-                name='company_id', post_gres_datatype='uuid', is_nullable=False, datatype='UUID', is_foreign_key=True
-            ),
-        ],
-        foreign_keys=[],
-        constraints=[
-            ConstraintInfo(
-                constraint_name='User_pkey',
-                raw_constraint_type='p',
-                columns=['id'],
-                constraint_definition='PRIMARY KEY (id)',
-            ),
-        ],
-    )
-    writer = PydanticJSONAPIClassWriter(table_info)
-    assert writer.write_foreign_columns() is None
-
-
-def test_PydanticJSONAPIClassWriter_write_operational_class(jsonapi_class_writer):
-    """Validate the write_operational_class method for Pydantic JSONAPI Class Writer."""
-    expected_output = (
-        'class UserPatchSchema(UserBaseSchema):\n\t'
-        '"""User PATCH Schema."""\n\t'
-        'pass\n\nclass UserInputSchema(UserBaseSchema):\n\t'
-        '"""User INPUT Schema."""\n\tpass\n\n'
-        'class UserItemSchema(UserBaseSchema):\n\t"""User ITEM Schema."""'
-        '\n\tpass'
-    )
-
-    assert jsonapi_class_writer.write_operational_class() == expected_output
-
-
-def test_PydanticJSONAPIWriter_write(jsonapi_writer):
-    """Validate the write method for Pydantic JSONAPI Writer."""
-    expected_output = (
-        'from __future__ import annotations\n'
-        'from fastapi_jsonapi.schema_base import Field, RelationshipInfo\n'
-        'from pydantic import BaseModel as PydanticBaseModel\n'
-        'from pydantic import Json\nfrom pydantic import UUID4\n\n\n'
-        '# CUSTOM CLASSES\n'
-        '# Note: This is a custom model class for defining common features among\n'
-        '# Pydantic Base Schema.\n\n\nclass CustomModel(PydanticBaseModel):\n\t'
-        'pass\n\n\n# BASE CLASSES\n\n\n'
-        'class UserBaseSchema(CustomModel):\n\t"""User Base Schema."""\n\n\t'
-        '# Primary Keys\n\tid: int\n\n\t# Columns\n\tclient_id: UUID4\n\t'
-        'company_id: UUID4\n\temail: str | None = Field(default=None)\n\n\t'
-        '# Relationships\n\tcompany: CompanyBaseSchema | None = Field(\n\t\t'
-        'relationsip=RelationshipInfo(\n\t\t\tresource_type="company"\n\t\t),\n\t)'
-        '\n\tclient: ClientBaseSchema | None = Field(\n\t\t'
-        'relationsip=RelationshipInfo(\n\t\t\tresource_type="client"\n\t\t),\n\t)\n\n\n'
-        'class CompanyBaseSchema(CustomModel):\n\t"""Company Base Schema."""\n\n\t'
-        '# Primary Keys\n\tid: UUID4\n\n\t# Columns\n\tname: str\n\n\n'
-        'class ClientBaseSchema(CustomModel):\n\t"""Client Base Schema."""\n\n\t'
-        '# Primary Keys\n\tid: UUID4\n\n\t# Columns\n\t'
-        'info_json: dict | Json | None = Field(default=None)\n\tname: str\n\n\n'
-        '# OPERATIONAL CLASSES\n\n\n'
-        'class UserPatchSchema(UserBaseSchema):\n\t"""User PATCH Schema."""\n\tpass'
-        '\n\nclass UserInputSchema(UserBaseSchema):\n\t"""User INPUT Schema."""\n\t'
-        'pass\n\nclass UserItemSchema(UserBaseSchema):\n\t"""User ITEM Schema."""\n\t'
-        'pass\n\n\nclass CompanyPatchSchema(CompanyBaseSchema):\n\t'
-        '"""Company PATCH Schema."""\n\tpass\n\n'
-        'class CompanyInputSchema(CompanyBaseSchema):\n\t"""Company INPUT Schema."""\n\t'
-        'pass\n\nclass CompanyItemSchema(CompanyBaseSchema):\n\t'
-        '"""Company ITEM Schema."""\n\tpass\n\n\n'
-        'class ClientPatchSchema(ClientBaseSchema):\n\t"""Client PATCH Schema."""\n\t'
-        'pass\n\nclass ClientInputSchema(ClientBaseSchema):\n\t"""Client INPUT Schema."""'
-        '\n\tpass\n\nclass ClientItemSchema(ClientBaseSchema):\n\t'
-        '"""Client ITEM Schema."""\n\tpass\n'
-    )
-
-    assert jsonapi_writer.write() == expected_output

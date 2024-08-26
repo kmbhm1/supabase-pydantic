@@ -279,6 +279,7 @@ def gen(
         for p in paths:
             run_isort(p)
             format_with_ruff(p)
+            fix_imports_with_ruff(p)
             print(f'File formatted successfully: {p}')
     except Exception as e:
         print('An error occurred while running isort and ruff: ')

@@ -24,6 +24,7 @@ from .fake import generate_fake_data
 from .json import CustomJsonEncoder
 from .sorting import (
     build_dependency_graph,
+    fix_imports_with_ruff,
     format_with_ruff,
     generate_seed_data,
     run_isort,
@@ -69,6 +70,7 @@ __all__ = [
     'construct_tables',
     'create_connection',
     'create_directories_if_not_exist',
+    'fix_imports_with_ruff',
     'format_with_ruff',
     'generate_fake_data',
     'generate_seed_data',

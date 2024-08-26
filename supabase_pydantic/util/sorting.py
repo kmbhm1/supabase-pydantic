@@ -40,6 +40,20 @@ def format_with_ruff(file_path: str) -> None:
         print(e.stderr)  # Print any error output from ruff
 
 
+def fix_imports_with_ruff(file_path: str) -> None:
+    """Run the ruff command to fix imports on the specified file."""
+    try:
+        # Run ruff using subprocess.run
+        _ = subprocess.run(
+            ['ruff', 'check', '--select', 'I', '--fix', file_path], check=True, text=True, capture_output=True
+        )
+        # print(f'Ruff formatting successful: {file_path}')
+        # print(result.stdout)  # Output the stdout of the ruff command
+    except subprocess.CalledProcessError as e:
+        print('Error during Ruff formatting:')
+        print(e.stderr)  # Print any error output from ruff
+
+
 def build_dependency_graph(tables: list[TableInfo]) -> tuple[defaultdict[str, list[str]], dict[str, int]]:
     """Build a dependency graph from the tables."""
     graph = defaultdict(list)

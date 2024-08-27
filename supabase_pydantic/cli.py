@@ -16,6 +16,7 @@ from supabase_pydantic.util import (
     ToolConfig,
     clean_directories,
     construct_tables,
+    fix_imports_with_ruff,
     format_with_ruff,
     generate_seed_data,
     get_standard_jobs,

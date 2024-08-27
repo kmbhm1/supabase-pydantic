@@ -96,7 +96,7 @@ class DatabaseUserDefinedType(str, Enum):
 
 
 CUSTOM_MODEL_NAME = 'CustomModel'
-BASE_CLASS_POSTFIX = 'BaseSchema'
+BASE_CLASS_SUFFIX = 'BaseSchema'
 
 CONSTRAINT_TYPE_MAP = {'p': 'PRIMARY KEY', 'f': 'FOREIGN KEY', 'u': 'UNIQUE', 'c': 'CHECK', 'x': 'EXCLUDE'}
 USER_DEFINED_TYPE_MAP = {'d': 'DOMAIN', 'c': 'COMPOSITE', 'e': 'ENUM', 'r': 'RANGE'}

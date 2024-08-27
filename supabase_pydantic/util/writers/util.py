@@ -2,13 +2,13 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
+from supabase_pydantic.util.constants import BASE_CLASS_SUFFIX, WriterClassType
 from supabase_pydantic.util.util import chunk_text
 
 
 def get_base_class_post_script(table_type: str, class_type: WriterClassType) -> str:
     """Method to generate the header for the base class."""
-    post = 'View' + BASE_CLASS_POSTFIX if table_type == 'VIEW' else BASE_CLASS_POSTFIX
+    post = 'View' + BASE_CLASS_SUFFIX if table_type == 'VIEW' else BASE_CLASS_SUFFIX
     return post + 'Parent' if class_type == WriterClassType.PARENT else post
 
 

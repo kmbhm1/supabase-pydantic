@@ -2,7 +2,7 @@ import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
+from supabase_pydantic.util.constants import BASE_CLASS_SUFFIX, WriterClassType
 from supabase_pydantic.util.dataclasses import TableInfo
 from supabase_pydantic.util.util import to_pascal_case
 from supabase_pydantic.util.writers.util import generate_unique_filename
@@ -19,7 +19,7 @@ class AbstractClassWriter(ABC):
 
     @staticmethod
     def _proper_name(name: str, use_base: bool = False) -> str:
-        return to_pascal_case(name) + (BASE_CLASS_POSTFIX if use_base else '')
+        return to_pascal_case(name) + (BASE_CLASS_SUFFIX if use_base else '')
 
     def write_class(
         self,

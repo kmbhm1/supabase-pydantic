@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS countries;
+DROP TYPE IF EXISTS continents;

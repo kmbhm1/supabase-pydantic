@@ -162,6 +162,8 @@ cython_debug/
 # Generated Types
 entities/
 notes/
+docker/generated
+wait-for-it.sh
 
 # VS Code
 .vscode/

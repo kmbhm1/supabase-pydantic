@@ -1,0 +1,89 @@
+
+services:
+  supabase-db:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: supabase-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - supabase-net
+
+  init:
+    image: postgres:14
+    container_name: supabase-init
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../db-scripts:/docker-entrypoint-initdb.d
+      - ../docker/wait-for-it.sh:/wait-for-it.sh
+    networks:
+      - supabase-net
+    depends_on:
+      - supabase-db
+    command: >
+      bash -c "
+      PGPASSWORD=${POSTGRES_PASSWORD} /wait-for-it.sh supabase-db:5432 --
+      psql -h supabase-db -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f /docker-entrypoint-initdb.d/${SCENARIO}/init_database.sql
+      "
+
+  teardown:
+    image: postgres:14
+    container_name: supabase-teardown
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../db-scripts:/docker-entrypoint-initdb.d
+      - ../docker/wait-for-it.sh:/wait-for-it.sh
+    networks:
+      - supabase-net
+    depends_on:
+      - supabase-db
+    command: >
+      bash -c "
+      PGPASSWORD=${POSTGRES_PASSWORD} /wait-for-it.sh supabase-db:5432 --
+      psql -h supabase-db -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f /docker-entrypoint-initdb.d/${SCENARIO}/teardown.sql
+      "
+
+  test-runner:
+    image: python:3.10-slim
+    container_name: supabase-test-runner
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      SCENARIO: ${SCENARIO}  # Pass the SCENARIO variable to the container
+    networks:
+      - supabase-net
+    volumes:
+      - ./generated:/generated
+    depends_on:
+      - supabase-db
+    working_dir: /app
+    command: >
+      bash -c '
+      pip install --upgrade pip &&
+      pip install supabase-pydantic &&
+      sb-pydantic gen --db-url postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@supabase-db:5432/${POSTGRES_DB} &&
+      mkdir -p /generated && mkdir -p /generated/${SCENARIO} &&
+      cp -r entities/fastapi/* /generated/${SCENARIO}/
+      '
+
+volumes:
+  pgdata:
+
+networks:
+  supabase-net:

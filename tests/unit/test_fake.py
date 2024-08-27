@@ -142,7 +142,6 @@ def test_guess_datetime_order():
     assert check[0] < check[1] < check[2], 'Datetime order is incorrect'
 
 
-# Test for guess_and_generate_fake_data
 @pytest.mark.parametrize(
     'column_name, expected_type',
     [
@@ -159,6 +158,29 @@ def test_guess_and_generate_fake_data(column_name, expected_type):
     assert isinstance(
         result, expected_type
     ), f'Expected {expected_type} but got {type(result)} for column {column_name}'
+
+
+@pytest.mark.parametrize(
+    'column_name, expected_type',
+    [
+        ('username', str),
+        ('email', str),
+        ('created_at', datetime),
+        ('updated_at', datetime),
+        ('birthdate', date),
+        ('phone_number', str),
+    ],
+)
+def test_guess_and_generate_fake_data_handles_provided_data_type(column_name, expected_type):
+    result = guess_and_generate_fake_data(column_name, data_type='foo')
+    assert isinstance(
+        result, expected_type
+    ), f'Expected {expected_type} but got {type(result)} for column {column_name} with provided date_type'
+
+    result = guess_and_generate_fake_data(column_name, data_type='int')
+    assert isinstance(
+        result, expected_type
+    ), f'Expected {expected_type} but got {type(result)} for column {column_name} with provided date_type'
 
 
 # Test for generate_fake_data

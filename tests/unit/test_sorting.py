@@ -1,11 +1,12 @@
 from math import inf
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 import subprocess
 
 import pytest
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.sorting import (
+    MAX_ROWS,
     build_dependency_graph,
     format_with_ruff,
     generate_seed_data,
@@ -17,6 +18,7 @@ from supabase_pydantic.util.sorting import (
     sort_tables_for_insert,
     topological_sort,
     total_possible_combinations,
+    unique_data_rows,
 )
 
 
@@ -473,3 +475,83 @@ def test_total_possible_combinations():
 
     result = total_possible_combinations(table_info_no_unique)
     assert result == inf, "Expected 'inf' when the table has no unique constraint"
+
+
+@pytest.fixture
+def mock_table_with_unique_constraints():
+    mock_table = MagicMock()
+    mock_table.has_unique_constraint.return_value = True
+
+    mock_column_1 = MagicMock()
+    mock_column_1.name = 'column1'
+    mock_column_1.is_unique = True
+    mock_column_1.user_defined_values = ['value1', 'value2']
+    mock_column_1.post_gres_datatype = 'text'
+    mock_column_1.is_foreign_key = False
+
+    mock_column_2 = MagicMock()
+    mock_column_2.name = 'column2'
+    mock_column_2.is_unique = True
+    mock_column_2.user_defined_values = ['value3', 'value4']
+    mock_column_2.post_gres_datatype = 'text'
+    mock_column_2.is_foreign_key = False
+
+    mock_table.columns = [mock_column_1, mock_column_2]
+
+    return mock_table
+
+
+@pytest.fixture
+def mock_table_without_unique_constraints():
+    mock_table = MagicMock()
+    mock_table.has_unique_constraint.return_value = False
+    return mock_table
+
+
+@patch('supabase_pydantic.util.sorting.generate_fake_data')
+@patch('supabase_pydantic.util.sorting.pick_random_foreign_key')
+@patch('supabase_pydantic.util.sorting.total_possible_combinations')
+def test_unique_data_rows_finite_combinations(
+    mock_total_combinations, mock_foreign_key, mock_fake_data, mock_table_with_unique_constraints
+):
+    mock_total_combinations.return_value = 4  # Simulate finite combinations
+    mock_foreign_key.return_value = 'foreign_key_value'
+    mock_fake_data.return_value = 'fake_data_value'
+
+    remember_fn = MagicMock()
+    result = unique_data_rows(mock_table_with_unique_constraints, remember_fn)
+
+    assert len(result) == 4
+    expected_result = [
+        {'column1': "'value1'", 'column2': "'value3'"},
+        {'column1': "'value1'", 'column2': "'value4'"},
+        {'column1': "'value2'", 'column2': "'value3'"},
+        {'column1': "'value2'", 'column2': "'value4'"},
+    ]
+    assert result == expected_result
+
+
+@patch('supabase_pydantic.util.sorting.generate_fake_data')
+@patch('supabase_pydantic.util.sorting.pick_random_foreign_key')
+@patch('supabase_pydantic.util.sorting.total_possible_combinations')
+def test_unique_data_rows_infinite_combinations(
+    mock_total_combinations, mock_foreign_key, mock_fake_data, mock_table_with_unique_constraints
+):
+    mock_total_combinations.return_value = float('inf')  # Simulate infinite combinations
+    mock_foreign_key.return_value = 'foreign_key_value'
+    mock_fake_data.return_value = 'fake_data_value'
+
+    remember_fn = MagicMock()
+    result = unique_data_rows(mock_table_with_unique_constraints, remember_fn)
+
+    assert len(result) <= MAX_ROWS
+    for row in result:
+        assert isinstance(row, dict)
+        assert 'column1' in row and 'column2' in row
+
+
+def test_unique_data_rows_no_unique_constraints(mock_table_without_unique_constraints):
+    remember_fn = MagicMock()
+    result = unique_data_rows(mock_table_without_unique_constraints, remember_fn)
+
+    assert result == []

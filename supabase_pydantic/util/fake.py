@@ -217,7 +217,7 @@ def guess_and_generate_fake_data(
                         return bool(data)
                     elif data_type == 'str':
                         return str(data)
-                except ValueError as e:
+                except (ValueError, TypeError) as e:
                     print(f'Error converting data_type "{data_type}" with data "{data}"')
                     print(f'Error: {e}')
                     return data  # Return original data if conversion fails

@@ -75,6 +75,9 @@ coverage:
 	@echo "Running tests with coverage"
 	@poetry run pytest --cov=supabase_pydantic --cov-report=term-missing --cov-report=html --cov-config=pyproject.toml
 
+e2e:
+	@echo "Running end-to-end tests"
+	@cd docker && ./run_tests.sh && cd ..
 
 #######################################################
 # Documentation 									  #

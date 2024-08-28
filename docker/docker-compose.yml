@@ -59,13 +59,13 @@ services:
       "
 
   test-runner:
-    image: python:3.10-slim
+    image: sb-pydantic-test-runner:latest  # Use the custom image
     container_name: supabase-test-runner
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      SCENARIO: ${SCENARIO}  # Pass the SCENARIO variable to the container
+      SCENARIO: ${SCENARIO}
     networks:
       - supabase-net
     volumes:

@@ -1,0 +1,17 @@
+# Dockerfile.test-runner
+FROM python:3.10-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Upgrade pip and install the required packages
+RUN pip install --upgrade pip && \
+    pip install supabase-pydantic
+
+# Define environment variables for flexibility
+ENV POSTGRES_USER=supabase_user
+ENV POSTGRES_PASSWORD=supabase_pass
+ENV POSTGRES_DB=supabase_db
+
+# Default command (can be overridden by docker-compose.yml)
+CMD ["bash"]

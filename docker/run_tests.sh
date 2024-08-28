@@ -9,10 +9,15 @@ fi
 
 # List of scenarios
 # scenarios=("scenario1" "scenario2" "scenario3")
-scenarios=("sb-countries")
+scenarios=("sb-countries" "sb-slack")
 
 # Define the path to docker-compose.yml
 DOCKER_COMPOSE_PATH="./docker-compose.yml"
+
+# Step 1: Build the custom Docker image
+echo "Building custom Docker image for test runner..."
+docker build -f Dockerfile.test-runner -t sb-pydantic-test-runner:latest .
+echo "Custom Docker image built successfully."
 
 # Loop through each scenario
 for scenario in "${scenarios[@]}"; do
@@ -39,3 +44,7 @@ for scenario in "${scenarios[@]}"; do
 
   echo "$scenario completed."
 done
+
+
+# Shut down the database
+docker compose -f "$DOCKER_COMPOSE_PATH" down

@@ -9,7 +9,7 @@ fi
 
 # List of scenarios
 # scenarios=("scenario1" "scenario2" "scenario3")
-scenarios=("sb-countries" "sb-slack")
+scenarios=("sb-countries" "sb-slack" "postgres-todos")
 
 # Define the path to docker-compose.yml
 DOCKER_COMPOSE_PATH="./docker-compose.yml"

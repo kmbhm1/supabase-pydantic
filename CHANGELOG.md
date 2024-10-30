@@ -1,19 +1,29 @@
 # CHANGELOG
 
+
+## v0.14.6 (2024-10-30)
+
+### Bug Fixes
+
+* fix: correct import for datetime (dot) datetime, time, and date (#49) ([`9f72bcd`](https://github.com/kmbhm1/supabase-pydantic/commit/9f72bcd8cf0aa78c113bd7c042747b3ea0d2fcca))
+
+
 ## v0.14.5 (2024-08-23)
 
-### Fix
+### Bug Fixes
 
 * fix: remove out of scope code (#47) ([`1454654`](https://github.com/kmbhm1/supabase-pydantic/commit/1454654f921663ab12a4f19cc67c1932324efaec))
 
+
 ## v0.14.4 (2024-08-22)
 
-### Refactor
+### Refactoring
 
 * refactor: update dependencies and dev status (#46)
 
 * refactor: update dependencies and dev status
 * refactor: update poetry.lock ([`6f16225`](https://github.com/kmbhm1/supabase-pydantic/commit/6f16225b35cc0d8d611756e249a1d5e7fbd7c29c))
+
 
 ## v0.14.3 (2024-08-15)
 
@@ -21,21 +31,24 @@
 
 * docs: update SQL example (#45) ([`5f8f84f`](https://github.com/kmbhm1/supabase-pydantic/commit/5f8f84ffdab21911725a4bdd632da7647b4e2eba))
 
+
 ## v0.14.2 (2024-08-15)
 
-### Fix
+### Bug Fixes
 
 * fix: refine how dates are organized within a given row for a table (#44) ([`72927e7`](https://github.com/kmbhm1/supabase-pydantic/commit/72927e76dff853c13df7f6828006bd6890fc210d))
 
+
 ## v0.14.1 (2024-08-14)
 
-### Fix
+### Bug Fixes
 
 * fix: refine fake data generator (#43) ([`873a4d6`](https://github.com/kmbhm1/supabase-pydantic/commit/873a4d651bae12a06ce6de163760471742d4c074))
 
+
 ## v0.14.0 (2024-08-13)
 
-### Feature
+### Features
 
 * feat: add seed data generator for models (#42)
 
@@ -47,6 +60,7 @@
 * feat: add seed.sql generator for models
 * ci: exclude poc folder fo checking ([`cd7c97b`](https://github.com/kmbhm1/supabase-pydantic/commit/cd7c97bcee6d52d0bbdb36b8c58ceb45e0131707))
 
+
 ## v0.13.1 (2024-08-06)
 
 ### Documentation
@@ -55,20 +69,23 @@
 
 * docs: update README (#40) ([`2487307`](https://github.com/kmbhm1/supabase-pydantic/commit/2487307896bcace748d75b0c6635c179e45dfdf5))
 
+
 ## v0.13.0 (2024-08-05)
 
-### Feature
+### Features
 
 * feat: update version logic to dts and latest schema (#39)
 
 * feat: add ability to inherit from all-null parent classes in pydantic fastapi models
 * feat: change versioning to datetime ([`06193cb`](https://github.com/kmbhm1/supabase-pydantic/commit/06193cb0b8c7d9bd599f5e8198912e64a0499836))
 
+
 ## v0.12.0 (2024-08-05)
 
-### Feature
+### Features
 
 * feat: add ability to inherit from all-null parent classes in pydantic fastapi models (#38) ([`6c6c673`](https://github.com/kmbhm1/supabase-pydantic/commit/6c6c67320b701c3208775a620f2fc46a89d65380))
+
 
 ## v0.11.0 (2024-08-04)
 
@@ -76,11 +93,12 @@
 
 * docs: correct linkedin url (#36) ([`d55991d`](https://github.com/kmbhm1/supabase-pydantic/commit/d55991dd4fe6cc48e65a9e3d63783e4e8313181f))
 
-### Feature
+### Features
 
 * feat: add db-url connector (#37)
 
 * feat: add db-url connector ([`42fe787`](https://github.com/kmbhm1/supabase-pydantic/commit/42fe787628ba802f398bae94b41006b7db6c7918))
+
 
 ## v0.10.0 (2024-08-01)
 
@@ -90,52 +108,58 @@
 
 * docs: rm invalid refs (#33) ([`e8c8717`](https://github.com/kmbhm1/supabase-pydantic/commit/e8c87177979b2b6300cbbf326f0cdb1add10e1d9))
 
-### Feature
+### Features
 
 * feat: update sqlalchemy writer for v2 (#35)
 
 - feat: ref https://docs.sqlalchemy.org/en/20/orm/declarative_tables.html ([`1c5b9a5`](https://github.com/kmbhm1/supabase-pydantic/commit/1c5b9a519a0211e1d1bcf674f51504ff7f044995))
 
+
 ## v0.9.0 (2024-07-31)
 
-### Feature
+### Features
 
 * feat: add homepage (#32)
 
 * chore: add homepage
 * docs: update README ([`6407452`](https://github.com/kmbhm1/supabase-pydantic/commit/6407452d68ed6c4e7e4f5228996fba783bd31feb))
 
+
 ## v0.8.4 (2024-07-31)
 
-### Fix
+### Bug Fixes
 
 * fix: rm reference to mkdocs-click (#31) ([`4ae71f2`](https://github.com/kmbhm1/supabase-pydantic/commit/4ae71f26fbfd0dafe58bd107fc5a7f17449a3afd))
 
+
 ## v0.8.3 (2024-07-31)
 
-### Fix
+### Bug Fixes
 
 * fix: remove mkdocs-click (#30) ([`79f6783`](https://github.com/kmbhm1/supabase-pydantic/commit/79f678328db072b4a9c7e9a645349f5eeed8e288))
 
+
 ## v0.8.2 (2024-07-31)
 
-### Fix
+### Bug Fixes
 
 * fix: mkdocs deploy 2 (#29) ([`4aaf224`](https://github.com/kmbhm1/supabase-pydantic/commit/4aaf2246f659d2dfbcdb4c5bee7e100910ec4950))
 
+
 ## v0.8.1 (2024-07-31)
 
-### Fix
+### Bug Fixes
 
 * fix: mkdocs deploy (#28) ([`27dd29c`](https://github.com/kmbhm1/supabase-pydantic/commit/27dd29cbeecb27e2b3960b8d2de245b7e1f579a5))
 
+
 ## v0.8.0 (2024-07-31)
 
-### Ci
+### Continuous Integration
 
 * ci: fix codecov upload (#26) ([`e4551e8`](https://github.com/kmbhm1/supabase-pydantic/commit/e4551e84636dd680df1a1608370bcebcfafd4b11))
 
-### Feature
+### Features
 
 * feat: add github pages site with mkdocs (#27)
 
@@ -152,9 +176,10 @@
 * feat(docs): styling changes and add mkdocs deploy action
 * test: fix clean_directories test ([`ee9eba7`](https://github.com/kmbhm1/supabase-pydantic/commit/ee9eba7e549bc35684eaf6ba4daf1d6489611cc8))
 
+
 ## v0.7.0 (2024-07-29)
 
-### Feature
+### Features
 
 * feat: Add full coverage testing, testing coverage checking, and coverage reporting (#25)
 
@@ -172,20 +197,23 @@
 * chore: fix mypy issues
 * chore: remove incorrect test ([`f84dd83`](https://github.com/kmbhm1/supabase-pydantic/commit/f84dd8381a187d1035df89a158af05400d2e6336))
 
+
 ## v0.6.2 (2024-07-27)
 
-### Fix
+### Bug Fixes
 
 * fix: poetry script entry fn (#24) ([`06ff101`](https://github.com/kmbhm1/supabase-pydantic/commit/06ff1018cc71df054a867f5eef7aed859b5384fc))
 
+
 ## v0.6.1 (2024-07-26)
 
-### Fix
+### Bug Fixes
 
 * fix: correct overwrite logic (#23)
 
 * fix: correct overwrite logic
 * docs: update README with new cli args ([`70a02d7`](https://github.com/kmbhm1/supabase-pydantic/commit/70a02d718f5c752cc302504ca57fa69b3231f8df))
+
 
 ## v0.6.0 (2024-07-26)
 
@@ -204,12 +232,12 @@
 * docs: add FUNDING.yml (#19)
 * docs: add CONTRIBUTING.md ([`865ecf2`](https://github.com/kmbhm1/supabase-pydantic/commit/865ecf292dda8a89eab64489396eaed09f250121))
 
-### Feature
+### Features
 
 * feat: Convert writers to Abstract Base Class and reformate CLI with args like supabase-cli gen function (#22)
 
 * feat(cli-refine-1): move utility functions and add example args for revised cli, like supabase cli generate cmd
-* feat(writer-abc): starter for abc&#39;s for new writer classes
+* feat(writer-abc): starter for abc's for new writer classes
 * feat(writer-abc): add methods to abcs and factories for writers
 * feat(writer-abc): implement pydantic fastapi writer from abc
 * feat(writer-abc): pre-commit updates
@@ -222,9 +250,10 @@
 * test: temporary update threshold for failing coverge
 * chore: change lint and type checking in action to verbose ([`d23b88d`](https://github.com/kmbhm1/supabase-pydantic/commit/d23b88d29be7497c7cc5e67e4fc4615f22605537))
 
+
 ## v0.5.0 (2024-07-21)
 
-### Feature
+### Features
 
 * feat(pre-commit): add pre commits, linting, formatting, pyrpoject.toml config, and tests (#16)
 
@@ -244,15 +273,17 @@
 * feat(pre-commit): re-add verbose with testing step in action
 * feat(pre-commit): remove uneccessary step for reporting ([`6b686e8`](https://github.com/kmbhm1/supabase-pydantic/commit/6b686e86ce699e0ae5c4a9014a971b30d7bc01a1))
 
+
 ## v0.4.0 (2024-07-19)
 
-### Feature
+### Features
 
 * feat(add-writer): cleanup (#15) ([`5d80031`](https://github.com/kmbhm1/supabase-pydantic/commit/5d80031e916e6b62689282dc5da3acad96ae63ef))
 
+
 ## v0.3.0 (2024-07-19)
 
-### Feature
+### Features
 
 * feat(add-writer): updates to rerun pipeline (#14) ([`c7be9e5`](https://github.com/kmbhm1/supabase-pydantic/commit/c7be9e5a4970ed3f669078cf67d2b648700b5099))
 
@@ -265,11 +296,12 @@
 * feat(add-writer): integrate fastapi-jsonapi writing into writer classes, add job configuration for cli
 * feat(add-writer): update marshalling logic to incorporate foreign relation types, add sqlalchemy jsonapi starter
 * feat(add-writer): finalize marshalling logic and writer for relationships
-* feat(add-writer): update todo&#39;s ([`caf2b59`](https://github.com/kmbhm1/supabase-pydantic/commit/caf2b59e399f79c11f3ff4359b4739643def498b))
+* feat(add-writer): update todo's ([`caf2b59`](https://github.com/kmbhm1/supabase-pydantic/commit/caf2b59e399f79c11f3ff4359b4739643def498b))
+
 
 ## v0.2.1 (2024-07-12)
 
-### Fix
+### Bug Fixes
 
 * fix(cicd): change strategy for poetry install (#12) ([`825c4e2`](https://github.com/kmbhm1/supabase-pydantic/commit/825c4e2551d8d5f5d51e83e0e1e9c977b50f5219))
 
@@ -277,13 +309,10 @@
 
 * fix(cicd): fix wrong version pointer and add build command (#10) ([`ded4864`](https://github.com/kmbhm1/supabase-pydantic/commit/ded486454834ca0811c03dae3c9333e1e4713a6d))
 
+
 ## v0.2.0 (2024-07-12)
 
-### Feature
-
-* feat(deploy-prod): add publish to pypi step (#6) ([`cac019e`](https://github.com/kmbhm1/supabase-pydantic/commit/cac019eeb58e60197777c7872d0848e124d9187a))
-
-### Fix
+### Bug Fixes
 
 * fix(cicd): test-pr (#9) ([`d410d2f`](https://github.com/kmbhm1/supabase-pydantic/commit/d410d2f59c1fba0ca3d879a8749dbfd7e1819627))
 
@@ -302,6 +331,11 @@
 * fix(missing-dist): adding dist_path to semantic_release config (#3) ([`ea3f5d4`](https://github.com/kmbhm1/supabase-pydantic/commit/ea3f5d43424ff621108c4507d1b22672cbcef81a))
 
 * fix(vscode-dir): remove .vscode tracking (#2) ([`eed989b`](https://github.com/kmbhm1/supabase-pydantic/commit/eed989b39fa7448de60ee84c3dc8e8da544f22c0))
+
+### Features
+
+* feat(deploy-prod): add publish to pypi step (#6) ([`cac019e`](https://github.com/kmbhm1/supabase-pydantic/commit/cac019eeb58e60197777c7872d0848e124d9187a))
+
 
 ## v0.1.0 (2024-07-09)
 

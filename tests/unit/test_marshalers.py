@@ -355,7 +355,7 @@ def test_add_foreign_key_info_to_table_details(column_details, fk_details):
 # Test add_constraints_to_table_details
 def test_add_constraints_to_table_details(column_details, constraints):
     tables = get_table_details_from_columns(column_details)
-    add_constraints_to_table_details(tables, constraints)
+    add_constraints_to_table_details(tables, 'public', constraints)
     table = tables[('public', 'users')]
     assert len(table.constraints) == 1
     assert table.constraints[0].constraint_name == 'pk_users'
@@ -383,11 +383,11 @@ def test_is_bridge_table(
     no_primary_bridge_table_setup,
     primary_foreign_and_col_primary_unequal_table_setup,
 ):
-    assert is_bridge_table(bridge_table_setup) == True, 'Should identify as a bridge table'
-    assert is_bridge_table(non_bridge_table_setup) == False, 'Should not identify as a bridge table'
-    assert is_bridge_table(no_primary_bridge_table_setup) == False, 'Should not identify as a bridge table'
-    assert (
-        is_bridge_table(primary_foreign_and_col_primary_unequal_table_setup) == False
+    assert is_bridge_table(bridge_table_setup) is True, 'Should identify as a bridge table'
+    assert not is_bridge_table(non_bridge_table_setup), 'Should not identify as a bridge table'
+    assert not is_bridge_table(no_primary_bridge_table_setup), 'Should not identify as a bridge table'
+    assert not is_bridge_table(
+        primary_foreign_and_col_primary_unequal_table_setup
     ), 'Should not identify as a bridge table'
 
 
@@ -401,8 +401,8 @@ def test_analyze_bridge_tables(
         'simple_table': non_bridge_table_setup,
     }
     analyze_bridge_tables(tables)
-    assert tables['user_roles'].is_bridge == True, 'user_roles should be marked as a bridge table'
-    assert tables['simple_table'].is_bridge == False, 'simple_table should not be marked as a bridge table'
+    assert tables['user_roles'].is_bridge is True, 'user_roles should be marked as a bridge table'
+    assert not tables['simple_table'].is_bridge, 'simple_table should not be marked as a bridge table'
 
 
 def test_analyze_table_relationships(setup_analyze_tables):
@@ -544,7 +544,7 @@ def mock_enum_types():
 
 def test_get_enum_types(mock_enum_types):
     # Call the function
-    enum_types = get_enum_types(mock_enum_types)
+    enum_types = get_enum_types(mock_enum_types, 'public')
 
     # Assert the output
     assert len(enum_types) == 2
@@ -563,7 +563,7 @@ def mock_enum_type_mapping():
 
 def test_get_user_type_mappings(mock_enum_type_mapping):
     # Call the function
-    user_type_mappings = get_user_type_mappings(mock_enum_type_mapping)
+    user_type_mappings = get_user_type_mappings(mock_enum_type_mapping, 'public')
 
     # Assert the output
     assert len(user_type_mappings) == 4
@@ -608,7 +608,7 @@ def get_user_type_mappings_mock(mocker):
 def test_add_user_defined_types_valid_input(
     mock_tables, mock_enum_types, mock_enum_type_mapping, get_enum_types_mock, get_user_type_mappings_mock
 ):
-    add_user_defined_types_to_tables(mock_tables, mock_enum_types, mock_enum_type_mapping)
+    add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
     assert mock_tables[('public', 'test_table')].columns[1].user_defined_values == [
         'A',
         'B',
@@ -624,7 +624,7 @@ def test_table_key_not_found(
         MagicMock(table_name='nonexistent_table', column_name='type', type_name='my_enum')
     ]
     with pytest.raises(KeyError):
-        add_user_defined_types_to_tables(mock_tables, mock_enum_types, mock_enum_type_mapping)
+        add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
 
 
 def test_column_name_not_found(
@@ -634,6 +634,6 @@ def test_column_name_not_found(
     get_user_type_mappings_mock.return_value = [
         MagicMock(table_name='test_table', column_name='nonexistent_column', type_name='my_enum')
     ]
-    add_user_defined_types_to_tables(mock_tables, mock_enum_types, mock_enum_type_mapping)
+    add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
     # Since this writes to stdout, it might be hard to directly assert without capturing the output
     assert True, 'Should handle non-existent column gracefully (test by inspecting printed output or modify function to be more testable)'

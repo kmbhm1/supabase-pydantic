@@ -135,7 +135,7 @@ def test_clean_directories_ignores_non_directories():
 
 def test_get_working_directories_returns_correct_list():
     default_directory = 'default_directory'
-    frameworks = 'fastapi'
+    frameworks = ('fastapi',)
     for auto_create in [False, True]:
         with (
             patch('os.path.exists', return_value=False),
@@ -259,14 +259,17 @@ def test_get_enum_member_from_string_and_enums():
 
 
 def test_get_standard_jobs_returns_jobs():
-    models = ('pydantic', 'sqlalchemy')
-    frameworks = 'fastapi'
-    dirs = {
+    models = ('pydantic',)
+    frameworks = ('fastapi',)
+    dirs: dict[str, str | None] = {
         'fastapi': 'fastapi_directory',
     }
+    schemas = ('public',)
 
-    jobs = get_standard_jobs(models, frameworks, dirs)
+    job_dict = get_standard_jobs(models, frameworks, dirs, schemas)
 
+    assert 'public' in job_dict
+    jobs = job_dict['public']
     assert all([isinstance(job, WriterConfig) for job in jobs.values()])
 
 
@@ -299,20 +302,20 @@ def test_write_seed_file_no_overwrite_file_does_not_exist():
 
     with patch('builtins.open', m):
         with patch('os.path.exists', return_value=False):
-            with patch('pathlib.Path.write_text') as mock_write:
+            with patch('pathlib.Path.write_text'):
                 with patch('pathlib.Path.exists', return_value=False):
                     result = write_seed_file(seed_data, file_path, overwrite=False)
 
     assert result == expected
     expected_calls = [
-        call(f'-- table1\n'),
-        call(f'INSERT INTO table1 (id, name) VALUES (1, Alice);\n'),
-        call(f'INSERT INTO table1 (id, name) VALUES (2, Bob);\n'),
-        call(f'\n'),
-        call(f'-- table2\n'),
-        call(f'INSERT INTO table2 (id, value) VALUES (1, Value1);\n'),
-        call(f'INSERT INTO table2 (id, value) VALUES (2, Value2);\n'),
-        call(f'\n'),
+        call('-- table1\n'),
+        call('INSERT INTO table1 (id, name) VALUES (1, Alice);\n'),
+        call('INSERT INTO table1 (id, name) VALUES (2, Bob);\n'),
+        call('\n'),
+        call('-- table2\n'),
+        call('INSERT INTO table2 (id, value) VALUES (1, Value1);\n'),
+        call('INSERT INTO table2 (id, value) VALUES (2, Value2);\n'),
+        call('\n'),
     ]
     m().write.assert_has_calls(expected_calls, any_order=True)
 
@@ -359,19 +362,19 @@ def test_write_seed_file_overwrite():
 
     with patch('builtins.open', m):
         with patch('os.path.exists', return_value=True):
-            with patch('pathlib.Path.write_text') as mock_write:
+            with patch('pathlib.Path.write_text'):
                 with patch('pathlib.Path.exists', return_value=True):
                     result = write_seed_file(seed_data, file_path, overwrite=True)
 
     assert result == [expected]
     expected_calls = [
-        call(f'-- table1\n'),
-        call(f'INSERT INTO table1 (id, name) VALUES (1, Alice);\n'),
-        call(f'INSERT INTO table1 (id, name) VALUES (2, Bob);\n'),
-        call(f'\n'),
-        call(f'-- table2\n'),
-        call(f'INSERT INTO table2 (id, value) VALUES (1, Value1);\n'),
-        call(f'INSERT INTO table2 (id, value) VALUES (2, Value2);\n'),
-        call(f'\n'),
+        call('-- table1\n'),
+        call('INSERT INTO table1 (id, name) VALUES (1, Alice);\n'),
+        call('INSERT INTO table1 (id, name) VALUES (2, Bob);\n'),
+        call('\n'),
+        call('-- table2\n'),
+        call('INSERT INTO table2 (id, value) VALUES (1, Value1);\n'),
+        call('INSERT INTO table2 (id, value) VALUES (2, Value2);\n'),
+        call('\n'),
     ]
     m().write.assert_has_calls(expected_calls, any_order=True)

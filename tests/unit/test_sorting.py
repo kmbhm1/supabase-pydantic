@@ -17,6 +17,7 @@ from supabase_pydantic.util.sorting import (
     sort_tables_for_insert,
     topological_sort,
     total_possible_combinations,
+    unique_data_rows,
 )
 
 
@@ -473,3 +474,94 @@ def test_total_possible_combinations():
 
     result = total_possible_combinations(table_info_no_unique)
     assert result == inf, "Expected 'inf' when the table has no unique constraint"
+
+
+def test_unique_data_rows_no_unique_constraints():
+    table = TableInfo(
+        name='test_table',
+        columns=[ColumnInfo(name='id', datatype='int4', post_gres_datatype='integer', is_unique=False)],
+        constraints=[],
+    )
+    result = unique_data_rows(table, remember_fn=Mock())
+    assert result == []
+
+
+def test_unique_data_rows_finite_combinations():
+    table = TableInfo(
+        name='test_table',
+        columns=[
+            ColumnInfo(
+                name='id',
+                datatype='int4',
+                post_gres_datatype='integer',
+                is_unique=True,
+                user_defined_values=['1', '2', '3'],
+            ),
+            ColumnInfo(
+                name='name',
+                datatype='str',
+                post_gres_datatype='text',
+                is_unique=True,
+                user_defined_values=['Alice', 'Bob'],
+            ),
+        ],
+        constraints=[
+            ConstraintInfo(
+                raw_constraint_type='u',
+                constraint_name='unique_constraint',
+                constraint_definition='',
+                columns=['id', 'name'],
+            )
+        ],
+    )
+    result = unique_data_rows(table, remember_fn=Mock())
+    assert len(result) == 6  # Since there are 6 possible unique combinations
+
+
+def test_unique_data_rows_infinite_combinations():
+    table = TableInfo(
+        name='test_table',
+        columns=[
+            ColumnInfo(
+                name='id', datatype='int4', post_gres_datatype='integer', is_unique=True, user_defined_values=[]
+            ),
+            ColumnInfo(name='name', datatype='str', post_gres_datatype='text', is_unique=True, user_defined_values=[]),
+        ],
+        constraints=[
+            ConstraintInfo(
+                raw_constraint_type='u',
+                constraint_name='unique_constraint',
+                constraint_definition='',
+                columns=['id', 'name'],
+            )
+        ],
+    )
+    result = unique_data_rows(table, remember_fn=Mock())
+    assert len(result) > 0  # Should generate some rows even with infinite possibilities
+
+
+def test_unique_data_rows_with_foreign_keys():
+    table = TableInfo(
+        name='test_table',
+        columns=[
+            ColumnInfo(name='id', datatype='int4', post_gres_datatype='integer', is_unique=True, is_foreign_key=True),
+            ColumnInfo(
+                name='name',
+                datatype='str',
+                post_gres_datatype='text',
+                is_unique=True,
+                user_defined_values=['Alice', 'Bob'],
+            ),
+        ],
+        constraints=[
+            ConstraintInfo(
+                raw_constraint_type='u',
+                constraint_name='unique_constraint',
+                constraint_definition='',
+                columns=['id', 'name'],
+            )
+        ],
+    )
+    with patch('supabase_pydantic.util.sorting.pick_random_foreign_key', return_value=1):
+        result = unique_data_rows(table, remember_fn=Mock())
+    assert len(result) == 2  # Should generate 2 rows, one for each name

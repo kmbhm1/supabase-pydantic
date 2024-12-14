@@ -175,11 +175,11 @@ class TableInfo(AsDictParent):
 
     def primary_key(self) -> list[str]:
         """Get the primary key for a table."""
-        return (
-            next(c.columns for c in self.constraints if c.constraint_type() == 'PRIMARY KEY')
-            if self.table_type == 'BASE TABLE'
-            else []
-        )
+        if self.table_type == 'BASE TABLE':
+            for constraint in self.constraints:
+                if constraint.constraint_type() == 'PRIMARY KEY':
+                    return constraint.columns
+        return []  # Return an empty list if no primary key is found
 
     def primary_is_composite(self) -> bool:
         """Check if the primary key is composite."""

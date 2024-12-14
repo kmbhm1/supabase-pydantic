@@ -156,14 +156,16 @@ def pick_random_foreign_key(column_name: str, table: TableInfo, remember_fn: Cal
     """Pick a random foreign key value for a column."""
     fk = next((fk for fk in table.foreign_keys if fk.column_name == column_name), None)
     if fk is None:
-        print(f'Could not find foreign table for column {column_name}')
+        # TODO: change this to debug logging
+        # print(f'Could not find foreign table for column {column_name}')
         return 'NULL'
     else:
         try:
             values = remember_fn(fk.foreign_table_name, fk.foreign_column_name)
             return choice(list(values))
         except KeyError:
-            print(f'Could not find foreign table for column {column_name}')
+            # TODO: change this to debug logging
+            # print(f'Could not find foreign table for column {column_name}')
             return 'NULL'
 
 

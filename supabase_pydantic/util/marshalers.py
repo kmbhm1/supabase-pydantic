@@ -76,8 +76,6 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
             is_nullable=is_nullable == 'YES',
             max_length=max_length,
         )
-        # if column_info.name == 'permission':
-        #     print(str(column_info))
         tables[table_key].add_column(column_info)
 
     return tables
@@ -108,11 +106,18 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
             tables[table_key].add_foreign_key(fk_info)
 
 
-def add_constraints_to_table_details(tables: dict, constraints: list) -> None:
+def add_constraints_to_table_details(tables: dict, schema: str, constraints: list) -> None:
     """Add constraints to the table details."""
     for row in constraints:
         (constraint_name, table_name, columns, constraint_type, constraint_definition) = row
-        table_key = ('public', table_name)
+
+        # Remove schema from the beginning of table_name if present
+        if table_name.startswith(f'{schema}.'):
+            table_name = table_name[len(schema) + 1 :]  # Remove schema and the dot  # noqa: E203
+        table_name = table_name.lstrip('.')  # Remove any leading dots
+        table_key = (schema, table_name)
+
+        # Create the constraint and add it to the table
         if table_key in tables:
             constraint = ConstraintInfo(
                 constraint_name=constraint_name,
@@ -163,7 +168,7 @@ def add_relationships_to_table_details(tables: dict, fk_details: list) -> None:
             print('Table key not found in tables', table_key)
 
 
-def get_enum_types(enum_types: list) -> list[UserEnumType]:
+def get_enum_types(enum_types: list, schema: str) -> list[UserEnumType]:
     """Get enum types."""
     enums = []
     for row in enum_types:
@@ -176,7 +181,7 @@ def get_enum_types(enum_types: list) -> list[UserEnumType]:
             t,  # type, typtype
             enum_values,
         ) = row
-        if t == 'e' and namespace == 'public':
+        if t == 'e' and namespace == schema:
             enums.append(
                 UserEnumType(
                     type_name,
@@ -191,7 +196,7 @@ def get_enum_types(enum_types: list) -> list[UserEnumType]:
     return enums
 
 
-def get_user_type_mappings(enum_type_mapping: list) -> list[UserTypeMapping]:
+def get_user_type_mappings(enum_type_mapping: list, schema: str) -> list[UserTypeMapping]:
     """Get user type mappings."""
     mappings = []
     for row in enum_type_mapping:
@@ -203,7 +208,7 @@ def get_user_type_mappings(enum_type_mapping: list) -> list[UserTypeMapping]:
             type_category,
             type_description,
         ) = row
-        if namespace == 'public':
+        if namespace == schema:
             mappings.append(
                 UserTypeMapping(
                     column_name,
@@ -218,14 +223,14 @@ def get_user_type_mappings(enum_type_mapping: list) -> list[UserTypeMapping]:
 
 
 def add_user_defined_types_to_tables(
-    tables: dict[tuple[str, str], TableInfo], enum_types: list, enum_type_mapping: list
+    tables: dict[tuple[str, str], TableInfo], schema: str, enum_types: list, enum_type_mapping: list
 ) -> None:
     """Get user defined types and add them to ColumnInfo."""
-    enums = get_enum_types(enum_types)
-    mappings = get_user_type_mappings(enum_type_mapping)
+    enums = get_enum_types(enum_types, schema)
+    mappings = get_user_type_mappings(enum_type_mapping, schema)
 
     for mapping in mappings:
-        table_key = ('public', mapping.table_name)
+        table_key = (schema, mapping.table_name)
         enum_values = next((e.enum_values for e in enums if e.type_name == mapping.type_name), None)
         if table_key in tables:
             if mapping.column_name in [c.name for c in tables[table_key].columns]:
@@ -363,16 +368,17 @@ def construct_table_info(
     # user_defined_types: list,
     enum_types: list,
     enum_type_mapping: list,
+    schema: str = 'public',
 ) -> list[TableInfo]:
     """Construct TableInfo objects from column and foreign key details."""
-    # construction
+    # Construct table information
     tables = get_table_details_from_columns(column_details)
     add_foreign_key_info_to_table_details(tables, fk_details)
-    add_constraints_to_table_details(tables, constraints)
+    add_constraints_to_table_details(tables, schema, constraints)
     add_relationships_to_table_details(tables, fk_details)
-    add_user_defined_types_to_tables(tables, enum_types, enum_type_mapping)
+    add_user_defined_types_to_tables(tables, schema, enum_types, enum_type_mapping)
 
-    # updating
+    # Update columns with constraints
     update_columns_with_constraints(tables)
     analyze_bridge_tables(tables)
     for _ in range(2):
@@ -380,5 +386,4 @@ def construct_table_info(
         # print('running analyze_table_relationships ' + str(i))
         analyze_table_relationships(tables)  # run twice to ensure all relationships are captured
 
-    # return
     return list(tables.values())

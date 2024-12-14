@@ -55,6 +55,7 @@ nav:
   - Examples:
     - Create a Slack Clone: examples/setup-slack-simple-fastapi.md
     - Add seed.sql Data: examples/add-seed-sql-data.md
+    - Analyze Multiple Schemas: examples/generate-multiple-basemodels.md
   - API:
     - API Reference: api/api-reference.md
 

@@ -274,6 +274,24 @@ SQLALCHEMY_V2_TYPE_MAP: dict[str, tuple[str, str | None]] = {
 
 # Queries
 
+TABLES_QUERY = """
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = %s
+"""
+
+COLUMNS_QUERY = """
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = %s AND table_name = %s
+"""
+
+SCHEMAS_QUERY = """
+SELECT schema_name
+FROM information_schema.schemata
+WHERE schema_name NOT IN ('information_schema', 'pg_catalog')
+"""
+
 GET_TABLE_COLUMN_DETAILS = """
 SELECT
     tc.table_schema,
@@ -295,7 +313,7 @@ JOIN
   AND ccu.table_schema = tc.table_schema
 WHERE
     tc.constraint_type = 'FOREIGN KEY'
-    AND tc.table_schema = 'public';
+    AND tc.table_schema = %s;
 """
 
 GET_ALL_PUBLIC_TABLES_AND_COLUMNS = """
@@ -313,7 +331,7 @@ FROM
 JOIN
     information_schema.tables AS t ON c.table_name = t.table_name AND c.table_schema = t.table_schema
 WHERE
-    c.table_schema = 'public'
+    c.table_schema = %s
     AND (t.table_type = 'BASE TABLE' OR t.table_type = 'VIEW')
 ORDER BY
     c.table_schema, c.table_name, c.ordinal_position;
@@ -331,7 +349,7 @@ FROM
 JOIN
     pg_attribute AS a ON a.attnum = ANY (conkey) AND a.attrelid = conrelid
 WHERE
-    connamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+    connamespace = (SELECT oid FROM pg_namespace WHERE nspname = %s)
 GROUP BY
     conname, conrelid, contype, oid
 ORDER BY

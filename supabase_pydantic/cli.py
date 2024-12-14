@@ -116,6 +116,7 @@ def clean(ctx: Any, directory: str) -> None:
         click.echo('Project cleaned.')
 
 
+# TODO: add this initialization command
 # @cli.command('init', short_help='Initializes the project for supabase-pydantic.')
 # def init_project() -> None:
 #     """This command initializes the project for supabase-pydantic."""
@@ -139,7 +140,7 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
 # )
 
 
-@cli.command(short_help='Generates code with specified configurations.')
+@cli.command(short_help='Generates code with specified configurations.')  # noqa
 @generator_config.option(
     '-t',
     '--type',
@@ -169,6 +170,13 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     show_default=True,
     default=False,
     help='Generate seed data for the tables if possible.',
+)
+@generator_config.option('--all-schemas', is_flag=True, help='Process all schemas in the database.')
+@generator_config.option(
+    '--schema',
+    multiple=True,
+    default=['public'],
+    help='Specify one or more schemas to include. Defaults to public.',
 )
 @connect_sources.option(
     '--local',
@@ -213,13 +221,14 @@ def gen(
     overwrite: bool,
     null_parent_classes: bool,
     create_seed_data: bool,
+    all_schemas: bool,
+    schema: tuple[str],
     local: bool = False,
     # linked: bool = False,
     db_url: str | None = None,
     # project_id: str | None = None,
 ) -> None:
     """Generate models from a PostgreSQL database."""
-    # pp.pprint(locals())
     # Load environment variables from .env file & check if they are set correctly
     if not local and db_url is None:
         print('Please provide a connection source. Exiting...')
@@ -257,22 +266,40 @@ def gen(
     # Get the directories for the generated files
     dirs = get_working_directories(default_directory, frameworks, auto_create=True)
 
-    # Get the database schema details
-    tables = construct_tables(conn_type, **env_vars)
+    # Get the database schema and table details
+    # Determine schemas to process
+    schemas = ('*',) if all_schemas else tuple(schema)  # Use '*' as an indicator to fetch all schemas
+    table_dict = construct_tables(conn_type=conn_type, schemas=schemas, **env_vars)
+
+    schemas_with_no_tables = [k for k, v in table_dict.items() if len(v) == 0]
+    if len(schemas_with_no_tables) > 0:
+        print(f'The following schemas have no tables and will be skipped: {", ".join(schemas_with_no_tables)}')
+    table_dict = {k: v for k, v in table_dict.items() if len(v) > 0}
+    if all_schemas:  # Reset schemas if all_schemas is True
+        schemas = tuple(table_dict.keys())
 
     # Configure the writer jobs
-    jobs = {k: v for k, v in get_standard_jobs(models, frameworks, dirs).items() if v.enabled}
+    std_jobs = get_standard_jobs(models, frameworks, dirs, schemas)
+    jobs = {}
+    for k, v in std_jobs.items():
+        jobs[k] = {}
+        for job, c in v.items():
+            if c.enabled is False:
+                continue
+            jobs[k][job] = c
 
     # Generate the models; Run jobs
     paths = []
     factory = FileWriterFactory()
-    for job, c in jobs.items():  # c = config
-        print(f'Generating {job} models...')
-        p, vf = factory.get_file_writer(
-            tables, c.fpath(), c.file_type, c.framework_type, add_null_parent_classes=null_parent_classes
-        ).save(overwrite)
-        paths += [p, vf] if vf is not None else [p]
-        print(f'{job} models generated successfully: {p}')
+    for s, j in jobs.items():  # s = schema, j = jobs
+        tables = table_dict[s]
+        for job, c in j.items():  # c = config
+            print(f'Generating {job} models...')
+            p, vf = factory.get_file_writer(
+                tables, c.fpath(), c.file_type, c.framework_type, add_null_parent_classes=null_parent_classes
+            ).save(overwrite)
+            paths += [p, vf] if vf is not None else [p]
+            print(f"{job} models generated successfully for schema '{s}': {p}")
 
     # Format the generated files
     try:
@@ -287,15 +314,26 @@ def gen(
     # Generate seed data
     if create_seed_data:
         print('Generating seed data...')
-        # try:
-        seed_data = generate_seed_data(tables)
-        d = dirs.get('default')
-        fname = os.path.join(d if d is not None else 'entities', 'seed.sql')
-        fpaths = write_seed_file(seed_data, fname, overwrite)
-        print(f'Seed data generated successfully: {", ".join(fpaths)}')
-        # except Exception as e:
-        #     print('Error creating seed data:', e)
+        for s, j in jobs.items():  # s = schema, j = jobs
+            # Generate seed data
+            tables = table_dict[s]
+            seed_data = generate_seed_data(tables)
+
+            # Check if seed data was generated
+            if len(seed_data) == 0:
+                print(f'Failed to generate seed data for schema: {s}')
+                if all([t.table_type == 'VIEW' for t in tables]):
+                    print('All entities are views in this schema. Skipping seed data generation...')
+                else:
+                    print('Unknown error occurred; check the schema. Skipping seed data generation...')
+                continue
+
+            # Write the seed data
+            d = dirs.get('default')
+            fname = os.path.join(d if d is not None else 'entities', f'seed_{s}.sql')
+            fpaths = write_seed_file(seed_data, fname, overwrite)
+            print(f'Seed data generated successfully: {", ".join(fpaths)}')
 
 
 if __name__ == '__main__':
-    cli()
+    cli()  # keep; for testing & debugging  # noqa

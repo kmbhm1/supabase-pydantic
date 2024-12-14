@@ -61,6 +61,14 @@ FastAPI Pydantic models generated successfully: /path/to/your/project/entities/f
 File formatted successfully: /path/to/your/project/entities/fastapi/schemas.py
 ```
 
+You can generate Pydantic models for certain schemas in your database using the `--schemas` or `--all-schemas` options:
+
+```bash
+$ sb-pydantic gen --type pydantic --framework fastapi --local --schema extensions --schema auth
+```
+
+This command will generate a BaseModel file for each schema in your database.
+
 For some users, integrating a Makefile command may be more convenient:
 
 ```bash

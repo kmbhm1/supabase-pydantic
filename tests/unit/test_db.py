@@ -2,7 +2,15 @@ import psycopg2
 import pytest
 from psycopg2 import connect
 from unittest.mock import MagicMock, patch
-from supabase_pydantic.util.constants import DatabaseConnectionType
+from supabase_pydantic.util.constants import (
+    GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
+    GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
+    GET_CONSTRAINTS,
+    GET_ENUM_TYPES,
+    GET_TABLE_COLUMN_DETAILS,
+    SCHEMAS_QUERY,
+    DatabaseConnectionType,
+)
 from supabase_pydantic.util.exceptions import ConnectionError
 from supabase_pydantic.util.db import (
     DBConnection,
@@ -71,7 +79,7 @@ def test_query_database_success(mock_psycopg2):
     """Test querying the database successfully retrieves results."""
     mock_conn, mock_cursor = mock_psycopg2[1], mock_psycopg2[2]
     result = query_database(mock_conn, 'SELECT * FROM table;')
-    mock_cursor.execute.assert_called_once_with('SELECT * FROM table;')
+    mock_cursor.execute.assert_called_once_with('SELECT * FROM table;', ())
     mock_cursor.fetchall.assert_called_once()
     assert result == [('row1',), ('row2',)]
 
@@ -114,11 +122,32 @@ def mock_construct_table_info(monkeypatch):
     return mock_function
 
 
-def test_construct_tables_local_success(mock_database, mock_construct_table_info):
+@pytest.fixture
+def mock_query_database(monkeypatch):
+    def mock_query(conn, query, params=()):
+        if query == SCHEMAS_QUERY:
+            return [('public',)]
+        elif query == GET_ALL_PUBLIC_TABLES_AND_COLUMNS:
+            return [('column1', 'column2')]
+        elif query == GET_TABLE_COLUMN_DETAILS:
+            return [('fk_column1', 'fk_column2')]
+        elif query == GET_CONSTRAINTS:
+            return [('constraint1', 'constraint2')]
+        elif query == GET_ENUM_TYPES:
+            return [('enum1', 'enum2')]
+        elif query == GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING:
+            return [('mapping1', 'mapping2')]
+        return []
+
+    monkeypatch.setattr('supabase_pydantic.util.db.query_database', mock_query)
+
+
+def test_construct_tables_local_success(mock_database, mock_query_database, mock_construct_table_info):
     """Test successful construction of tables."""
     db_name, user, password, host, port = 'testdb', 'user', 'password', 'localhost', 5432
     result = construct_tables(
         DatabaseConnectionType.LOCAL,
+        schemas=('public',),
         **{
             'DB_NAME': db_name,
             'DB_USER': user,
@@ -127,7 +156,8 @@ def test_construct_tables_local_success(mock_database, mock_construct_table_info
             'DB_PORT': port,
         },
     )
-    assert result == {'info': 'sample data'}
+    assert 'public' in result
+    assert result['public'] == {'info': 'sample data'}
     mock_construct_table_info.assert_called_once()  # Optionally check it was called correctly
 
 
@@ -137,11 +167,12 @@ def test_construct_tables_local_failure(mock_database):
         construct_tables(DatabaseConnectionType.LOCAL)
 
 
-def test_construct_tables_db_url_success(mock_database, mock_construct_table_info):
+def test_construct_tables_db_url_success(mock_database, mock_query_database, mock_construct_table_info):
     """Test successful construction of tables."""
     db_url = 'postgresql://user:password@localhost:5432/testdb'
-    result = construct_tables(DatabaseConnectionType.DB_URL, DB_URL=db_url)
-    assert result == {'info': 'sample data'}
+    result = construct_tables(DatabaseConnectionType.DB_URL, schemas=('public',), DB_URL=db_url)
+    assert 'public' in result
+    assert result['public'] == {'info': 'sample data'}
     mock_construct_table_info.assert_called_once()  # Optionally check it was called correctly
 
 
@@ -159,12 +190,13 @@ def mock_construct_table_info_raises_exception(monkeypatch):
     return mock_function
 
 
-def test_construct_tables_exception(mock_database, mock_construct_table_info_raises_exception):
+def test_construct_tables_exception(mock_database, mock_query_database, mock_construct_table_info_raises_exception):
     """Test that construct_tables handles exceptions when constructing table info."""
     db_name, user, password, host, port = 'test', 'user', 'password', 'localhost', 5432
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(Exception):
         construct_tables(
             DatabaseConnectionType.LOCAL,
+            schemas=('public',),
             **{
                 'DB_NAME': db_name,
                 'DB_USER': user,

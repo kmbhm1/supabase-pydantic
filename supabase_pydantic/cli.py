@@ -14,6 +14,7 @@ from supabase_pydantic.util import (
     DatabaseConnectionType,
     FileWriterFactory,
     ToolConfig,
+    WriterConfig,
     clean_directories,
     construct_tables,
     format_with_ruff,
@@ -22,8 +23,8 @@ from supabase_pydantic.util import (
     get_working_directories,
     local_default_env_configuration,
     run_isort,
+    write_seed_file,
 )
-from supabase_pydantic.util.writers.util import write_seed_file
 
 # Pretty print for testing
 pp = pprint.PrettyPrinter(indent=4)
@@ -280,7 +281,7 @@ def gen(
 
     # Configure the writer jobs
     std_jobs = get_standard_jobs(models, frameworks, dirs, schemas)
-    jobs = {}
+    jobs: dict[str, dict[str, WriterConfig]] = {}
     for k, v in std_jobs.items():
         jobs[k] = {}
         for job, c in v.items():

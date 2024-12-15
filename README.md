@@ -44,8 +44,8 @@ $ sb-pydantic gen --type pydantic --framework fastapi --local
 PostGres connection is open.
 PostGres connection is closed.
 Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schemas.py
+FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
+File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
 ```
 
 Or generate with a url:
@@ -57,11 +57,11 @@ Checking local database connection.postgresql://postgres:postgres@127.0.0.1:5432
 Connecting to database: postgres on host: 127.0.0.1 with user: postgres and port: 54322
 PostGres connection is open.
 Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schemas.py
+FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
+File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
 ```
 
-You can generate Pydantic models for certain schemas in your database using the `--schemas` or `--all-schemas` options:
+You can generate Pydantic models for certain schemas in your database using the `--schema` or `--all-schemas` options:
 
 ```bash
 $ sb-pydantic gen --type pydantic --framework fastapi --local --schema extensions --schema auth

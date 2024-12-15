@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.15.1 (2024-12-15)
+
+### Documentation
+
+- Correct typo on README ([#52](https://github.com/kmbhm1/supabase-pydantic/pull/52),
+  [`4bef3ac`](https://github.com/kmbhm1/supabase-pydantic/commit/4bef3ac441e7e0ee59df1ed3815a4d33d4624e6d))
+
+
 ## v0.15.0 (2024-12-14)
 
 ### Features

@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.15.2 (2024-12-24)
+
+### Bug Fixes
+
+- Upgrade jinja to 3.1.5 ([#53](https://github.com/kmbhm1/supabase-pydantic/pull/53),
+  [`183812e`](https://github.com/kmbhm1/supabase-pydantic/commit/183812e031b89a1be6f85edd57a895a9530bae6d))
+
+
 ## v0.15.1 (2024-12-15)
 
 ### Documentation

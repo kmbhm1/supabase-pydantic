@@ -239,7 +239,7 @@ default = "KB <kmbhm1@gmail.com>"
 [tool.semantic_release.commit_parser_options]
 allowed_tags = ["build", "chore", "ci", "docs", "feat", "feature", "fix", "perf", "style", "refactor", "test"]
 minor_tags = ["feat", "feature"]
-patch_tags = ["fix", "perf", "docs", "refactor"]
+patch_tags = ["fix", "perf", "docs", "refactor", "chore"]
 default_bump_level = 0
 
 [tool.semantic_release.remote]

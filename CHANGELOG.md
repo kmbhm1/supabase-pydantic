@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.15.3 (2025-01-16)
+
+### Chores
+
+- Upgrade package dependencies ([#54](https://github.com/kmbhm1/supabase-pydantic/pull/54),
+  [`4b3efe2`](https://github.com/kmbhm1/supabase-pydantic/commit/4b3efe260eb4e381bde8b2adde107be238f3ef60))
+
+
 ## v0.15.2 (2024-12-24)
 
 ### Bug Fixes

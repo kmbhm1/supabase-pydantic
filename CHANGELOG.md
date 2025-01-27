@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.15.5 (2025-01-27)
+
+### Bug Fixes
+
+- Move ruff to dev dependencies ([#58](https://github.com/kmbhm1/supabase-pydantic/pull/58),
+  [`824c74b`](https://github.com/kmbhm1/supabase-pydantic/commit/824c74b6d4cbbec3b9815b25d38d434258a7040e))
+
+
 ## v0.15.4 (2025-01-27)
 
 ### Chores

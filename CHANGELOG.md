@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.15.4 (2025-01-27)
+
+### Chores
+
+- Correct ruff dependency ([#57](https://github.com/kmbhm1/supabase-pydantic/pull/57),
+  [`3454a4e`](https://github.com/kmbhm1/supabase-pydantic/commit/3454a4e7fe7e1635f9bb943d92a85194a2004810))
+
+
 ## v0.15.3 (2025-01-16)
 
 ### Chores

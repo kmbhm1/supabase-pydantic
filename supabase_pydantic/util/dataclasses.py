@@ -68,6 +68,8 @@ class ConstraintInfo(AsDictParent):
 
 @dataclass
 class ColumnInfo(AsDictParent):
+    """Column information."""
+
     name: str
     post_gres_datatype: str
     datatype: str
@@ -80,6 +82,7 @@ class ColumnInfo(AsDictParent):
     primary: bool = False
     is_unique: bool = False
     is_foreign_key: bool = False
+    constraint_definition: str | None = None
 
     def orm_imports(self, orm_type: OrmType = OrmType.PYDANTIC) -> set[str | None]:
         """Get the unique import statements for a column."""

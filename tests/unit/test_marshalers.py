@@ -19,6 +19,7 @@ from supabase_pydantic.util.marshalers import (
     is_bridge_table,
     parse_constraint_definition_for_fk,
     standardize_column_name,
+    update_column_constraint_definitions,
     update_columns_with_constraints,
 )
 
@@ -637,3 +638,51 @@ def test_column_name_not_found(
     add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
     # Since this writes to stdout, it might be hard to directly assert without capturing the output
     assert True, 'Should handle non-existent column gracefully (test by inspecting printed output or modify function to be more testable)'
+
+
+def test_update_column_constraint_definitions():
+    """Test that update_column_constraint_definitions correctly updates columns with CHECK constraints."""
+    # Create a test table with a column and constraint
+    table = TableInfo(
+        name='User',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='country_code',
+                post_gres_datatype='text',
+                is_nullable=False,
+                datatype='str'
+            ),
+            ColumnInfo(
+                name='username',
+                post_gres_datatype='text',
+                is_nullable=False,
+                datatype='str'
+            )
+        ],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='country_code_length_check',
+                raw_constraint_type='c',
+                columns=['country_code'],
+                constraint_definition='CHECK (length(country_code) = 2)'
+            ),
+            ConstraintInfo(
+                constraint_name='username_length_check',
+                raw_constraint_type='c',
+                columns=['username'],
+                constraint_definition='CHECK (length(username) >= 4 AND length(username) <= 20)'
+            )
+        ]
+    )
+
+    # Update the columns with constraints
+    tables = {('public', 'User'): table}
+    update_column_constraint_definitions(tables)
+
+    # Verify the constraints were correctly added
+    country_code_col = next(col for col in table.columns if col.name == 'country_code')
+    assert country_code_col.constraint_definition == 'CHECK (length(country_code) = 2)'
+
+    username_col = next(col for col in table.columns if col.name == 'username')
+    assert username_col.constraint_definition == 'CHECK (length(username) >= 4 AND length(username) <= 20)'

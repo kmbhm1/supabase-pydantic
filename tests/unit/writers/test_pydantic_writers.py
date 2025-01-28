@@ -164,12 +164,17 @@ def test_PydanticFastAPIClassWriter_write_primary_keys_no_columns():
     """Validate the write_primary_keys method for Pydantic FastAPI Class Writer."""
     table_info = TableInfo(name='User', schema='public', columns=[], foreign_keys=[], constraints=[])
     writer = PydanticFastAPIClassWriter(table_info)
-    expected_output = 'class UserBaseSchema(CustomModel):\n' '\t"""User Base Schema."""\n\n'
+    expected_output = 'class UserBaseSchema(CustomModel):\n\t"""User Base Schema."""\n\n'
     assert writer.write_class() == expected_output
 
 
-def test_PydanticFastAPIClassWriter_write_foreign_columns():
-    """Validate the write_foreign_columns method for Pydantic FastAPI Class Writer."""
+def test_PydanticFastAPIClassWriter_write_foreign_columns_basic():
+    """Test that write_foreign_columns correctly generates foreign key fields.
+
+    This test verifies:
+    1. A single foreign key relationship is correctly written as a Field
+    2. Empty foreign keys list returns None
+    """
     table_info = TableInfo(
         name='User',
         schema='public',
@@ -182,22 +187,17 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns():
         ],
         foreign_keys=[
             ForeignKeyInfo(
-                constraint_name='User_company_id_fkey',
                 column_name='company_id',
                 foreign_table_name='Company',
                 foreign_column_name='id',
                 relation_type=RelationType.ONE_TO_ONE,
-            ),
+                foreign_table_schema='public',
+                constraint_name='User_company_id_fkey',
+            )
         ],
-        constraints=[
-            ConstraintInfo(
-                constraint_name='User_pkey',
-                raw_constraint_type='p',
-                columns=['id'],
-                constraint_definition='PRIMARY KEY (id)',
-            ),
-        ],
+        constraints=[],
     )
+
     writer = PydanticFastAPIClassWriter(table_info)
     expected_output = '\t# Foreign Keys\n\tcompany: list[Company] | None = Field(default=None)'
     assert writer.write_foreign_columns() == expected_output
@@ -207,8 +207,12 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns():
     assert new_writer.write_foreign_columns() is None
 
 
-def test_PydanticFastAPIClassWriter_write_foreign_columns_returns_None():
-    """Validate the write_foreign_columns method for Pydantic FastAPI Class Writer returns None with no foreign tables."""
+def test_PydanticFastAPIClassWriter_write_foreign_columns_no_foreign_keys():
+    """Test that write_foreign_columns returns None when there are no foreign keys.
+
+    This test specifically verifies that even with a foreign key column,
+    if there are no foreign key constraints defined, the method returns None.
+    """
     table_info = TableInfo(
         name='User',
         schema='public',
@@ -233,8 +237,14 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns_returns_None():
     assert writer.write_foreign_columns() is None
 
 
-def test_PydanticFastAPIClassWriter_write_foreign_columns(table_info):
-    """Validate the write_foreign_columns method for Pydantic FastAPI Class Writer."""
+def test_PydanticFastAPIClassWriter_write_operational_class_with_foreign_keys(table_info):
+    """Test that write_operational_class correctly includes foreign key relationships.
+
+    This test verifies:
+    1. The complete operational class is generated with proper inheritance
+    2. Foreign key relationships are included in the class body
+    3. When foreign keys are removed, the class is generated with a pass statement
+    """
     writer = PydanticFastAPIClassWriter(table_info)
     expected_output = (
         'class User(UserBaseSchema):\n\t'
@@ -257,9 +267,10 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns(table_info):
 def test_PydanticFastAPIWriter_write(fastapi_file_writer):
     """Validate the write method for Pydantic FastAPI Writer."""
     expected_output = (
-        'from __future__ import annotations\nfrom pydantic import BaseModel\n'
-        'from pydantic import Field\nfrom pydantic import Json\n'
-        'from pydantic import UUID4\n\n\n# CUSTOM CLASSES\n'
+        'from __future__ import annotations\nfrom pydantic import Annotated'
+        '\nfrom pydantic import BaseModel\nfrom pydantic import Field\nfrom pydantic import Json\n'
+        'from pydantic import UUID4\n'
+        'from pydantic.types import StringConstraints\n\n\n# CUSTOM CLASSES\n'
         '# Note: This is a custom model class for defining common features among\n'
         '# Pydantic Base Schema.\n\n\nclass CustomModel(BaseModel):\n\tpass\n\n\n'
         '# BASE CLASSES\n\n\n'
@@ -288,9 +299,11 @@ def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
     """Validate the imports for the Pydantic FastAPI writer."""
     expected_imports = (
         'from __future__ import annotations\n'
+        'from pydantic import Annotated\n'
         'from pydantic import BaseModel\n'
         'from pydantic import Field\n'
         'from pydantic import Json\n'
-        'from pydantic import UUID4'
+        'from pydantic import UUID4\n'
+        'from pydantic.types import StringConstraints'
     )
     assert fastapi_file_writer.write_imports() == expected_imports

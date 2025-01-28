@@ -1,6 +1,5 @@
 import psycopg2
 import pytest
-from psycopg2 import connect
 from unittest.mock import MagicMock, patch
 from supabase_pydantic.util.constants import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
@@ -65,14 +64,14 @@ def test_check_connection_open(mock_psycopg2):
     """Test that check_connection returns True when the connection is open."""
     mock_conn = mock_psycopg2[1]
     mock_conn.closed = False
-    assert check_connection(mock_conn) == True
+    assert check_connection(mock_conn) is True
 
 
 def test_check_connection_closed(mock_psycopg2):
     """Test that check_connection returns False when the connection is closed."""
     mock_conn = mock_psycopg2[1]
     mock_conn.closed = True
-    assert check_connection(mock_conn) == False
+    assert check_connection(mock_conn) is False
 
 
 def test_query_database_success(mock_psycopg2):
@@ -219,7 +218,7 @@ def test_DBConnection_create_connection(mock_create_connection):
     """Test that DBConnection.create_connection correctly initializes a psycopg2 connection."""
     # Raises value error with incorrect key (KeyError)
     with pytest.raises(ValueError):
-        conn = DBConnection(
+        _ = DBConnection(
             DatabaseConnectionType.LOCAL,
             DB_NAM='dbname',
             DB_USER='user',

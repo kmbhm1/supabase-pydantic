@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from supabase_pydantic.util.constants import (
@@ -38,19 +39,71 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             metaclasses.append(f'{self.name}{post(self.table.table_type, WriterClassType.PARENT)}')
         return ', '.join(metaclasses)
 
-    def write_column(self, c: ColumnInfo) -> str:
-        """Method to generate the column definition for the class."""
-        base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
-        base_type = f'{base_type} | None' if (c.is_nullable or self._null_defaults) else base_type
+    def _parse_length_constraint(self, constraint_def: str | None) -> dict[str, int] | None:
+        """Parse length constraints from a CHECK constraint definition.
 
-        field_values = dict()
+        Args:
+            constraint_def: SQL constraint definition string
+
+        Returns:
+            Dictionary with min_length and/or max_length if constraints found, None otherwise
+        """
+        if not constraint_def:
+            return None
+
+        length_pattern = r'length\((\w+)\)\s*([=<>]+)\s*(\d+)'
+        matches = re.findall(length_pattern, constraint_def)
+
+        if not matches:
+            return None
+
+        result = {}
+        for _, operator, value in matches:
+            value = int(value)
+            if operator == '=':
+                result['min_length'] = value
+                result['max_length'] = value
+            elif operator == '>=':
+                result['min_length'] = value
+            elif operator == '<=':
+                result['max_length'] = value
+
+        return result if result else None
+
+    def write_column(self, c: ColumnInfo) -> str:
+        """Write a column definition for a Pydantic model."""
+        base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
+
+        # Handle length constraints for text fields
+        length_constraints = None
+        if c.post_gres_datatype.lower() == 'text' and c.constraint_definition:
+            length_constraints = self._parse_length_constraint(c.constraint_definition)
+
+        # Build the type annotation
+        if length_constraints and base_type == 'str':
+            constraints = {}
+            if 'min_length' in length_constraints:
+                constraints['min_length'] = length_constraints['min_length']
+            if 'max_length' in length_constraints:
+                constraints['max_length'] = length_constraints['max_length']
+
+            type_str = f'Annotated[str, StringConstraints(**{constraints})]'
+        else:
+            type_str = base_type
+
+        # Add nullable type if needed
+        type_str = f'{type_str} | None' if (c.is_nullable or self._null_defaults) else type_str
+
+        # Build field values
+        field_values = {}
         if (c.is_nullable is not None and c.is_nullable) or self._null_defaults:
             field_values['default'] = 'None'
         if c.alias is not None:
             field_values['alias'] = f'"{c.alias}"'
 
-        col = f'{c.name}: {base_type}'
-        if len(field_values) > 0:
+        # Construct the final column definition
+        col = f'{c.name}: {type_str}'
+        if field_values:
             col += ' = Field(' + ', '.join([f'{k}={v}' for k, v in field_values.items()]) + ')'
 
         return col
@@ -130,6 +183,8 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         imports = {
             'from pydantic import BaseModel',
             'from pydantic import Field',
+            'from pydantic import Annotated',
+            'from pydantic.types import StringConstraints',
         }
         if any([len(t.table_dependencies()) > 0 for t in self.tables]):
             imports.add('from __future__ import annotations')

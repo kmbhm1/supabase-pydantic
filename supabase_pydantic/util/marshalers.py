@@ -255,6 +255,23 @@ def get_unique_columns_from_constraints(constraint: ConstraintInfo) -> list[str 
     return unique_columns
 
 
+def update_column_constraint_definitions(tables: dict) -> None:
+    """Update columns with their CHECK constraint definitions."""
+    for table in tables.values():
+        if table.columns is None or len(table.columns) == 0:
+            continue
+        if table.constraints is None or len(table.constraints) == 0:
+            continue
+
+        # iterate through columns and constraints
+        for column in table.columns:
+            for constraint in table.constraints:
+                # Only process CHECK constraints that affect this column
+                if constraint.constraint_type() == 'CHECK' and len(constraint.columns) == 1:
+                    if column.name == constraint.columns[0]:
+                        column.constraint_definition = constraint.constraint_definition
+
+
 def update_columns_with_constraints(tables: dict) -> None:
     """Update columns with constraints."""
     for table in tables.values():
@@ -275,6 +292,8 @@ def update_columns_with_constraints(tables: dict) -> None:
                             column.unique_partners = get_unique_columns_from_constraints(constraint)
                         if constraint.constraint_type() == 'FOREIGN KEY':
                             column.is_foreign_key = True
+                        if constraint.constraint_type() == 'CHECK' and len(constraint.columns) == 1:
+                            column.constraint_definition = constraint.constraint_definition
 
 
 def analyze_table_relationships(tables: dict) -> None:
@@ -380,6 +399,7 @@ def construct_table_info(
 
     # Update columns with constraints
     update_columns_with_constraints(tables)
+    update_column_constraint_definitions(tables)
     analyze_bridge_tables(tables)
     for _ in range(2):
         # TODO: update this fn to avoid running twice.

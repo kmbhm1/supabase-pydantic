@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.15.6 (2025-01-28)
+
+### Refactoring
+
+- **pydantic**: Migrate from constr to Annotated[str, StringConstraints]
+  ([#59](https://github.com/kmbhm1/supabase-pydantic/pull/59),
+  [`031a53e`](https://github.com/kmbhm1/supabase-pydantic/commit/031a53e8d2b78f2f3de64d49fddf50712c501aa2))
+
+
 ## v0.15.5 (2025-01-27)
 
 ### Bug Fixes

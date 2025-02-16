@@ -1,7 +1,7 @@
 import os
-import pytest
-
 from unittest.mock import call, mock_open, patch
+
+import pytest
 
 from supabase_pydantic.util.constants import FrameWorkType, OrmType, WriterConfig
 from supabase_pydantic.util.util import (
@@ -9,9 +9,9 @@ from supabase_pydantic.util.util import (
     clean_directories,
     clean_directory,
     create_directories_if_not_exist,
+    get_enum_member_from_string,
     get_pydantic_type,
     get_sqlalchemy_type,
-    get_enum_member_from_string,
     get_standard_jobs,
     get_working_directories,
     local_default_env_configuration,

@@ -3,11 +3,7 @@ from typing import Any
 
 from inflection import pluralize
 
-from supabase_pydantic.util.constants import (
-    CUSTOM_MODEL_NAME,
-    RelationType,
-    WriterClassType,
-)
+from supabase_pydantic.util.constants import CUSTOM_MODEL_NAME, RelationType, WriterClassType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
 from supabase_pydantic.util.util import get_pydantic_type
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter

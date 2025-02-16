@@ -1,16 +1,8 @@
 import pytest
+
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import (
-    ConstraintInfo,
-    ForeignKeyInfo,
-    TableInfo,
-    ColumnInfo,
-    RelationshipInfo,
-)
-from supabase_pydantic.util.writers.pydantic_writers import (
-    PydanticFastAPIClassWriter,
-    PydanticFastAPIWriter,
-)
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIClassWriter, PydanticFastAPIWriter
 
 
 @pytest.fixture

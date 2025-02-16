@@ -1,8 +1,9 @@
 from datetime import date, datetime, timedelta
-from faker import Faker
-import pytest
 from unittest.mock import patch
+
+import pytest
 from dateutil.parser import parse
+from faker import Faker
 
 from supabase_pydantic.util.fake import (
     generate_fake_data,

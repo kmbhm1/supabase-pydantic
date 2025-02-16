@@ -1,5 +1,6 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 # Import the abstract classes
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter, TableInfo

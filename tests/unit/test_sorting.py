@@ -1,8 +1,9 @@
+import subprocess
 from math import inf
 from unittest.mock import Mock, patch
-import subprocess
 
 import pytest
+
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.sorting import (

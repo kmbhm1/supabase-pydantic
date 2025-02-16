@@ -1,6 +1,8 @@
+from unittest.mock import MagicMock, patch
+
 import psycopg2
 import pytest
-from unittest.mock import MagicMock, patch
+
 from supabase_pydantic.util.constants import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
@@ -10,15 +12,15 @@ from supabase_pydantic.util.constants import (
     SCHEMAS_QUERY,
     DatabaseConnectionType,
 )
-from supabase_pydantic.util.exceptions import ConnectionError
 from supabase_pydantic.util.db import (
     DBConnection,
+    check_connection,
     construct_tables,
     create_connection,
     create_connection_from_db_url,
-    check_connection,
     query_database,
 )
+from supabase_pydantic.util.exceptions import ConnectionError
 
 
 @pytest.fixture

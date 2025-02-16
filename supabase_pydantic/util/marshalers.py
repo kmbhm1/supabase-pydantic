@@ -63,7 +63,17 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
     """Get the table details from the column details."""
     tables = {}
     for row in column_details:
-        (schema, table_name, column_name, default, is_nullable, data_type, max_length, table_type) = row
+        (
+            schema,
+            table_name,
+            column_name,
+            default,
+            is_nullable,
+            data_type,
+            max_length,
+            table_type,
+            identity_generation,
+        ) = row
         table_key: tuple[str, str] = (schema, table_name)
         if table_key not in tables:
             tables[table_key] = TableInfo(name=table_name, schema=schema, table_type=table_type)
@@ -75,6 +85,7 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
             default=default,
             is_nullable=is_nullable == 'YES',
             max_length=max_length,
+            is_identity=identity_generation is not None,
         )
         tables[table_key].add_column(column_info)
 

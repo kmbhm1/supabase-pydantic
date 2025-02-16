@@ -13,6 +13,7 @@ class FileWriterFactory:
         file_type: OrmType = OrmType.PYDANTIC,
         framework_type: FrameWorkType = FrameWorkType.FASTAPI,
         add_null_parent_classes: bool = False,
+        generate_crud_models: bool = True,
     ) -> AbstractFileWriter:
         """Get the file writer based on the provided parameters.
 
@@ -30,6 +31,11 @@ class FileWriterFactory:
             case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI:
                 return SqlAlchemyFastAPIWriter(tables, file_path)
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI:
-                return PydanticFastAPIWriter(tables, file_path, add_null_parent_classes=add_null_parent_classes)
+                return PydanticFastAPIWriter(
+                    tables,
+                    file_path,
+                    add_null_parent_classes=add_null_parent_classes,
+                    generate_crud_models=generate_crud_models,
+                )
             case _:
                 raise ValueError(f'Unsupported file type or framework type: {file_type}, {framework_type}')

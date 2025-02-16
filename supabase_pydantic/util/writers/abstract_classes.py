@@ -50,8 +50,16 @@ class AbstractClassWriter(ABC):
 
     def write_definition(self) -> str:
         """Method to generate the class definition for the class."""
-        metas = self.write_metaclass()
-        return f'class {self.write_name()}' + (f'({metas}):' if metas is not None else ':')
+        name = self.write_name()
+        metaclass = self.write_metaclass()
+        result = f'class {name}({metaclass}):' if metaclass else f'class {name}:'
+
+        # print(f'\nwrite_definition() for table {self.table.name}:')
+        # print(f'  class_type: {self.class_type}')
+        # print(f'  name: {name}')
+        # print(f'  metaclass: {metaclass}')
+        # print(f'  result: {result}')
+        return result
 
     @abstractmethod
     def write_primary_keys(self) -> str | None:

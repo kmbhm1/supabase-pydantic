@@ -215,6 +215,13 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     default=False,
     help='In addition to the generated base classes, generate null parent classes for those base classes. For Pydantic models only.',  # noqa: E501
 )
+@click.option(
+    '--no-crud-models',
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help='Do not generate Insert and Update model variants. Only generate the base Row models.',  # noqa: E501
+)
 def gen(
     models: tuple[str],
     frameworks: tuple[str],
@@ -228,6 +235,7 @@ def gen(
     # linked: bool = False,
     db_url: str | None = None,
     # project_id: str | None = None,
+    no_crud_models: bool = False,
 ) -> None:
     """Generate models from a PostgreSQL database."""
     # Load environment variables from .env file & check if they are set correctly
@@ -297,7 +305,12 @@ def gen(
         for job, c in j.items():  # c = config
             print(f'Generating {job} models...')
             p, vf = factory.get_file_writer(
-                tables, c.fpath(), c.file_type, c.framework_type, add_null_parent_classes=null_parent_classes
+                tables,
+                c.fpath(),
+                c.file_type,
+                c.framework_type,
+                add_null_parent_classes=null_parent_classes,
+                generate_crud_models=not no_crud_models,
             ).save(overwrite)
             paths += [p, vf] if vf is not None else [p]
             print(f"{job} models generated successfully for schema '{s}': {p}")

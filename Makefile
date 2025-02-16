@@ -75,6 +75,10 @@ coverage:
 	@echo "Running tests with coverage"
 	@poetry run pytest --cov=supabase_pydantic --cov-report=term-missing --cov-report=html --cov-config=pyproject.toml
 
+smoke-test:
+	@echo "Running smoke test"
+	@sb-pydantic gen --type pydantic --framework fastapi --local
+
 
 #######################################################
 # Documentation 									  #

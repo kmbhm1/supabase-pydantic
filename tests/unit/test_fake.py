@@ -1,8 +1,9 @@
 from datetime import date, datetime, timedelta
-from faker import Faker
-import pytest
 from unittest.mock import patch
+
+import pytest
 from dateutil.parser import parse
+from faker import Faker
 
 from supabase_pydantic.util.fake import (
     generate_fake_data,
@@ -156,9 +157,9 @@ def test_guess_datetime_order():
 )
 def test_guess_and_generate_fake_data(column_name, expected_type):
     result = guess_and_generate_fake_data(column_name)
-    assert isinstance(
-        result, expected_type
-    ), f'Expected {expected_type} but got {type(result)} for column {column_name}'
+    assert isinstance(result, expected_type), (
+        f'Expected {expected_type} but got {type(result)} for column {column_name}'
+    )
 
 
 # Test for generate_fake_data
@@ -178,6 +179,6 @@ def test_generate_fake_data(data_type, nullable, max_length, name, expected_type
     if nullable and result == 'NULL':
         assert True
     else:
-        assert isinstance(
-            result, expected_type
-        ), f'Expected {expected_type} but got {type(result)} for data type {data_type}'
+        assert isinstance(result, expected_type), (
+            f'Expected {expected_type} but got {type(result)} for data type {data_type}'
+        )

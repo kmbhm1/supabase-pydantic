@@ -1,10 +1,9 @@
 import decimal
 import json
-from datetime import datetime, date
-import pytest
-from supabase_pydantic.util.json import (
-    CustomJsonEncoder,
-)
+from datetime import date, datetime
+
+
+from supabase_pydantic.util.json import CustomJsonEncoder
 
 
 def test_encode_decimal():

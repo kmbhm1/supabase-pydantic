@@ -1,6 +1,7 @@
 import pytest
+
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ConstraintInfo, ForeignKeyInfo, TableInfo, ColumnInfo
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIClassWriter, SqlAlchemyFastAPIWriter
 
 
@@ -79,6 +80,83 @@ def tables(table_info):
 
 
 @pytest.fixture
+def blog_tables():
+    """Return a list of TableInfo instances for testing relationships."""
+    return [
+        TableInfo(
+            name='User',
+            schema='public',
+            columns=[
+                ColumnInfo(name='id', post_gres_datatype='uuid', is_nullable=False, primary=True, datatype='UUID'),
+                ColumnInfo(name='email', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+                ColumnInfo(name='profile_id', post_gres_datatype='uuid', is_nullable=True, datatype='UUID'),
+            ],
+            foreign_keys=[
+                ForeignKeyInfo(
+                    constraint_name='User_profile_id_fkey',
+                    column_name='profile_id',
+                    foreign_table_name='Profile',
+                    foreign_column_name='id',
+                    relation_type=RelationType.ONE_TO_ONE,
+                ),
+            ],
+            relationships=[
+                RelationshipInfo(
+                    table_name='user',
+                    related_table_name='post',
+                    relation_type=RelationType.ONE_TO_MANY,
+                ),
+            ],
+        ),
+        TableInfo(
+            name='Profile',
+            schema='public',
+            columns=[
+                ColumnInfo(name='id', post_gres_datatype='uuid', is_nullable=False, primary=True, datatype='UUID'),
+                ColumnInfo(name='bio', post_gres_datatype='text', is_nullable=True, datatype='str'),
+            ],
+            relationships=[
+                RelationshipInfo(
+                    table_name='profile',
+                    related_table_name='user',
+                    relation_type=RelationType.ONE_TO_ONE,
+                ),
+            ],
+        ),
+        TableInfo(
+            name='Post',
+            schema='public',
+            columns=[
+                ColumnInfo(name='id', post_gres_datatype='uuid', is_nullable=False, primary=True, datatype='UUID'),
+                ColumnInfo(name='title', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+                ColumnInfo(name='author_id', post_gres_datatype='uuid', is_nullable=False, datatype='UUID'),
+            ],
+            foreign_keys=[
+                ForeignKeyInfo(
+                    constraint_name='Post_author_id_fkey',
+                    column_name='author_id',
+                    foreign_table_name='User',
+                    foreign_column_name='id',
+                    relation_type=RelationType.ONE_TO_MANY,
+                ),
+            ],
+            relationships=[
+                RelationshipInfo(
+                    table_name='post',
+                    related_table_name='comment',
+                    relation_type=RelationType.ONE_TO_MANY,
+                ),
+                RelationshipInfo(
+                    table_name='post',
+                    related_table_name='tag',
+                    relation_type=RelationType.MANY_TO_MANY,
+                ),
+            ],
+        ),
+    ]
+
+
+@pytest.fixture
 def fastapi_class_writer(table_info):
     """Return a SqlAlchemyFastAPIClassWriter instance."""
     return SqlAlchemyFastAPIClassWriter(table_info)
@@ -103,7 +181,7 @@ def test_SqlAlchemyFastAPIClassWriter_write_metaclass_returns_Base(fastapi_class
 
 def test_SqlAlchemyFastAPIClassWriter_write_docs(fastapi_class_writer):
     """Verify the write_docs method returns the expected value."""
-    assert fastapi_class_writer.write_docs() == '\n\t"""User Base."""\n\n\t__tablename__ = "User"\n\n'
+    assert fastapi_class_writer.write_docs() == '\n\t"""User Base."""\n\n\t__tablename__ = "User"\n'
 
 
 def test_SqlAlchemyFastAPIClassWriter_write_column(fastapi_class_writer):
@@ -202,8 +280,40 @@ def test_SqlAlchemyFastAPIClassWriter_write_primary_keys(fastapi_class_writer):
 
 def test_SqlAlchemyFastAPIClassWriter_write_foreign_columns(fastapi_class_writer):
     """Verify the write_foreign_columns method returns the expected value."""
-    expected_value = "\t# Table Args\n\t__table_args__ = (\n\t\tPrimaryKeyConstraint('id', name='User_pkey'),\n\t\t{ 'schema': 'public' }\n\t)\n"
+    expected_value = "\t# Table Args\n\t__table_args__ = (\n\t\tPrimaryKeyConstraint('id', name='User_pkey'),\n\t\t{ 'schema': 'public' }\n\t)\n\n\t# Relationships\n\tcompany: Mapped[Company | None] = relationship(\"Company\", back_populates=\"users\", uselist=False)\n"
     assert fastapi_class_writer.write_foreign_columns() == expected_value
+
+
+def test_SqlAlchemyFastAPIClassWriter_write_foreign_columns_relationships(blog_tables):
+    """Verify the write_foreign_columns method handles different relationship types correctly."""
+    # Test User model (ONE_TO_ONE with Profile, ONE_TO_MANY with Posts)
+    user_table = [t for t in blog_tables if t.name == 'User'][0]
+    user_writer = SqlAlchemyFastAPIClassWriter(user_table)
+    user_foreign_cols = user_writer.write_foreign_columns()
+
+    assert (
+        'profile: Mapped[Profile | None] = relationship("Profile", back_populates="users", uselist=False)'
+        in user_foreign_cols
+    )
+    assert 'posts: Mapped[list[Post]] = relationship("Post", back_populates="users")' in user_foreign_cols
+
+    # Test Post model (ONE_TO_MANY with Comments, MANY_TO_MANY with Tags)
+    post_table = [t for t in blog_tables if t.name == 'Post'][0]
+    post_writer = SqlAlchemyFastAPIClassWriter(post_table)
+    post_foreign_cols = post_writer.write_foreign_columns()
+
+    assert 'comments: Mapped[list[Comment]] = relationship("Comment", back_populates="posts")' in post_foreign_cols
+    assert 'tags: Mapped[list[Tag]] = relationship("Tag", back_populates="posts")' in post_foreign_cols
+
+    # Test Profile model (ONE_TO_ONE with User)
+    profile_table = [t for t in blog_tables if t.name == 'Profile'][0]
+    profile_writer = SqlAlchemyFastAPIClassWriter(profile_table)
+    profile_foreign_cols = profile_writer.write_foreign_columns()
+
+    assert (
+        'user: Mapped[User | None] = relationship("User", back_populates="profiles", uselist=False)'
+        in profile_foreign_cols
+    )
 
 
 def test_SqlAlchemyFastAPIClassWriter_write_operational_class_returns_None(fastapi_class_writer):
@@ -216,9 +326,7 @@ def test_SqlAlchemyFastAPIClassWriter_write_columns(fastapi_class_writer):
     expected_value = (
         '\t# Primary Keys\n\tid: Mapped[int] = mapped_column(Integer, primary_key=True)\n\n\t'
         '# Columns\n\tcompany_id: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), ForeignKey("Company.id"))'
-        '\n\temail: Mapped[str | None] = mapped_column(String)\n\n\t'
-        "# Table Args\n\t__table_args__ = (\n\t\tPrimaryKeyConstraint('id', "
-        "name='User_pkey'),\n\t\t{ 'schema': 'public' }\n\t)\n"
+        '\n\temail: Mapped[str | None] = mapped_column(String)\n'
     )
     assert fastapi_class_writer.write_columns() == expected_value
 
@@ -254,7 +362,8 @@ def test_SqlAlchemyFastAPIWriter_write(fastapi_writer):
         'from sqlalchemy.dialects.postgresql import UUID\n'
         'from sqlalchemy.orm import DeclarativeBase\n'
         'from sqlalchemy.orm import Mapped\n'
-        'from sqlalchemy.orm import mapped_column\n\n\n'
+        'from sqlalchemy.orm import mapped_column\n'
+        'from sqlalchemy.orm import relationship\n\n\n'
         '# DECLARATIVE BASE\n\n\n'
         'class Base(DeclarativeBase):\n'
         '\t"""Declarative Base Class."""\n'
@@ -268,24 +377,26 @@ def test_SqlAlchemyFastAPIWriter_write(fastapi_writer):
         '\tid: Mapped[int] = mapped_column(Integer, primary_key=True)\n\n'
         '\t# Columns\n'
         '\tcompany_id: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), ForeignKey("Company.id"))\n'
-        '\temail: Mapped[str | None] = mapped_column(String)\n\n'
+        '\temail: Mapped[str | None] = mapped_column(String)\n'
+        '\t# Relationships\n'
+        '\tcompany: Mapped[Company | None] = relationship("Company", back_populates="users", uselist=False)\n'
         '\t# Table Args\n'
         '\t__table_args__ = (\n'
         "\t\tPrimaryKeyConstraint('id', name='User_pkey'),\n"
         "\t\t{ 'schema': 'public' }\n"
-        '\t)\n\n\n\n'
+        '\t)\n\n\n'
         'class Company(Base):\n'
         '\t"""Company Base."""\n\n'
         '\t__tablename__ = "Company"\n\n'
         '\t# Primary Keys\n'
         '\tid: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), primary_key=True)\n\n'
         '\t# Columns\n'
-        '\tname: Mapped[str] = mapped_column(String)\n\n'
+        '\tname: Mapped[str] = mapped_column(String)\n'
         '\t# Table Args\n'
         '\t__table_args__ = (\n'
         "\t\tPrimaryKeyConstraint('id', name='Company_pkey'),\n"
         "\t\t{ 'schema': 'public' }\n"
-        '\t)\n\n\n\n'
+        '\t)\n\n\n'
         'class Client(Base):\n'
         '\t"""Client Base."""\n\n'
         '\t__tablename__ = "Client"\n\n'
@@ -293,11 +404,11 @@ def test_SqlAlchemyFastAPIWriter_write(fastapi_writer):
         '\tid: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), primary_key=True)\n\n'
         '\t# Columns\n'
         '\tname: Mapped[str] = mapped_column(String)\n'
-        '\tinfo_json: Mapped[dict | Json | None] = mapped_column(JSONB)\n\n'
+        '\tinfo_json: Mapped[dict | Json | None] = mapped_column(JSONB)\n'
         '\t# Table Args\n'
         '\t__table_args__ = (\n'
         "\t\tPrimaryKeyConstraint('id', name='Client_pkey'),\n"
         "\t\t{ 'schema': 'public' }\n"
-        '\t)\n\n'
+        '\t)'
     )
     assert fastapi_writer.write() == expected_value

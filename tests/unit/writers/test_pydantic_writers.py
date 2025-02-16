@@ -1,10 +1,97 @@
 import pytest
+
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ConstraintInfo, ForeignKeyInfo, TableInfo, ColumnInfo
-from supabase_pydantic.util.writers.pydantic_writers import (
-    PydanticFastAPIClassWriter,
-    PydanticFastAPIWriter,
-)
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIClassWriter, PydanticFastAPIWriter
+
+
+@pytest.fixture
+def relationship_test_tables():
+    # Create tables with various relationship types
+    post_table = TableInfo(
+        name='Post',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(name='title', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+            ColumnInfo(name='author_id', post_gres_datatype='integer', is_nullable=False, datatype='int'),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                constraint_name='Post_author_id_fkey',
+                column_name='author_id',
+                foreign_table_name='User',
+                foreign_column_name='id',
+                relation_type=RelationType.ONE_TO_ONE,  # Each post has one author
+            ),
+        ],
+        relationships=[
+            RelationshipInfo(
+                table_name='Post',
+                related_table_name='Tag',
+                relation_type=RelationType.MANY_TO_MANY,  # Posts can have many tags
+            ),
+        ],
+    )
+
+    user_table = TableInfo(
+        name='User',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(name='name', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+        ],
+        relationships=[
+            RelationshipInfo(
+                table_name='User',
+                related_table_name='Post',
+                relation_type=RelationType.ONE_TO_MANY,  # One user has many posts
+            ),
+        ],
+    )
+
+    tag_table = TableInfo(
+        name='Tag',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(name='name', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+        ],
+        relationships=[
+            RelationshipInfo(
+                table_name='Tag',
+                related_table_name='Post',
+                relation_type=RelationType.MANY_TO_MANY,  # Tags can have many posts and vice versa
+            ),
+        ],
+    )
+
+    post_tag_table = TableInfo(
+        name='PostTag',
+        schema='public',
+        columns=[
+            ColumnInfo(name='post_id', post_gres_datatype='integer', is_nullable=False, datatype='int'),
+            ColumnInfo(name='tag_id', post_gres_datatype='integer', is_nullable=False, datatype='int'),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                constraint_name='PostTag_post_id_fkey',
+                column_name='post_id',
+                foreign_table_name='Post',
+                foreign_column_name='id',
+                relation_type=RelationType.MANY_TO_MANY,
+            ),
+            ForeignKeyInfo(
+                constraint_name='PostTag_tag_id_fkey',
+                column_name='tag_id',
+                foreign_table_name='Tag',
+                foreign_column_name='id',
+                relation_type=RelationType.MANY_TO_MANY,
+            ),
+        ],
+    )
+
+    return [post_table, user_table, tag_table, post_tag_table]
 
 
 @pytest.fixture
@@ -199,7 +286,7 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns_basic():
     )
 
     writer = PydanticFastAPIClassWriter(table_info)
-    expected_output = '\t# Foreign Keys\n\tcompany: list[Company] | None = Field(default=None)'
+    expected_output = '\t# Foreign Keys\n\tcompany_id: Company | None = Field(default=None)'
     assert writer.write_foreign_columns() == expected_output
 
     table_info.foreign_keys = []
@@ -251,7 +338,7 @@ def test_PydanticFastAPIClassWriter_write_operational_class_with_foreign_keys(ta
         '"""User Schema for Pydantic.\n\n\t'
         'Inherits from UserBaseSchema. Add any customization here.\n\t"""\n\n'
         '\t# Foreign Keys\n'
-        '\tcompany: list[Company] | None = Field(default=None)'
+        '\tcompany_id: Company | None = Field(default=None)'
     )
     assert writer.write_operational_class() == expected_output
 
@@ -284,8 +371,8 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
         'name: str\n\n\n# OPERATIONAL CLASSES\n\n\nc'
         'lass User(UserBaseSchema):\n\t"""User Schema for Pydantic.\n\n\t'
         'Inherits from UserBaseSchema. Add any customization here.\n\t"""\n\n\t'
-        '# Foreign Keys\n\tcompany: list[Company] | None = Field(default=None)\n\t'
-        'client: list[Client] | None = Field(default=None)\n\n\n'
+        '# Foreign Keys\n\tcompany_id: Company | None = Field(default=None)\n\t'
+        'client_id: Client | None = Field(default=None)\n\n\n'
         'class Company(CompanyBaseSchema):\n\t"""Company Schema for Pydantic.\n\n\t'
         'Inherits from CompanyBaseSchema. Add any customization here.\n\t"""\n\tpass\n\n\n'
         'class Client(ClientBaseSchema):\n\t"""Client Schema for Pydantic.\n\n\t'
@@ -307,3 +394,83 @@ def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
         'from pydantic.types import StringConstraints'
     )
     assert fastapi_file_writer.write_imports() == expected_imports
+
+
+def test_pluralization_in_relationships():
+    """Test that field names are correctly pluralized for many relationships.
+
+    This test verifies that:
+    1. Regular nouns are pluralized correctly (e.g., book -> books)
+    2. Irregular nouns are pluralized correctly (e.g., child -> children)
+    3. Words ending in 'y' are pluralized correctly (e.g., category -> categories)
+    4. Already plural words remain plural (e.g., news -> news)
+    """
+    # Create tables with various column names
+    tables = [
+        TableInfo(
+            name='Book',
+            schema='public',
+            columns=[
+                ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ],
+            foreign_keys=[
+                ForeignKeyInfo(
+                    constraint_name='book_category_id_fkey',
+                    column_name='category_id',  # Regular plural: categories
+                    foreign_table_name='Category',
+                    foreign_column_name='id',
+                    relation_type=RelationType.MANY_TO_MANY,
+                ),
+                ForeignKeyInfo(
+                    constraint_name='book_child_id_fkey',
+                    column_name='child_id',  # Irregular plural: children
+                    foreign_table_name='Child',
+                    foreign_column_name='id',
+                    relation_type=RelationType.MANY_TO_MANY,
+                ),
+                ForeignKeyInfo(
+                    constraint_name='book_news_id_fkey',
+                    column_name='news_id',  # Already plural: news
+                    foreign_table_name='News',
+                    foreign_column_name='id',
+                    relation_type=RelationType.MANY_TO_MANY,
+                ),
+            ],
+        ),
+    ]
+
+    # Create writer for the Book table
+    book_writer = PydanticFastAPIClassWriter(tables[0])
+
+    # Test pluralization in foreign columns
+    book_foreign_cols = book_writer.write_foreign_columns()
+    assert 'category_ids: list[Category] | None = Field(default=None)' in book_foreign_cols
+    assert 'child_ids: list[Child] | None = Field(default=None)' in book_foreign_cols
+    assert 'news_ids: list[News] | None = Field(default=None)' in book_foreign_cols
+
+
+def test_relationship_type_handling(relationship_test_tables):
+    """Test that foreign key relationships are correctly typed based on their relationship type.
+
+    This test verifies:
+    1. ONE_TO_ONE relationships generate a single instance type (e.g., author: User | None)
+    2. ONE_TO_MANY relationships generate a list type (e.g., posts: list[Post] | None)
+    3. MANY_TO_MANY relationships generate a list type (e.g., tags: list[Tag] | None)
+    """
+    # Create writers for each table
+    post_writer = PydanticFastAPIClassWriter(next(t for t in relationship_test_tables if t.name == 'Post'))
+    user_writer = PydanticFastAPIClassWriter(next(t for t in relationship_test_tables if t.name == 'User'))
+    tag_writer = PydanticFastAPIClassWriter(next(t for t in relationship_test_tables if t.name == 'Tag'))
+
+    # Test Post model foreign keys and relationships
+    post_foreign_cols = post_writer.write_foreign_columns()
+    assert 'author_id: User | None = Field(default=None)' in post_foreign_cols  # ONE_TO_ONE with User
+    assert 'tag: list[Tag] | None = Field(default=None)' in post_foreign_cols  # MANY_TO_MANY with Tag
+
+    # Test User model relationships
+    user_foreign_cols = user_writer.write_foreign_columns()
+    assert 'post: list[Post] | None = Field(default=None)' in user_foreign_cols  # ONE_TO_MANY with Post
+
+    # Test Tag model relationships
+    tag_foreign_cols = tag_writer.write_foreign_columns()
+    assert 'post: list[Post] | None = Field(default=None)' in tag_foreign_cols  # MANY_TO_MANY with Post

@@ -1,13 +1,7 @@
 import json
-import re
-from unittest.mock import patch
+
 from supabase_pydantic.util.constants import OrmType
-from supabase_pydantic.util.dataclasses import (
-    ConstraintInfo,
-    ForeignKeyInfo,
-    TableInfo,
-    ColumnInfo,
-)
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
 
 
 def test_ConstraintInfo_methods():

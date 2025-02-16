@@ -1,4 +1,5 @@
 import pytest
+
 from supabase_pydantic.util.dataclasses import ColumnInfo, TableInfo
 from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIClassWriter
 

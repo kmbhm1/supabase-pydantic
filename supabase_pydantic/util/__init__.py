@@ -14,12 +14,7 @@ from .constants import (
     WriterConfig,
 )
 from .dataclasses import AsDictParent, ColumnInfo, ForeignKeyInfo, TableInfo
-from .db import (
-    check_connection,
-    construct_tables,
-    create_connection,
-    query_database,
-)
+from .db import check_connection, construct_tables, create_connection, query_database
 from .fake import generate_fake_data
 from .json import CustomJsonEncoder
 from .sorting import (

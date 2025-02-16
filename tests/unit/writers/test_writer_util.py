@@ -1,11 +1,13 @@
 import datetime
 import re
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from supabase_pydantic.util.constants import WriterClassType
 from supabase_pydantic.util.writers.util import (
-    get_base_class_post_script,
     generate_unique_filename,
+    get_base_class_post_script,
     get_section_comment,
 )
 

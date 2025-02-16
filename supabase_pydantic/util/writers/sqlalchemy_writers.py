@@ -169,10 +169,7 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
     def write_custom_classes(self, add_fk: bool = False) -> str:
         """Method to write the complete class definition."""
         declarative_base_class = (
-            'class Base(DeclarativeBase):\n\t'
-            '"""Declarative Base Class."""\n\t'
-            '# type_annotation_map = {}\n\n\t'
-            'pass'
+            'class Base(DeclarativeBase):\n\t"""Declarative Base Class."""\n\t# type_annotation_map = {}\n\n\tpass'
         )
         return self._class_writer_helper(
             comment_title='Declarative Base',

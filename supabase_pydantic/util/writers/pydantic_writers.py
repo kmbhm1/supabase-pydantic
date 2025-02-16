@@ -1,8 +1,11 @@
 import re
 from typing import Any
 
+from inflection import pluralize
+
 from supabase_pydantic.util.constants import (
     CUSTOM_MODEL_NAME,
+    RelationType,
     WriterClassType,
 )
 from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
@@ -126,16 +129,49 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         return AbstractClassWriter.column_section('Columns', cols)
 
     def write_foreign_columns(self, use_base: bool = True) -> str | None:
-        """Method to generate foreign column definitions for the class."""
-        if len(self.table.foreign_keys) == 0:
-            return None
+        """Method to generate foreign column definitions for the class.
 
+        The type hint for each foreign key depends on the relationship type:
+        - ONE_TO_ONE: single instance (e.g., author: User | None)
+        - ONE_TO_MANY: list of instances (e.g., posts: list[Post] | None)
+        - MANY_TO_MANY: list of instances (e.g., tags: list[Tag] | None)
+
+        If a relationship type is not specified, defaults to list type for backward compatibility.
+        """
         _n = AbstractClassWriter._proper_name
 
-        def _col(x: ForeignKeyInfo) -> str:  # nullable foreign key
-            return f'{x.foreign_table_name.lower()}: list[{_n(x.foreign_table_name)}] | None = Field(default=None)'
+        def _col(x: ForeignKeyInfo) -> str:
+            # Get the target table name in proper case
+            target_type = _n(x.foreign_table_name)
 
+            # Use column name as is
+            field_name = x.column_name.lower()
+
+            # Determine type hint based on relationship type
+            if x.relation_type == RelationType.ONE_TO_ONE:
+                type_hint = f'{target_type}'
+            else:  # ONE_TO_MANY, MANY_TO_MANY, or unspecified
+                type_hint = f'list[{target_type}]'
+                # Pluralize field name for many relationships
+                field_name = pluralize(field_name)
+
+            return f'{field_name}: {type_hint} | None = Field(default=None)'
+
+        # Generate foreign key fields
         fks = [_col(fk) for fk in self.table.foreign_keys]
+
+        # Add relationship fields that aren't covered by foreign keys
+        for rel in self.table.relationships:
+            # Skip if this relationship is already covered by a foreign key
+            if any(fk.foreign_table_name == rel.related_table_name for fk in self.table.foreign_keys):
+                continue
+
+            target_type = _n(rel.related_table_name)
+            field_name = rel.related_table_name.lower()
+
+            # For relationships, we always use list type since they represent the 'many' side
+            type_hint = f'list[{target_type}]'
+            fks.append(f'{field_name}: {type_hint} | None = Field(default=None)')
 
         return AbstractClassWriter.column_section('Foreign Keys', fks) if len(fks) > 0 else None
 

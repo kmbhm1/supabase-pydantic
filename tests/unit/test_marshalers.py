@@ -329,9 +329,9 @@ def test_get_alias(column_name, expected):
     ],
 )
 def test_parse_constraint_definition_for_fk(constraint_definition, expected):
-    assert (
-        parse_constraint_definition_for_fk(constraint_definition) == expected
-    ), f'Failed for definition: {constraint_definition}'
+    assert parse_constraint_definition_for_fk(constraint_definition) == expected, (
+        f'Failed for definition: {constraint_definition}'
+    )
 
 
 # Test get_table_details_from_columns
@@ -387,9 +387,9 @@ def test_is_bridge_table(
     assert is_bridge_table(bridge_table_setup) is True, 'Should identify as a bridge table'
     assert not is_bridge_table(non_bridge_table_setup), 'Should not identify as a bridge table'
     assert not is_bridge_table(no_primary_bridge_table_setup), 'Should not identify as a bridge table'
-    assert not is_bridge_table(
-        primary_foreign_and_col_primary_unequal_table_setup
-    ), 'Should not identify as a bridge table'
+    assert not is_bridge_table(primary_foreign_and_col_primary_unequal_table_setup), (
+        'Should not identify as a bridge table'
+    )
 
 
 # Test analyze_bridge_tables function
@@ -637,7 +637,9 @@ def test_column_name_not_found(
     ]
     add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
     # Since this writes to stdout, it might be hard to directly assert without capturing the output
-    assert True, 'Should handle non-existent column gracefully (test by inspecting printed output or modify function to be more testable)'
+    assert True, (
+        'Should handle non-existent column gracefully (test by inspecting printed output or modify function to be more testable)'
+    )
 
 
 def test_update_column_constraint_definitions():
@@ -647,33 +649,23 @@ def test_update_column_constraint_definitions():
         name='User',
         schema='public',
         columns=[
-            ColumnInfo(
-                name='country_code',
-                post_gres_datatype='text',
-                is_nullable=False,
-                datatype='str'
-            ),
-            ColumnInfo(
-                name='username',
-                post_gres_datatype='text',
-                is_nullable=False,
-                datatype='str'
-            )
+            ColumnInfo(name='country_code', post_gres_datatype='text', is_nullable=False, datatype='str'),
+            ColumnInfo(name='username', post_gres_datatype='text', is_nullable=False, datatype='str'),
         ],
         constraints=[
             ConstraintInfo(
                 constraint_name='country_code_length_check',
                 raw_constraint_type='c',
                 columns=['country_code'],
-                constraint_definition='CHECK (length(country_code) = 2)'
+                constraint_definition='CHECK (length(country_code) = 2)',
             ),
             ConstraintInfo(
                 constraint_name='username_length_check',
                 raw_constraint_type='c',
                 columns=['username'],
-                constraint_definition='CHECK (length(username) >= 4 AND length(username) <= 20)'
-            )
-        ]
+                constraint_definition='CHECK (length(username) >= 4 AND length(username) <= 20)',
+            ),
+        ],
     )
 
     # Update the columns with constraints

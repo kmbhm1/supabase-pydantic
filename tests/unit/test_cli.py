@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 from click.testing import CliRunner
@@ -80,3 +80,135 @@ def test_clean_command_handles_other_errors(runner, mock_env_vars):
         result = runner.invoke(cli, ['clean'])
         assert 'An error occurred while cleaning the project' in result.output
         assert result.exit_code == 0
+
+
+def test_gen_command_with_invalid_db_url(runner):
+    """Test gen command with invalid database URL."""
+    result = runner.invoke(cli, ['gen', '--db-url', 'invalid_url'])
+    assert 'Invalid database URL' in result.output
+    assert result.exit_code == 0
+
+
+def test_gen_command_with_valid_db_url(runner):
+    """Test gen command with valid database URL."""
+    with (
+        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
+    ):
+        mock_construct.return_value = {'public': [MagicMock(name='table1')]}
+        mock_dirs.return_value = {'default': '/tmp'}
+        mock_jobs.return_value = {'public': {'pydantic': MagicMock(enabled=True)}}
+        mock_writer = mock_factory.return_value.get_file_writer.return_value
+        mock_writer.save.return_value = ('path1.py', None)
+
+        result = runner.invoke(
+            cli, ['gen', '--db-url', 'postgresql://user:pass@localhost:5432/db', '--schema', 'public']
+        )
+        assert 'Checking local database connection' in result.output
+        assert result.exit_code == 0
+
+
+def test_gen_command_with_empty_schemas(runner):
+    """Test gen command when schemas have no tables."""
+    with (
+        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
+    ):
+        mock_construct.return_value = {'public': [], 'schema2': []}
+        mock_dirs.return_value = {'default': '/tmp'}
+        mock_jobs.return_value = {}
+        mock_writer = mock_factory.return_value.get_file_writer.return_value
+        mock_writer.save.return_value = ('path1.py', None)
+
+        result = runner.invoke(cli, ['gen', '--local', '--schema', 'public', '--schema', 'schema2'])
+        assert 'The following schemas have no tables and will be skipped' in result.output
+        assert result.exit_code == 0
+
+
+def test_gen_command_with_tables(runner):
+    """Test gen command with tables in schema."""
+    with (
+        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.run_isort') as mock_isort,
+        patch('supabase_pydantic.cli.format_with_ruff') as mock_ruff,
+    ):
+        table_info = MagicMock()
+        table_info.name = 'table1'
+        mock_construct.return_value = {'public': [table_info]}
+        mock_dirs.return_value = {'default': '/tmp'}
+
+        writer_config = MagicMock()
+        writer_config.enabled = True
+        writer_config.fpath.return_value = '/tmp/models.py'
+        mock_jobs.return_value = {'public': {'pydantic': writer_config}}
+
+        mock_writer = mock_factory.return_value.get_file_writer.return_value
+        mock_writer.save.return_value = ('path1.py', None)
+
+        result = runner.invoke(cli, ['gen', '--local'])
+
+        assert result.exit_code == 0
+        mock_isort.assert_called_once()
+        mock_ruff.assert_called_once()
+
+
+def test_gen_command_with_seed_data(runner):
+    """Test gen command with seed data generation."""
+    with (
+        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.generate_seed_data') as mock_seed,
+        patch('supabase_pydantic.cli.write_seed_file') as mock_write_seed,
+    ):
+        table_info = MagicMock()
+        table_info.name = 'table1'
+        mock_construct.return_value = {'public': [table_info]}
+        mock_dirs.return_value = {'default': '/tmp'}
+
+        writer_config = MagicMock()
+        writer_config.enabled = True
+        writer_config.fpath.return_value = '/tmp/models.py'
+        mock_jobs.return_value = {'public': {'pydantic': writer_config}}
+
+        mock_writer = mock_factory.return_value.get_file_writer.return_value
+        mock_writer.save.return_value = ('path1.py', None)
+        mock_seed.return_value = {'table1': [{'id': 1}]}
+        mock_write_seed.return_value = ['seed.sql']
+
+        result = runner.invoke(cli, ['gen', '--local', '--seed', '--schema', 'public'])
+
+        assert result.exit_code == 0
+        mock_seed.assert_called_once()
+        mock_write_seed.assert_called_once()
+
+
+def test_gen_command_with_seed_data_no_tables(runner):
+    """Test gen command with seed data generation but no tables."""
+    with (
+        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.generate_seed_data') as mock_seed,
+    ):
+        mock_construct.return_value = {'public': []}
+        mock_dirs.return_value = {'default': '/tmp'}
+
+        mock_jobs.return_value = {}
+        mock_writer = mock_factory.return_value.get_file_writer.return_value
+        mock_writer.save.return_value = ('path1.py', None)
+        mock_seed.return_value = {}
+
+        result = runner.invoke(cli, ['gen', '--local', '--seed', '--schema', 'public'])
+
+        assert result.exit_code == 0
+        mock_seed.assert_not_called()

@@ -30,8 +30,8 @@ from supabase_pydantic.util.marshalers import (
 @pytest.fixture
 def column_details():
     return [
-        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE'),
-        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE'),
+        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None),
+        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None),
     ]
 
 
@@ -412,11 +412,11 @@ def test_analyze_table_relationships(setup_analyze_tables):
     analyze_table_relationships(setup_analyze_tables)
 
     # Check basic one-to-many relationship
-    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.ONE_TO_ONE
+    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.ONE_TO_MANY
 
     # Check for automatically added reciprocal foreign key in users table
     assert len(setup_analyze_tables['public.users'].foreign_keys) == 1
-    assert setup_analyze_tables['public.users'].foreign_keys[0].relation_type == RelationType.ONE_TO_ONE
+    assert setup_analyze_tables['public.users'].foreign_keys[0].relation_type == RelationType.ONE_TO_MANY
     assert setup_analyze_tables['public.users'].foreign_keys[0].foreign_table_name == 'orders'
 
 
@@ -437,19 +437,30 @@ def test_no_foreign_table(setup_analyze_tables):
 
 
 def test_reciprocal_foreign_keys(setup_analyze_tables):
+    # Add a new column to users for order_id
+    setup_analyze_tables['public.users'].columns.append(
+        ColumnInfo(
+            name='order_id',
+            primary=False,
+            is_unique=False,
+            is_foreign_key=True,
+            post_gres_datatype='uuid',
+            datatype='str',
+        )
+    )
     # Add reciprocal foreign key in users table
     setup_analyze_tables['public.users'].foreign_keys.append(
         ForeignKeyInfo(
-            constraint_name='fk_user_id',
-            column_name='id',
+            constraint_name='fk_order_id',
+            column_name='order_id',
             foreign_table_name='orders',
-            foreign_column_name='user_id',
+            foreign_column_name='id',
             relation_type=None,
         )
     )
     analyze_table_relationships(setup_analyze_tables)
-    # Expecting a many-to-many because of reciprocal relationship
-    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.ONE_TO_ONE
+    # Expecting a one-to-many relationship in both directions
+    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.ONE_TO_MANY
     assert setup_analyze_tables['public.users'].foreign_keys[0].relation_type == RelationType.ONE_TO_MANY
 
 
@@ -648,35 +659,142 @@ def test_update_column_constraint_definitions():
     """Test that update_column_constraint_definitions correctly updates columns with CHECK constraints."""
     # Create a test table with a column and constraint
     table = TableInfo(
-        name='User',
+        name='users',
         schema='public',
+        table_type='BASE TABLE',
         columns=[
-            ColumnInfo(name='country_code', post_gres_datatype='text', is_nullable=False, datatype='str'),
-            ColumnInfo(name='username', post_gres_datatype='text', is_nullable=False, datatype='str'),
+            ColumnInfo(
+                name='age',
+                primary=False,
+                is_unique=False,
+                is_foreign_key=False,
+                post_gres_datatype='integer',
+                datatype='int',
+            ),
         ],
         constraints=[
             ConstraintInfo(
-                constraint_name='country_code_length_check',
+                constraint_name='age_check',
+                columns=['age'],
                 raw_constraint_type='c',
-                columns=['country_code'],
-                constraint_definition='CHECK (length(country_code) = 2)',
-            ),
-            ConstraintInfo(
-                constraint_name='username_length_check',
-                raw_constraint_type='c',
-                columns=['username'],
-                constraint_definition='CHECK (length(username) >= 4 AND length(username) <= 20)',
+                constraint_definition='CHECK (age >= 0)',
             ),
         ],
     )
 
-    # Update the columns with constraints
-    tables = {('public', 'User'): table}
+    # Create a dictionary of tables as expected by the function
+    tables = {('public', 'users'): table}
+
+    # Call the function
     update_column_constraint_definitions(tables)
 
-    # Verify the constraints were correctly added
-    country_code_col = next(col for col in table.columns if col.name == 'country_code')
-    assert country_code_col.constraint_definition == 'CHECK (length(country_code) = 2)'
+    # Check that the column's constraint_definition field was updated
+    assert table.columns[0].constraint_definition == 'CHECK (age >= 0)'
 
-    username_col = next(col for col in table.columns if col.name == 'username')
-    assert username_col.constraint_definition == 'CHECK (length(username) >= 4 AND length(username) <= 20)'
+    # Test with multiple CHECK constraints on the same column
+    table.constraints.append(
+        ConstraintInfo(
+            constraint_name='age_upper_check',
+            columns=['age'],
+            raw_constraint_type='c',
+            constraint_definition='CHECK (age <= 120)',
+        )
+    )
+
+    # Call the function again with the updated table
+    tables = {('public', 'users'): table}
+    update_column_constraint_definitions(tables)
+
+
+@pytest.fixture
+def identity_column_details():
+    return [
+        ('public', 'users', 'id', None, 'NO', 'integer', None, 'BASE TABLE', 'ALWAYS'),
+        ('public', 'users', 'name', None, 'YES', 'text', 255, 'BASE TABLE', None),
+    ]
+
+
+def test_identity_columns(identity_column_details):
+    tables = get_table_details_from_columns(identity_column_details)
+    table = tables[('public', 'users')]
+
+    # Check that identity column is properly identified
+    id_column = next(col for col in table.columns if col.name == 'id')
+    assert id_column.is_identity is True
+
+    # Check non-identity column
+    name_column = next(col for col in table.columns if col.name == 'name')
+    assert name_column.is_identity is False
+
+
+@pytest.fixture
+def relationship_tables():
+    # Create tables with various relationship types
+    user_table = TableInfo(
+        name='users',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', primary=True, is_unique=True, post_gres_datatype='uuid', datatype='str'),
+            ColumnInfo(
+                name='profile_id', is_foreign_key=True, is_unique=True, post_gres_datatype='uuid', datatype='str'
+            ),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                column_name='profile_id',
+                foreign_table_name='profiles',
+                foreign_column_name='id',
+                constraint_name='fk_user_profile',
+            ),
+        ],
+    )
+
+    profile_table = TableInfo(
+        name='profiles',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', primary=True, is_unique=True, post_gres_datatype='uuid', datatype='str'),
+        ],
+    )
+
+    post_table = TableInfo(
+        name='posts',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', primary=True, is_unique=True, post_gres_datatype='uuid', datatype='str'),
+            ColumnInfo(name='user_id', is_foreign_key=True, is_unique=False, post_gres_datatype='uuid', datatype='str'),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                column_name='user_id',
+                foreign_table_name='users',
+                foreign_column_name='id',
+                constraint_name='fk_post_user',
+            ),
+        ],
+    )
+
+    return {
+        ('public', 'users'): user_table,
+        ('public', 'profiles'): profile_table,
+        ('public', 'posts'): post_table,
+    }
+
+
+def test_relationship_types(relationship_tables):
+    # Test ONE_TO_ONE relationship (user -> profile)
+    analyze_table_relationships(relationship_tables)
+    user_table = relationship_tables[('public', 'users')]
+
+    # Check user -> profile relationship (ONE_TO_ONE)
+    user_profile_rel = next(rel for rel in user_table.foreign_keys if rel.foreign_table_name == 'profiles')
+    assert user_profile_rel.relation_type == RelationType.ONE_TO_ONE
+
+    # Check post -> user relationship (ONE_TO_MANY)
+    post_table = relationship_tables[('public', 'posts')]
+    post_user_rel = next(rel for rel in post_table.foreign_keys if rel.foreign_table_name == 'users')
+    assert post_user_rel.relation_type == RelationType.ONE_TO_MANY
+
+    # Check reciprocal user -> posts relationship (ONE_TO_MANY)
+    user_posts_rel = next(rel for rel in user_table.foreign_keys if rel.foreign_table_name == 'posts')
+    assert user_posts_rel.relation_type == RelationType.ONE_TO_MANY

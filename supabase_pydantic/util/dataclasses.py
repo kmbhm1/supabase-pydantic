@@ -83,6 +83,17 @@ class ColumnInfo(AsDictParent):
     is_unique: bool = False
     is_foreign_key: bool = False
     constraint_definition: str | None = None
+    is_identity: bool = False  # For auto-generated identity columns
+
+    @property
+    def has_default(self) -> bool:
+        """Check if the column has a default value."""
+        return self.default is not None
+
+    @property
+    def is_generated(self) -> bool:
+        """Check if the column is auto-generated (identity or serial)."""
+        return self.is_identity or (self.default is not None and 'nextval' in str(self.default).lower())
 
     def orm_imports(self, orm_type: OrmType = OrmType.PYDANTIC) -> set[str | None]:
         """Get the unique import statements for a column."""

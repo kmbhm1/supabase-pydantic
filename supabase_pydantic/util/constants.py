@@ -11,9 +11,11 @@ STD_SEED_DATA_FILENAME = 'seed.sql'
 class WriterClassType(Enum):
     """Enum for writer class types."""
 
-    BASE = 'base'
+    BASE = 'base'  # The main Row model with all fields
     BASE_WITH_PARENT = 'base_with_parent'
     PARENT = 'parent'
+    INSERT = 'insert'  # Model for insert operations - auto-generated fields optional
+    UPDATE = 'update'  # Model for update operations - all fields optional
 
 
 class DatabaseConnectionType(Enum):
@@ -325,7 +327,8 @@ SELECT
     c.is_nullable,
     c.data_type,
     c.character_maximum_length,
-    t.table_type
+    t.table_type,
+    c.identity_generation
 FROM
     information_schema.columns AS c
 JOIN

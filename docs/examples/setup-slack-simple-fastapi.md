@@ -2,6 +2,10 @@
 
 This example is a simple demonstration of how to generate FastAPI schemas from the [Slack clone database](https://github.com/supabase/supabase/tree/master/examples/slack-clone/nextjs-slack-clone#2-run-slack-clone-quickstart) tutorial provided by Supabase. 
 
+!!! info "New Feature - Insert and Update Models (Feb 16, 2025)"
+
+    The generated models now include specialized Insert and Update models for better type safety and validation. See the [Working with Insert and Update Models](insert-update-models.md) guide for details.
+
 ## Prerequisites
 
 You will need to have the following installed:

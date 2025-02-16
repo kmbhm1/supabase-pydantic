@@ -29,14 +29,15 @@ def run_isort(file_path: str) -> None:
 
 
 def format_with_ruff(file_path: str) -> None:
-    """Run the ruff formatter on a specified Python file."""
+    """Run the ruff formatter and fixer on a specified Python file."""
     try:
-        # Run ruff using subprocess.run
+        # First run ruff check --fix to handle unused imports and other issues
+        _ = subprocess.run(['ruff', 'check', '--fix', file_path], check=True, text=True, capture_output=True)
+
+        # Then run ruff format for code formatting
         _ = subprocess.run(['ruff', 'format', file_path], check=True, text=True, capture_output=True)
-        # print(f'Ruff formatting successful: {file_path}')
-        # print(result.stdout)  # Output the stdout of the ruff command
     except subprocess.CalledProcessError as e:
-        print('Error during Ruff formatting:')
+        print('Error during Ruff processing:')
         print(e.stderr)  # Print any error output from ruff
 
 

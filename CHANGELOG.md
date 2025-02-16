@@ -1,6 +1,50 @@
 # CHANGELOG
 
 
+## v0.16.0 (2025-02-16)
+
+### Features
+
+- Foreign key fields should be single instances, not lists in generated Pydantic models
+  ([#62](https://github.com/kmbhm1/supabase-pydantic/pull/62),
+  [`1484841`](https://github.com/kmbhm1/supabase-pydantic/commit/14848413ec23813c11ff719ac2aea1a3c947b191))
+
+* refactor(pydantic): improve foreign key and relationship field generation
+
+- Keep original column names for foreign keys (e.g., author_id: User) - Use inflection library for
+  proper pluralization in many relationships - Fix handling of tables with relationships but no
+  foreign keys - Add comprehensive tests for pluralization cases
+
+This change ensures more accurate model generation that better reflects the database schema while
+  maintaining proper type hints based on relationship types (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY).
+
+* style: organize imports and format code
+
+- Sort and group imports according to PEP8 - Remove unused imports - Fix line spacing and
+  indentation
+
+* fix(sqlalchemy): standardize newline formatting in model generation
+
+- Remove extra newline after __tablename__ in write_docs method - Adjust newlines between sections
+  in model output: - Single newline after __tablename__ - Single newline between columns - Single
+  newline before section headers - Double newline between classes - Update test assertions to match
+  new formatting
+
+* test(cli): fix schema handling in CLI test cases
+
+- Add proper schema parameter to CLI command invocations - Fix mock table dictionary and jobs
+  configuration - Improve test coverage for empty schema scenarios - Simplify test setup by removing
+  redundant configurations
+
+* fix: line length error
+
+* fix(deps): correct supabase package name in pre-commit config
+
+* style: break long line in sqlalchemy writer
+
+* fix(writers): use RelationshipInfo objects for relationships
+
+
 ## v0.15.6 (2025-01-28)
 
 ### Refactoring

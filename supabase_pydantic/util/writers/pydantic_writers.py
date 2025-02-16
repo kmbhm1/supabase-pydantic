@@ -28,13 +28,13 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         base_name = self.name
         result = base_name
 
-        # Add appropriate suffix for Insert/Update models
+        # Add appropriate suffix for different model types
         if self.class_type == WriterClassType.INSERT:
             result = f'{base_name}Insert'
         elif self.class_type == WriterClassType.UPDATE:
             result = f'{base_name}Update'
         elif self.class_type == WriterClassType.BASE:
-            result = base_name
+            result = f'{base_name}BaseSchema'
         else:
             result = base_name
 
@@ -45,31 +45,28 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         return result
 
     def write_metaclass(self, metaclasses: list[str] | None = None) -> str | None:
-        """Method to generate the metaclasses for the class."""
-        result = None
+        """Method to generate the metaclasses for the class.
 
-        # Handle Insert/Update models
+        Args:
+            metaclasses: Optional list of metaclasses to use. If provided, these will be joined
+                        with commas and returned directly. If not provided, the appropriate
+                        model type will be returned based on class_type.
+        """
+        # If metaclasses are provided, join them with commas and return
+        if metaclasses:
+            return ', '.join(metaclasses)
+
+        # Otherwise, determine the appropriate model type based on class_type
         if self.class_type == WriterClassType.INSERT:
-            result = f'{CUSTOM_MODEL_NAME}Insert'
+            return f'{CUSTOM_MODEL_NAME}Insert'
         elif self.class_type == WriterClassType.UPDATE:
-            result = f'{CUSTOM_MODEL_NAME}Update'
-        # Handle base models
-        elif self.class_type == WriterClassType.BASE:
-            result = CUSTOM_MODEL_NAME
-        # Handle parent models
-        elif self.class_type == WriterClassType.PARENT:
-            result = CUSTOM_MODEL_NAME
-        # Handle base with parent models
+            return f'{CUSTOM_MODEL_NAME}Update'
+        elif self.class_type in [WriterClassType.BASE, WriterClassType.PARENT]:
+            return CUSTOM_MODEL_NAME
         elif self.class_type == WriterClassType.BASE_WITH_PARENT:
-            parent_name = f'{self.name}{post(self.table.table_type, WriterClassType.PARENT)}'
-            result = parent_name
+            return f'{self.name}{post(self.table.table_type, WriterClassType.PARENT)}'
         else:
-            result = CUSTOM_MODEL_NAME
-
-        # print(f'write_metaclass() for {self.table.name}:')
-        # print(f'  class_type: {self.class_type}')
-        # print(f'  result: {result}')
-        return result
+            return CUSTOM_MODEL_NAME
 
     def _parse_length_constraint(self, constraint_def: str | None) -> dict[str, int] | None:
         """Parse length constraints from a CHECK constraint definition.
@@ -180,7 +177,12 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
 
     def write_docs(self) -> str:
         """Method to generate the docstrings for the class."""
-        qualifier = '(Nullable) Parent' if self._null_defaults else 'Base'
+        if self.class_type == WriterClassType.INSERT:
+            qualifier = 'Insert'
+        elif self.class_type == WriterClassType.UPDATE:
+            qualifier = 'Update'
+        else:
+            qualifier = '(Nullable) Parent' if self._null_defaults else 'Base'
         return f'\n\t"""{self.name} {qualifier} Schema."""\n\n'
 
     def write_primary_keys(self) -> str | None:
@@ -195,7 +197,24 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             required_fields = []
             optional_fields = []
             field_comments = []
+            primary_key_comments = []
 
+            # First gather all field properties
+            for c in self.separated_columns.primary_keys + self.separated_columns.remaining:
+                if c.is_identity:
+                    if self.class_type == WriterClassType.INSERT:
+                        primary_key_comments.append(f'# {c.name}: auto-generated')
+                    continue
+
+                if c.has_default or c.is_generated or c.is_nullable:
+                    reason = self._get_optional_reason(c)
+                    if reason:
+                        if c in self.separated_columns.primary_keys:
+                            primary_key_comments.append(f'# {c.name}: {reason}')
+                        else:
+                            field_comments.append(f'# {c.name}: {reason}')
+
+            # Then organize fields by required/optional
             for c in self.separated_columns.remaining:
                 # Skip identity columns for Insert/Update
                 if c.is_identity:
@@ -208,15 +227,12 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
                 else:
                     if c.has_default or c.is_generated or c.is_nullable:
                         optional_fields.append(c)
-                        reason = self._get_optional_reason(c)
-                        if reason:
-                            field_comments.append(f'# {c.name}: {reason}')
                     else:
                         required_fields.append(c)
 
             sections = []
-            if self.class_type == WriterClassType.INSERT and field_comments:
-                sections.extend(['# Field properties:', *field_comments, ''])
+            if field_comments and self.class_type in [WriterClassType.INSERT, WriterClassType.UPDATE]:
+                sections.extend(['\t# Field properties:', *field_comments, ''])
 
             if required_fields:
                 sections.extend(
@@ -226,7 +242,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
                 if required_fields:  # Add spacing between sections
                     sections.append('')
                 sections.extend(
-                    ['# Optional fields', *[self.write_column(c, add_comment=False) for c in optional_fields]]
+                    ['\t# Optional fields', *[self.write_column(c, add_comment=False) for c in optional_fields]]
                 )
             return '\n\t'.join(sections) if sections else None
 
@@ -285,7 +301,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
 
     def write_operational_class(self) -> str | None:
         """Method to generate operational class definitions."""
-        m = self.write_name()
+        # Create a base schema writer and get its name
+        base_writer = PydanticFastAPIClassWriter(self.table, WriterClassType.BASE)
+        m = base_writer.write_name()
         op_class = [
             f'class {self.name}({m}):',
             f'\t"""{self.name} Schema for Pydantic.',
@@ -427,9 +445,6 @@ class PydanticFastAPIWriter(AbstractFileWriter):
                 class_type=base_class_type,
             )
         )
-
-        # Generate operational classes
-        classes.append(self.write_operational_classes())
 
         if self.generate_crud_models:
             # Generate Insert classes

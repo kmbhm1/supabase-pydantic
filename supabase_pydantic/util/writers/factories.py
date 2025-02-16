@@ -23,6 +23,7 @@ class FileWriterFactory:
             file_type (OrmType, optional): The ORM type. Defaults to OrmType.PYDANTIC.
             framework_type (FrameWorkType, optional): The framework type. Defaults to FrameWorkType.FASTAPI.
             add_null_parent_classes (bool, optional): Add null parent classes for base classes. Defaults to False.
+            generate_crud_models (bool, optional): Generate CRUD models. (i.e., Insert, Update) Defaults to True.
 
         Returns:
             The file writer instance.

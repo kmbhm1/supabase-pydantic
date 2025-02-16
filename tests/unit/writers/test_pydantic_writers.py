@@ -1,6 +1,6 @@
 import pytest
 
-from supabase_pydantic.util.constants import RelationType
+from supabase_pydantic.util.constants import RelationType, WriterClassType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIClassWriter, PydanticFastAPIWriter
 
@@ -209,16 +209,35 @@ def fastapi_file_writer(api_writer_tables):
     return PydanticFastAPIWriter(api_writer_tables, 'dummy_path.py')
 
 
-def test_PydanticFastAPIClassWriter_write_name(fastapi_class_writer):
+def test_PydanticFastAPIClassWriter_write_name(table_info):
     """Validate the write_name method for Pydantic FastAPI Class Writer."""
-    assert fastapi_class_writer.write_name() == 'UserBaseSchema'
+    # Test base schema
+    base_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.BASE)
+    assert base_writer.write_name() == 'UserBaseSchema'
+
+    # Test insert schema
+    insert_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.INSERT)
+    assert insert_writer.write_name() == 'UserInsert'
+
+    # Test update schema
+    update_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.UPDATE)
+    assert update_writer.write_name() == 'UserUpdate'
 
 
-def test_PydanticFastAPIClassWriter_write_metaclass(fastapi_class_writer):
+def test_PydanticFastAPIClassWriter_write_metaclass(table_info):
     """Validate the write_metaclass method for Pydantic FastAPI Class Writer."""
-    expected_output = 'foo, bar'
-    assert fastapi_class_writer.write_metaclass(['foo', 'bar']) == expected_output
-    assert fastapi_class_writer.write_metaclass(None) == 'CustomModel'
+    # Test base schema
+    base_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.BASE)
+    assert base_writer.write_metaclass(['foo', 'bar']) == 'foo, bar'
+    assert base_writer.write_metaclass(None) == 'CustomModel'
+
+    # Test insert schema
+    insert_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.INSERT)
+    assert insert_writer.write_metaclass(None) == 'CustomModelInsert'
+
+    # Test update schema
+    update_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.UPDATE)
+    assert update_writer.write_metaclass(None) == 'CustomModelUpdate'
 
 
 def test_PydanticFastAPIClassWriter_write_column(fastapi_class_writer):
@@ -233,9 +252,11 @@ def test_PydanticFastAPIClassWriter_write_column(fastapi_class_writer):
     assert fastapi_class_writer.write_column(column_two) == expected_output_two
 
 
-def test_PydanticFastAPIClassWriter_write_class(fastapi_class_writer):
-    """Validate the write_class method for Pydantic FastAPI Class Writer."""
-    expected_output = (
+def test_PydanticFastAPIClassWriter_write_class_base(table_info):
+    """Validate the write_class method for Pydantic FastAPI Class Writer (BaseSchema)."""
+    # Test base schema
+    base_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.BASE)
+    base_output = (
         'class UserBaseSchema(CustomModel):\n'
         '\t"""User Base Schema."""\n\n'
         '\t# Primary Keys\n'
@@ -244,7 +265,44 @@ def test_PydanticFastAPIClassWriter_write_class(fastapi_class_writer):
         '\tcompany_id: UUID4\n'
         '\temail: str | None = Field(default=None)'
     )
-    assert fastapi_class_writer.write_class() == expected_output
+    assert base_writer.write_class() == base_output
+
+
+def test_PydanticFastAPIClassWriter_write_class_insert(table_info):
+    """Validate the write_class method for Pydantic FastAPI Class Writer (Insert)."""
+    # Test insert schema
+    insert_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.INSERT)
+    insert_output = (
+        'class UserInsert(CustomModelInsert):\n'
+        '\t"""User Insert Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: int\n\n'
+        '\t# Field properties:\n'
+        '\t# email: nullable\n\t\n'
+        '\t# Required fields\n'
+        '\tcompany_id: UUID4\n\t\n'
+        '\t\t# Optional fields\n'
+        '\temail: str | None = Field(default=None)'
+    )
+    assert insert_writer.write_class() == insert_output
+
+
+def test_PydanticFastAPIClassWriter_write_class_update(table_info):
+    """Validate the write_class method for Pydantic FastAPI Class Writer (Update)."""
+    # Test update schema
+    update_writer = PydanticFastAPIClassWriter(table_info, WriterClassType.UPDATE)
+    update_output = (
+        'class UserUpdate(CustomModelUpdate):\n'
+        '\t"""User Update Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: int | None = Field(default=None)\n\n'
+        '\t# Field properties:\n'
+        '\t# email: nullable\n\t\n'
+        '\t\t# Optional fields\n'
+        '\tcompany_id: UUID4 | None = Field(default=None)\n'
+        '\temail: str | None = Field(default=None)'
+    )
+    assert update_writer.write_class() == update_output
 
 
 def test_PydanticFastAPIClassWriter_write_primary_keys_no_columns():
@@ -354,29 +412,129 @@ def test_PydanticFastAPIClassWriter_write_operational_class_with_foreign_keys(ta
 def test_PydanticFastAPIWriter_write(fastapi_file_writer):
     """Validate the write method for Pydantic FastAPI Writer."""
     expected_output = (
-        'from __future__ import annotations\nfrom pydantic import Annotated'
-        '\nfrom pydantic import BaseModel\nfrom pydantic import Field\nfrom pydantic import Json\n'
+        # Imports
+        'from __future__ import annotations\n'
+        'from pydantic import Annotated\n'
+        'from pydantic import BaseModel\n'
+        'from pydantic import Field\n'
+        'from pydantic import Json\n'
         'from pydantic import UUID4\n'
-        'from pydantic.types import StringConstraints\n\n\n# CUSTOM CLASSES\n'
-        '# Note: This is a custom model class for defining common features among\n'
-        '# Pydantic Base Schema.\n\n\nclass CustomModel(BaseModel):\n\tpass\n\n\n'
-        '# BASE CLASSES\n\n\n'
-        'class UserBaseSchema(CustomModel):\n\t"""User Base Schema."""\n\n\t'
-        '# Primary Keys\n\tid: int\n\n\t# Columns\n\tclient_id: UUID4\n\tcompany_id: UUID4'
-        '\n\temail: str | None = Field(default=None)\n\n\n'
-        'class CompanyBaseSchema(CustomModel):\n\t"""Company Base Schema."""\n\n\t'
-        '# Primary Keys\n\tid: UUID4\n\n\t# Columns\n\tname: str\n\n\n'
-        'class ClientBaseSchema(CustomModel):\n\t"""Client Base Schema."""\n\n\t'
-        '# Primary Keys\n\tid: UUID4\n\n\t# Columns\n\tinfo_json: dict | Json | None = Field(default=None)\n\t'
-        'name: str\n\n\n# OPERATIONAL CLASSES\n\n\nc'
-        'lass User(UserBaseSchema):\n\t"""User Schema for Pydantic.\n\n\t'
-        'Inherits from UserBaseSchema. Add any customization here.\n\t"""\n\n\t'
-        '# Foreign Keys\n\tcompany_id: Company | None = Field(default=None)\n\t'
-        'client_id: Client | None = Field(default=None)\n\n\n'
-        'class Company(CompanyBaseSchema):\n\t"""Company Schema for Pydantic.\n\n\t'
-        'Inherits from CompanyBaseSchema. Add any customization here.\n\t"""\n\tpass\n\n\n'
-        'class Client(ClientBaseSchema):\n\t"""Client Schema for Pydantic.\n\n\t'
-        'Inherits from ClientBaseSchema. Add any customization here.\n\t"""\n\tpass\n'
+        'from pydantic.types import StringConstraints\n\n\n'
+        # Custom Classes
+        '# CUSTOM CLASSES\n'
+        '# Note: These are custom model classes for defining common features among\n'
+        '# Pydantic Base Schema.\n\n\n'
+        'class CustomModel(BaseModel):\n'
+        '\t"""Base model class with common features."""\n'
+        '\tpass\n\n\n'
+        'class CustomModelInsert(CustomModel):\n'
+        '\t"""Base model for insert operations with common features."""\n'
+        '\tpass\n\n\n'
+        'class CustomModelUpdate(CustomModel):\n'
+        '\t"""Base model for update operations with common features."""\n'
+        '\tpass\n\n\n'
+        # Base Classes
+        '# BASE CLASSES\n'
+        '# Note: These are the base Row models that include all fields.\n\n\n'
+        'class UserBaseSchema(CustomModel):\n'
+        '\t"""User Base Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: int\n\n'
+        '\t# Columns\n'
+        '\tclient_id: UUID4\n'
+        '\tcompany_id: UUID4\n'
+        '\temail: str | None = Field(default=None)\n\n\n'
+        'class CompanyBaseSchema(CustomModel):\n'
+        '\t"""Company Base Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: UUID4\n\n'
+        '\t# Columns\n'
+        '\tname: str\n\n\n'
+        'class ClientBaseSchema(CustomModel):\n'
+        '\t"""Client Base Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: UUID4\n\n'
+        '\t# Columns\n'
+        '\tinfo_json: dict | Json | None = Field(default=None)\n'
+        '\tname: str\n'
+        # Insert Classes
+        '# INSERT CLASSES\n'
+        '# Note: These models are used for insert operations. Auto-generated fields\n'
+        '# (like IDs and timestamps) are optional.\n\n\n'
+        'class UserInsert(CustomModelInsert):\n'
+        '\t"""User Insert Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: int\n\n'
+        '\t# Field properties:\n'
+        '\t# email: nullable\n\t\n'
+        '\t# Required fields\n'
+        '\tclient_id: UUID4\n'
+        '\tcompany_id: UUID4\n\t\n'
+        '\t\t# Optional fields\n'
+        '\temail: str | None = Field(default=None)\n\n\n'
+        'class CompanyInsert(CustomModelInsert):\n'
+        '\t"""Company Insert Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: UUID4\n\n'
+        '# Required fields\n'
+        '\tname: str\n\n\n'
+        'class ClientInsert(CustomModelInsert):\n'
+        '\t"""Client Insert Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: UUID4\n\n'
+        '\t# Field properties:\n'
+        '\t# info_json: nullable\n\t\n'
+        '\t# Required fields\n'
+        '\tname: str\n\t\n'
+        '\t\t# Optional fields\n'
+        '\tinfo_json: dict | Json | None = Field(default=None)\n'
+        # Update Classes
+        '# UPDATE CLASSES\n'
+        '# Note: These models are used for update operations. All fields are optional.\n\n\n'
+        'class UserUpdate(CustomModelUpdate):\n'
+        '\t"""User Update Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: int | None = Field(default=None)\n\n'
+        '\t# Field properties:\n'
+        '\t# email: nullable\n\t\n'
+        '\t\t# Optional fields\n'
+        '\tclient_id: UUID4 | None = Field(default=None)\n'
+        '\tcompany_id: UUID4 | None = Field(default=None)\n'
+        '\temail: str | None = Field(default=None)\n\n\n'
+        'class CompanyUpdate(CustomModelUpdate):\n'
+        '\t"""Company Update Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: UUID4 | None = Field(default=None)\n\n'
+        '\t# Optional fields\n'
+        '\tname: str | None = Field(default=None)\n\n\n'
+        'class ClientUpdate(CustomModelUpdate):\n'
+        '\t"""Client Update Schema."""\n\n'
+        '\t# Primary Keys\n'
+        '\tid: UUID4 | None = Field(default=None)\n\n'
+        '\t# Field properties:\n'
+        '\t# info_json: nullable\n\t\n'
+        '\t\t# Optional fields\n'
+        '\tinfo_json: dict | Json | None = Field(default=None)\n'
+        '\tname: str | None = Field(default=None)\n\n\n'
+        # Operational Classes
+        '# OPERATIONAL CLASSES\n\n\n'
+        'class User(UserBaseSchema):\n'
+        '\t"""User Schema for Pydantic.\n\n'
+        '\tInherits from UserBaseSchema. Add any customization here.\n'
+        '\t"""\n\n'
+        '\t# Foreign Keys\n'
+        '\tcompany_id: Company | None = Field(default=None)\n'
+        '\tclient_id: Client | None = Field(default=None)\n\n\n'
+        'class Company(CompanyBaseSchema):\n'
+        '\t"""Company Schema for Pydantic.\n\n'
+        '\tInherits from CompanyBaseSchema. Add any customization here.\n'
+        '\t"""\n'
+        '\tpass\n\n\n'
+        'class Client(ClientBaseSchema):\n'
+        '\t"""Client Schema for Pydantic.\n\n'
+        '\tInherits from ClientBaseSchema. Add any customization here.\n'
+        '\t"""\n'
+        '\tpass\n'
     )
 
     assert fastapi_file_writer.write() == expected_output

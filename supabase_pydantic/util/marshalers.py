@@ -324,21 +324,9 @@ def analyze_table_relationships(tables: dict) -> None:
             is_target_unique = any(
                 col.is_unique and col.name == fk.foreign_column_name for col in foreign_table.columns
             )
-            is_target_foreign_key = any(
-                col.is_foreign_key and col.name == fk.foreign_column_name for col in foreign_table.columns
-            )
             is_source_unique = any(
                 col.name == fk.column_name and (col.is_unique or col.primary) for col in table.columns
             )
-            is_source_foreign_key = any(col.name == fk.column_name and col.is_foreign_key for col in table.columns)
-
-            # Determine the initial relationship type from source to target
-            if (is_source_unique or is_source_foreign_key) and (is_target_primary or is_target_unique):
-                fk.relation_type = RelationType.ONE_TO_ONE  # Both sides are unique
-            elif is_target_unique or is_target_primary or is_target_foreign_key:
-                fk.relation_type = RelationType.ONE_TO_MANY
-            else:
-                fk.relation_type = RelationType.MANY_TO_MANY
 
             # Check for reciprocal foreign keys in the foreign table
             reciprocal_fks = [
@@ -346,8 +334,23 @@ def analyze_table_relationships(tables: dict) -> None:
                 for f in foreign_table.foreign_keys
                 if f.foreign_table_name == table.name and f.foreign_column_name == fk.column_name
             ]
-            if len(reciprocal_fks) > 1:
-                fk.relation_type = RelationType.MANY_TO_MANY
+
+            # Determine relationship type
+            if reciprocal_fks:
+                # If there's a reciprocal relationship and either side is primary/unique,
+                # it's a ONE_TO_MANY in both directions
+                if is_target_primary or is_target_unique:
+                    fk.relation_type = RelationType.ONE_TO_MANY
+                else:
+                    fk.relation_type = RelationType.MANY_TO_MANY
+            else:
+                # No reciprocal relationship - use standard rules
+                if is_source_unique and (is_target_primary or is_target_unique):
+                    fk.relation_type = RelationType.ONE_TO_ONE  # Both sides are unique
+                elif is_target_primary or is_target_unique:
+                    fk.relation_type = RelationType.ONE_TO_MANY  # Target is unique/primary, source is not
+                else:
+                    fk.relation_type = RelationType.MANY_TO_MANY  # Neither side is unique
 
             # Ensure the foreign table has a mirrored foreign key info for bidirectional clarity
             if not any(f.constraint_name == fk.constraint_name for f in foreign_table.foreign_keys):

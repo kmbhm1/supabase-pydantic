@@ -1,6 +1,76 @@
 # CHANGELOG
 
 
+## v0.17.0 (2025-02-16)
+
+### Features
+
+- Differentiate between insert, update, and select models
+  ([#63](https://github.com/kmbhm1/supabase-pydantic/pull/63),
+  [`372aaad`](https://github.com/kmbhm1/supabase-pydantic/commit/372aaad7c6cd2d736ee227347cf20ed8e08b6c91))
+
+* refactor(pydantic): improve foreign key and relationship field generation
+
+- Keep original column names for foreign keys (e.g., author_id: User) - Use inflection library for
+  proper pluralization in many relationships - Fix handling of tables with relationships but no
+  foreign keys - Add comprehensive tests for pluralization cases
+
+This change ensures more accurate model generation that better reflects the database schema while
+  maintaining proper type hints based on relationship types (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY).
+
+* style: organize imports and format code
+
+- Sort and group imports according to PEP8 - Remove unused imports - Fix line spacing and
+  indentation
+
+* fix(sqlalchemy): standardize newline formatting in model generation
+
+- Remove extra newline after __tablename__ in write_docs method - Adjust newlines between sections
+  in model output: - Single newline after __tablename__ - Single newline between columns - Single
+  newline before section headers - Double newline between classes - Update test assertions to match
+  new formatting
+
+* test(cli): fix schema handling in CLI test cases
+
+- Add proper schema parameter to CLI command invocations - Fix mock table dictionary and jobs
+  configuration - Improve test coverage for empty schema scenarios - Simplify test setup by removing
+  redundant configurations
+
+* fix: line length error
+
+* fix(deps): correct supabase package name in pre-commit config
+
+* style: break long line in sqlalchemy writer
+
+* fix(writers): use RelationshipInfo objects for relationships
+
+* feat(models): add Insert and Update model variants
+
+- Add Insert and Update model variants for each table with appropriate field optionality - Add
+  --no-crud-models flag to disable generation of Insert/Update models - Add smoke-test target to
+  Makefile for quick testing
+
+Changes: - Add is_identity and related properties to ColumnInfo for tracking auto-generated columns
+  - Update SQL query to fetch identity_generation information - Enhance WriterClassType enum with
+  INSERT and UPDATE types - Group field property comments in Insert models for better readability -
+  Add ruff check --fix to remove unused imports in generated files
+
+This change makes it easier to use the generated models in CRUD operations by: 1. Making
+  auto-generated fields optional in Insert models 2. Making all fields optional in Update models 3.
+  Adding clear documentation about field properties
+
+* feat(models): generate specialized Insert and Update Pydantic models
+
+- Add Insert models that make auto-generated fields optional (e.g., IDs, timestamps) - Add Update
+  models that make all fields optional for partial updates - Add generate_crud_models flag to
+  FileWriterFactory for controlling model generation - Improve docstrings to clarify model
+  generation behavior
+
+Resolves issue with Insert/Update model generation to match TypeScript behavior
+
+* docs: Update mkdocs with new example illustrating Insert and Update generators
+
+
 ## v0.16.0 (2025-02-16)
 
 ### Features

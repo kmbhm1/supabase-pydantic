@@ -69,4 +69,4 @@ repos:
           - types-pytz
           - fastapi
           - passlib
-          - supabase-py
+          - supabase

@@ -115,7 +115,10 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
             back_ref = pluralize(self.table.name.lower())
             if fk.relation_type == RelationType.ONE_TO_ONE:
                 type_hint = f'Mapped[{target_class} | None]'
-                rel_str = f'{rel_name}: {type_hint} = relationship("{target_class}", back_populates="{back_ref}", uselist=False)'  # noqa: E501
+                rel_str = (
+                    f'{rel_name}: {type_hint} = relationship('
+                    f'"{target_class}", back_populates="{back_ref}", uselist=False)'
+                )
             else:  # ONE_TO_MANY or MANY_TO_MANY
                 rel_name = pluralize(rel_name)
                 type_hint = f'Mapped[list[{target_class}]]'

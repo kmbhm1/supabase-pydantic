@@ -1,6 +1,8 @@
 from typing import Any
 
-from supabase_pydantic.util.constants import WriterClassType
+from inflection import pluralize
+
+from supabase_pydantic.util.constants import RelationType, WriterClassType
 from supabase_pydantic.util.dataclasses import ColumnInfo, SortedColumns, TableInfo
 from supabase_pydantic.util.util import get_sqlalchemy_v2_type, to_pascal_case
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
@@ -30,7 +32,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
     def write_docs(self) -> str:
         """Method to generate the docstrings for the class."""
         qualifier = 'Nullable Base' if self._null_defaults else 'Base'
-        return f'\n\t"""{self._tname} {qualifier}."""\n\n\t__tablename__ = "{self.table.name}"\n\n'
+        return f'\n\t"""{self._tname} {qualifier}."""\n\n\t__tablename__ = "{self.table.name}"\n'
 
     def write_column(self, c: ColumnInfo) -> str:
         """Method to generate column definition for the class."""
@@ -73,9 +75,12 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
             return None
         return AbstractClassWriter.column_section('Columns', cols)
 
-    def write_foreign_columns(self, use_base: bool = True) -> str | None:
-        """Method to generate foreign column definitions for the class."""
-        # table args
+    def write_table_args(self) -> str | None:
+        """Method to generate table arguments for the class.
+
+        This method handles the table-level arguments like PrimaryKeyConstraint and schema.
+        Originally part of write_foreign_columns, this was split out for better separation of concerns.
+        """
         table_args = []
         for con in self.table.constraints:
             if con.constraint_type() == 'PRIMARY KEY':
@@ -84,21 +89,130 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
                 table_args.append(f'PrimaryKeyConstraint({primary_cols}, {name_str}),')
         table_args.append("{ 'schema': 'public' }")
 
-        class_string = '\t# Table Args\n\t__table_args__ = (\n'
-        return class_string + '\n'.join([f'\t\t{a}' for a in table_args]) + '\n\t)\n'
+        if table_args:
+            table_args_str = '\t# Table Args\n\t__table_args__ = (\n'
+            table_args_str += '\n'.join([f'\t\t{a}' for a in table_args]) + '\n\t)'
+            return table_args_str
+        return None
+
+    def write_relationships(self) -> str | None:
+        """Method to generate relationship definitions for the class.
+
+        This method handles all SQLAlchemy relationship definitions, supporting:
+        - ONE_TO_ONE: single instance (e.g., user: User | None)
+        - ONE_TO_MANY: list of instances (e.g., posts: list[Post])
+        - MANY_TO_MANY: list of instances (e.g., tags: list[Tag])
+
+        Originally part of write_foreign_columns, this was split out for better separation of concerns.
+        """
+        relationships = []
+
+        # Add relationships from foreign keys
+        for fk in self.table.foreign_keys:
+            target_class = to_pascal_case(fk.foreign_table_name)
+            rel_name = fk.foreign_table_name.lower()
+
+            back_ref = pluralize(self.table.name.lower())
+            if fk.relation_type == RelationType.ONE_TO_ONE:
+                type_hint = f'Mapped[{target_class} | None]'
+                rel_str = f'{rel_name}: {type_hint} = relationship("{target_class}", back_populates="{back_ref}", uselist=False)'
+            else:  # ONE_TO_MANY or MANY_TO_MANY
+                rel_name = pluralize(rel_name)
+                type_hint = f'Mapped[list[{target_class}]]'
+                rel_str = f'{rel_name}: {type_hint} = relationship("{target_class}", back_populates="{back_ref}")'
+
+            relationships.append(rel_str)
+
+        # Add relationships from relationships list
+        if hasattr(self.table, 'relationships') and self.table.relationships:
+            for rel in self.table.relationships:
+                target_class = to_pascal_case(rel['target_table'])
+                rel_name = rel['target_table'].lower()
+                rel_type = rel['type']
+
+                back_ref = pluralize(self.table.name.lower())
+                if rel_type == RelationType.ONE_TO_ONE:
+                    type_hint = f'Mapped[{target_class} | None]'
+                    rel_str = f'{rel_name}: {type_hint} = relationship("{target_class}", back_populates="{back_ref}", uselist=False)'
+                else:  # ONE_TO_MANY or MANY_TO_MANY
+                    rel_name = pluralize(rel_name)
+                    type_hint = f'Mapped[list[{target_class}]]'
+                    rel_str = f'{rel_name}: {type_hint} = relationship("{target_class}", back_populates="{back_ref}")'
+
+                relationships.append(rel_str)
+
+        if relationships:
+            rel_str = '\t# Relationships\n'
+            rel_str += '\n'.join([f'\t{r}' for r in relationships])
+            return rel_str
+        return None
 
     def write_operational_class(self) -> str | None:
         """Method to generate operational class definitions."""
         return None
 
+    def write_foreign_columns(self, use_base: bool = False) -> str | None:
+        """Method to generate foreign column definitions for the class.
+
+        DEVELOPER NOTE:
+        This method is deprecated and only maintained for test compatibility.
+        Its functionality has been split into two more focused methods:
+        - write_table_args: Handles table-level arguments
+        - write_relationships: Handles SQLAlchemy relationship definitions
+
+        New code should use write_table_args() and write_relationships() directly instead.
+        This method may be removed in a future version.
+        """
+        sections = []
+        table_args = self.write_table_args()
+        relationships = self.write_relationships()
+
+        if table_args:
+            sections.append(table_args)
+        if relationships:
+            sections.append(relationships)
+
+        result = '\n\n'.join(sections) if sections else None
+        return result + '\n' if result else None
+
     def write_columns(self, add_fk: bool = False) -> str:
         """Method to generate column definitions for the class."""
         keys = self.write_primary_keys()
         cols = self.write_primary_columns()
-        fcols = self.write_foreign_columns()
 
-        columns = [x for x in [keys, cols, fcols] if x is not None]
-        return '\n\n'.join(columns)
+        columns = [x for x in [keys, cols] if x is not None]
+        result = '\n\n'.join(columns)
+        return result + '\n' if result else ''
+
+    def write_class(self, add_fk: bool = False) -> str:
+        """Method to generate the class definition."""
+        name = self.write_name()
+        metaclass = self.write_metaclass()
+        docs = self.write_docs()
+        cols = self.write_columns(add_fk)
+        relationships = self.write_relationships()
+        table_args = self.write_table_args()
+
+        # Build class definition
+        parts = []
+
+        # Class declaration
+        class_decl = f'class {name}'
+        if metaclass is not None:
+            class_decl += f'({metaclass})'
+        class_decl += ':'
+        class_decl += docs or '\n\t"""Base class."""'
+        parts.append(class_decl)
+
+        # Class body
+        if cols is not None:
+            parts.append(cols.rstrip())  # Remove trailing newlines
+        if relationships is not None:
+            parts.append(relationships.rstrip())  # Remove trailing newlines
+        if table_args is not None:
+            parts.append(table_args.rstrip())  # Remove trailing newlines
+
+        return '\n'.join(parts)
 
 
 class SqlAlchemyFastAPIWriter(AbstractFileWriter):
@@ -110,6 +224,17 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         add_null_parent_classes: bool = False,
     ):
         super().__init__(tables, file_path, writer, add_null_parent_classes)
+
+    def write(self) -> str:
+        """Override the base write method to handle newlines correctly."""
+        parts = [
+            self.write_imports(),
+            self.write_custom_classes(),
+            self.write_base_classes(),
+            self.write_operational_classes(),
+        ]
+        result = self.jstr.join(p for p in parts if p is not None)
+        return result
 
     def _dt_imports(
         self, imports: set, default_import: tuple[Any, Any | None] = ('String,str', 'from sqlalchemy import String')
@@ -130,6 +255,7 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
             'from sqlalchemy.orm import DeclarativeBase',
             'from sqlalchemy.orm import Mapped',
             'from sqlalchemy.orm import mapped_column',
+            'from sqlalchemy.orm import relationship',
         }
         if any([len(t.primary_key()) > 0 for t in self.tables]):
             imports.add('from sqlalchemy import PrimaryKeyConstraint')

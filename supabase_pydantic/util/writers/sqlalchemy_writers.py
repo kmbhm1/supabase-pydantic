@@ -129,14 +129,17 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
         # Add relationships from relationships list
         if hasattr(self.table, 'relationships') and self.table.relationships:
             for rel in self.table.relationships:
-                target_class = to_pascal_case(rel['target_table'])
-                rel_name = rel['target_table'].lower()
-                rel_type = rel['type']
+                target_class = to_pascal_case(rel.related_table_name)
+                rel_name = rel.related_table_name.lower()
+                rel_type = rel.relation_type
 
                 back_ref = pluralize(self.table.name.lower())
                 if rel_type == RelationType.ONE_TO_ONE:
                     type_hint = f'Mapped[{target_class} | None]'
-                    rel_str = f'{rel_name}: {type_hint} = relationship("{target_class}", back_populates="{back_ref}", uselist=False)'
+                    rel_str = (
+                        f'{rel_name}: {type_hint} = relationship('
+                        f'"{target_class}", back_populates="{back_ref}", uselist=False)'
+                    )
                 else:  # ONE_TO_MANY or MANY_TO_MANY
                     rel_name = pluralize(rel_name)
                     type_hint = f'Mapped[list[{target_class}]]'

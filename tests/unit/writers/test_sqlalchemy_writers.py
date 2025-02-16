@@ -1,7 +1,7 @@
 import pytest
 
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
+from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIClassWriter, SqlAlchemyFastAPIWriter
 
 
@@ -101,10 +101,11 @@ def blog_tables():
                 ),
             ],
             relationships=[
-                {
-                    'target_table': 'post',
-                    'type': RelationType.ONE_TO_MANY,
-                },
+                RelationshipInfo(
+                    table_name='user',
+                    related_table_name='post',
+                    relation_type=RelationType.ONE_TO_MANY,
+                ),
             ],
         ),
         TableInfo(
@@ -115,10 +116,11 @@ def blog_tables():
                 ColumnInfo(name='bio', post_gres_datatype='text', is_nullable=True, datatype='str'),
             ],
             relationships=[
-                {
-                    'target_table': 'user',
-                    'type': RelationType.ONE_TO_ONE,
-                },
+                RelationshipInfo(
+                    table_name='profile',
+                    related_table_name='user',
+                    relation_type=RelationType.ONE_TO_ONE,
+                ),
             ],
         ),
         TableInfo(
@@ -139,14 +141,16 @@ def blog_tables():
                 ),
             ],
             relationships=[
-                {
-                    'target_table': 'comment',
-                    'type': RelationType.ONE_TO_MANY,
-                },
-                {
-                    'target_table': 'tag',
-                    'type': RelationType.MANY_TO_MANY,
-                },
+                RelationshipInfo(
+                    table_name='post',
+                    related_table_name='comment',
+                    relation_type=RelationType.ONE_TO_MANY,
+                ),
+                RelationshipInfo(
+                    table_name='post',
+                    related_table_name='tag',
+                    relation_type=RelationType.MANY_TO_MANY,
+                ),
             ],
         ),
     ]

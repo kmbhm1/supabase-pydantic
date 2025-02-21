@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.17.2 (2025-02-21)
+
+### Bug Fixes
+
+- **types**: Generate correct types for ONE_TO_ONE relationships
+  ([#66](https://github.com/kmbhm1/supabase-pydantic/pull/66),
+  [`e889eb3`](https://github.com/kmbhm1/supabase-pydantic/commit/e889eb36cd2ed0b4c78f490c92db15c085defec1))
+
+* fix: Debug logging * feat(marshalers): improve foreign key analysis and cross-schema handling
+
+- Add comprehensive test suite for add_foreign_key_info_to_table_details - Enhance debug logging
+  with guidance for cross-schema references - Keep foreign keys even when target table is in another
+  schema - Ensure proper relationship type detection for Pydantic model generation
+
+This improves support for cross-schema relationships (e.g., public.users -> auth.users) while
+  maintaining correct type generation in Pydantic models.
+
+
 ## v0.17.1 (2025-02-21)
 
 ### Bug Fixes

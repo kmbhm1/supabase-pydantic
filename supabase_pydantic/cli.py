@@ -71,9 +71,8 @@ config_dict: AppConfig = load_config()
 
 
 @click.group()
-@click.option('--debug/--no-debug', default=False)
 @click.pass_context
-def cli(ctx: Any, debug: bool) -> None:
+def cli(ctx: Any) -> None:
     """A CLI tool for generating Pydantic models from a Supabase/PostgreSQL database.
 
     In the future, more ORM frameworks and databases will be supported. In the works:
@@ -86,12 +85,6 @@ def cli(ctx: Any, debug: bool) -> None:
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
-    ctx.obj['DEBUG'] = debug
-
-    # Configure logging
-    log_level = logging.DEBUG if debug else logging.INFO
-    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
-    logging.debug(f'Debug mode is {"on" if debug else "off"}')
 
 
 @cli.command('clean', short_help='Cleans generated files.')
@@ -226,6 +219,12 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     default=False,
     help='Do not generate Insert and Update model variants. Only generate the base Row models.',  # noqa: E501
 )
+@click.option(
+    '--debug/--no-debug',
+    is_flag=True,
+    default=False,
+    help='Enable debug logging.',
+)
 def gen(
     models: tuple[str],
     frameworks: tuple[str],
@@ -240,8 +239,14 @@ def gen(
     db_url: str | None = None,
     # project_id: str | None = None,
     no_crud_models: bool = False,
+    debug: bool = False,
 ) -> None:
     """Generate models from a PostgreSQL database."""
+    # Configure logging
+    log_level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
+    logging.debug(f'Debug mode is {"on" if debug else "off"}')
+
     # Load environment variables from .env file & check if they are set correctly
     if not local and db_url is None:
         print('Please provide a connection source. Exiting...')

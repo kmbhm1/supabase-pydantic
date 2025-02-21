@@ -81,6 +81,10 @@ smoke-test: ## Run a quick test generating FastAPI models
 	@echo "Running smoke test"
 	@sb-pydantic gen --type pydantic --framework fastapi --local
 
+smoke-test-debug: ## Run a quick test with debugging generating FastAPI models
+	@echo "Running smoke test"
+	@sb-pydantic gen --type pydantic --framework fastapi --local --debug
+
 
 #######################################################
 # Documentation 									  #

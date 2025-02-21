@@ -21,7 +21,6 @@ from .sorting import (
     build_dependency_graph,
     format_with_ruff,
     generate_seed_data,
-    run_isort,
     sort_tables_for_insert,
     topological_sort,
 )
@@ -72,7 +71,6 @@ __all__ = [
     'get_working_directories',
     'local_default_env_configuration',
     'query_database',
-    'run_isort',
     'sort_tables_for_insert',
     'to_pascal_case',
     'topological_sort',

@@ -1,3 +1,4 @@
+import logging
 import os
 import pprint
 import re
@@ -22,7 +23,6 @@ from supabase_pydantic.util import (
     get_standard_jobs,
     get_working_directories,
     local_default_env_configuration,
-    run_isort,
     write_seed_file,
 )
 
@@ -40,14 +40,15 @@ framework_choices = ['fastapi']
 def check_readiness(env_vars: dict[str, str | None]) -> bool:
     """Check if environment variables are set correctly."""
     if not env_vars:
-        print('No environment variables provided.')
+        logging.error('No environment variables provided.')
         return False
     for k, v in env_vars.items():
-        # print(k, v)
+        logging.debug(f'Checking environment variable: {k}')
         if v is None:
-            print(f'Environment variables not set correctly. {k} is missing. Please set it in .env file.')
+            logging.error(f'Environment variables not set correctly. {k} is missing. Please set it in .env file.')
             return False
 
+    logging.debug('All required environment variables are set')
     return True
 
 
@@ -85,9 +86,12 @@ def cli(ctx: Any, debug: bool) -> None:
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
-
     ctx.obj['DEBUG'] = debug
-    # use as: click.echo(f"Debug is {'on' if ctx.obj['DEBUG'] else 'off'}")
+
+    # Configure logging
+    log_level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
+    logging.debug(f'Debug mode is {"on" if debug else "off"}')
 
 
 @cli.command('clean', short_help='Cleans generated files.')
@@ -303,7 +307,7 @@ def gen(
     for s, j in jobs.items():  # s = schema, j = jobs
         tables = table_dict[s]
         for job, c in j.items():  # c = config
-            print(f'Generating {job} models...')
+            logging.info(f'Generating {job} models...')
             p, vf = factory.get_file_writer(
                 tables,
                 c.fpath(),
@@ -313,21 +317,20 @@ def gen(
                 generate_crud_models=not no_crud_models,
             ).save(overwrite)
             paths += [p, vf] if vf is not None else [p]
-            print(f"{job} models generated successfully for schema '{s}': {p}")
+            logging.info(f"{job} models generated successfully for schema '{s}': {p}")
 
     # Format the generated files
     try:
         for p in paths:
-            run_isort(p)
             format_with_ruff(p)
-            print(f'File formatted successfully: {p}')
+            logging.info(f'File formatted successfully: {p}')
     except Exception as e:
-        print('An error occurred while running isort and ruff: ')
-        print(e)
+        logging.error('An error occurred while running ruff:')
+        logging.error(str(e))
 
     # Generate seed data
     if create_seed_data:
-        print('Generating seed data...')
+        logging.info('Generating seed data...')
         for s, j in jobs.items():  # s = schema, j = jobs
             # Generate seed data
             tables = table_dict[s]
@@ -335,11 +338,11 @@ def gen(
 
             # Check if seed data was generated
             if len(seed_data) == 0:
-                print(f'Failed to generate seed data for schema: {s}')
+                logging.warning(f'Failed to generate seed data for schema: {s}')
                 if all([t.table_type == 'VIEW' for t in tables]):
-                    print('All entities are views in this schema. Skipping seed data generation...')
+                    logging.info('All entities are views in this schema. Skipping seed data generation...')
                 else:
-                    print('Unknown error occurred; check the schema. Skipping seed data generation...')
+                    logging.error('Unknown error occurred; check the schema. Skipping seed data generation...')
                 continue
 
             # Write the seed data

@@ -136,7 +136,6 @@ def test_gen_command_with_tables(runner):
         patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
         patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
         patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
-        patch('supabase_pydantic.cli.run_isort') as mock_isort,
         patch('supabase_pydantic.cli.format_with_ruff') as mock_ruff,
     ):
         table_info = MagicMock()
@@ -155,7 +154,6 @@ def test_gen_command_with_tables(runner):
         result = runner.invoke(cli, ['gen', '--local'])
 
         assert result.exit_code == 0
-        mock_isort.assert_called_once()
         mock_ruff.assert_called_once()
 
 

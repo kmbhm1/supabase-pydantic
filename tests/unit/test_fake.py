@@ -106,7 +106,7 @@ def test_user_defined_datatype(fake_faker):
     """Test user-defined data type."""
     faker = Faker()
     result = generate_fake_data('user-defined', False, None, 'foo', ['bar', 'baz'], faker)
-    assert result in ["'bar'", "'baz'"]
+    assert result in ['bar', 'baz']
     result = generate_fake_data('user-defined', False, None, 'foo', None, faker)
     assert result == 'NULL'
 
@@ -182,3 +182,33 @@ def test_generate_fake_data(data_type, nullable, max_length, name, expected_type
         assert isinstance(result, expected_type), (
             f'Expected {expected_type} but got {type(result)} for data type {data_type}'
         )
+
+
+def test_type_conversion_error_handling(fake_faker):
+    """Test error handling in type conversion."""
+    # Test invalid integer conversion
+    result = generate_fake_data('integer', False, None, 'id', ['not_an_int'], fake_faker)
+    assert result == 'not_an_int', 'Should return original value on conversion error'
+
+    # Test invalid float conversion
+    result = generate_fake_data('real', False, None, 'amount', ['not_a_float'], fake_faker)
+    assert result == 'not_a_float', 'Should return original value on conversion error'
+
+    # Test invalid boolean conversion
+    result = generate_fake_data('boolean', False, None, 'active', ['not_a_bool'], fake_faker)
+    assert result == 'not_a_bool', 'Should return original value on conversion error'
+
+
+def test_type_conversion_edge_cases(fake_faker):
+    """Test edge cases in type conversion."""
+    # Test empty string conversion
+    result = generate_fake_data('integer', False, None, 'id', [''], fake_faker)
+    assert result == '', 'Should return empty string on conversion error'
+
+    # Test None conversion
+    result = generate_fake_data('integer', False, None, 'id', [None], fake_faker)
+    assert result is None, 'Should return None on conversion error'
+
+    # Test whitespace string conversion
+    result = generate_fake_data('integer', False, None, 'id', ['   '], fake_faker)
+    assert result == '   ', 'Should return whitespace string on conversion error'

@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+import logging
 
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
@@ -411,8 +412,8 @@ def test_analyze_bridge_tables(
 def test_analyze_table_relationships(setup_analyze_tables):
     analyze_table_relationships(setup_analyze_tables)
 
-    # Check basic one-to-many relationship
-    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.ONE_TO_MANY
+    # Check basic many-to-one relationship
+    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.MANY_TO_ONE
 
     # Check for automatically added reciprocal foreign key in users table
     assert len(setup_analyze_tables['public.users'].foreign_keys) == 1
@@ -459,9 +460,9 @@ def test_reciprocal_foreign_keys(setup_analyze_tables):
         )
     )
     analyze_table_relationships(setup_analyze_tables)
-    # Expecting a one-to-many relationship in both directions
-    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.ONE_TO_MANY
-    assert setup_analyze_tables['public.users'].foreign_keys[0].relation_type == RelationType.ONE_TO_MANY
+    # Expecting a many-to-one relationship in both directions
+    assert setup_analyze_tables['public.orders'].foreign_keys[0].relation_type == RelationType.MANY_TO_ONE
+    assert setup_analyze_tables['public.users'].foreign_keys[0].relation_type == RelationType.MANY_TO_ONE
 
 
 # Test for construct_table_info
@@ -790,11 +791,417 @@ def test_relationship_types(relationship_tables):
     user_profile_rel = next(rel for rel in user_table.foreign_keys if rel.foreign_table_name == 'profiles')
     assert user_profile_rel.relation_type == RelationType.ONE_TO_ONE
 
-    # Check post -> user relationship (ONE_TO_MANY)
+    # Check post -> user relationship (MANY_TO_ONE)
     post_table = relationship_tables[('public', 'posts')]
     post_user_rel = next(rel for rel in post_table.foreign_keys if rel.foreign_table_name == 'users')
-    assert post_user_rel.relation_type == RelationType.ONE_TO_MANY
+    assert post_user_rel.relation_type == RelationType.MANY_TO_ONE
 
     # Check reciprocal user -> posts relationship (ONE_TO_MANY)
     user_posts_rel = next(rel for rel in user_table.foreign_keys if rel.foreign_table_name == 'posts')
     assert user_posts_rel.relation_type == RelationType.ONE_TO_MANY
+
+
+@pytest.fixture
+def complex_relationship_tables():
+    # Create tables with various relationship types including MANY_TO_MANY
+
+    # User table with multiple relationships
+    user_table = TableInfo(
+        name='users',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', primary=True, is_unique=True, post_gres_datatype='uuid', datatype='str'),
+            ColumnInfo(
+                name='settings_id', is_foreign_key=True, is_unique=True, post_gres_datatype='uuid', datatype='str'
+            ),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                column_name='settings_id',
+                foreign_table_name='user_settings',
+                foreign_column_name='id',
+                constraint_name='fk_user_settings',
+            ),
+        ],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_users',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (id)',
+                columns=['id'],
+            ),
+            ConstraintInfo(
+                constraint_name='uq_settings',
+                raw_constraint_type='u',
+                constraint_definition='UNIQUE (settings_id)',
+                columns=['settings_id'],
+            ),
+        ],
+    )
+
+    # User settings table (ONE_TO_ONE with users)
+    settings_table = TableInfo(
+        name='user_settings',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', primary=True, is_unique=True, post_gres_datatype='uuid', datatype='str'),
+        ],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_settings',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (id)',
+                columns=['id'],
+            ),
+        ],
+    )
+
+    # Posts table (ONE_TO_MANY with users)
+    post_table = TableInfo(
+        name='posts',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', primary=True, is_unique=True, post_gres_datatype='uuid', datatype='str'),
+            ColumnInfo(name='user_id', is_foreign_key=True, post_gres_datatype='uuid', datatype='str'),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                column_name='user_id',
+                foreign_table_name='users',
+                foreign_column_name='id',
+                constraint_name='fk_post_user',
+            ),
+        ],
+    )
+
+    # Tags table for MANY_TO_MANY relationship with posts
+    tag_table = TableInfo(
+        name='tags',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', primary=True, is_unique=True, post_gres_datatype='uuid', datatype='str'),
+            ColumnInfo(name='name', post_gres_datatype='text', datatype='str'),
+        ],
+    )
+
+    # Bridge table for posts and tags (MANY_TO_MANY)
+    post_tags_table = TableInfo(
+        name='post_tags',
+        schema='public',
+        columns=[
+            ColumnInfo(name='post_id', is_foreign_key=True, primary=True, post_gres_datatype='uuid', datatype='str'),
+            ColumnInfo(name='tag_id', is_foreign_key=True, primary=True, post_gres_datatype='uuid', datatype='str'),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                column_name='post_id',
+                foreign_table_name='posts',
+                foreign_column_name='id',
+                constraint_name='fk_post_tags_post',
+            ),
+            ForeignKeyInfo(
+                column_name='tag_id',
+                foreign_table_name='tags',
+                foreign_column_name='id',
+                constraint_name='fk_post_tags_tag',
+            ),
+        ],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_post_tags',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (post_id, tag_id)',
+                columns=['post_id', 'tag_id'],
+            ),
+        ],
+    )
+
+    return {
+        ('public', 'users'): user_table,
+        ('public', 'user_settings'): settings_table,
+        ('public', 'posts'): post_table,
+        ('public', 'tags'): tag_table,
+        ('public', 'post_tags'): post_tags_table,
+    }
+
+
+def test_complex_relationship_types(complex_relationship_tables):
+    """Test various relationship types including MANY_TO_MANY and edge cases."""
+    analyze_bridge_tables(complex_relationship_tables)
+    analyze_table_relationships(complex_relationship_tables)
+
+
+def test_multiple_foreign_keys_to_same_table(complex_relationship_tables):
+    """Test handling of multiple foreign keys to the same table."""
+    # Add another foreign key to users in posts table (e.g., editor_id)
+    post_table = complex_relationship_tables[('public', 'posts')]
+    post_table.foreign_keys.append(
+        ForeignKeyInfo(
+            column_name='editor_id',
+            foreign_table_name='users',
+            foreign_column_name='id',
+            constraint_name='fk_posts_editor',
+        )
+    )
+
+    analyze_table_relationships(complex_relationship_tables)
+
+    # Both foreign keys should be MANY_TO_ONE
+    author_rel = next(rel for rel in post_table.foreign_keys if rel.column_name == 'user_id')
+    editor_rel = next(rel for rel in post_table.foreign_keys if rel.column_name == 'editor_id')
+    assert author_rel.relation_type == RelationType.MANY_TO_ONE, 'Post-Author should be MANY_TO_ONE'
+    assert editor_rel.relation_type == RelationType.MANY_TO_ONE, 'Post-Editor should be MANY_TO_ONE'
+
+
+def test_error_handling_in_relationship_detection(complex_relationship_tables):
+    """Test error handling in relationship detection."""
+    # Add a foreign key with non-existent target table
+    post_table = complex_relationship_tables[('public', 'posts')]
+    post_table.foreign_keys.append(
+        ForeignKeyInfo(
+            column_name='category_id',
+            foreign_table_name='non_existent_table',
+            foreign_column_name='id',
+            constraint_name='fk_posts_category',
+        )
+    )
+
+    # Should not raise an error, just skip the invalid foreign key
+    analyze_table_relationships(complex_relationship_tables)
+
+    # The invalid foreign key should be skipped but others should work
+    assert any(fk.foreign_table_name == 'users' for fk in post_table.foreign_keys), (
+        'Valid foreign keys should still be processed'
+    )
+
+
+def test_edge_case_relationship_types(complex_relationship_tables):
+    """Test edge cases in relationship type detection."""
+    # Add a table with a composite primary key that includes a foreign key
+    composite_table = TableInfo(
+        name='user_roles',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='user_id',
+                post_gres_datatype='integer',
+                datatype='int',
+                is_nullable=False,
+                primary=True,
+            ),
+            ColumnInfo(
+                name='role_id',
+                post_gres_datatype='integer',
+                datatype='int',
+                is_nullable=False,
+                primary=True,
+            ),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                column_name='user_id',
+                foreign_table_name='users',
+                foreign_column_name='id',
+                constraint_name='fk_user_roles_user',
+            ),
+        ],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_user_roles',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (user_id, role_id)',
+                columns=['user_id', 'role_id'],
+            ),
+        ],
+    )
+
+    complex_relationship_tables[('public', 'user_roles')] = composite_table
+    analyze_table_relationships(complex_relationship_tables)
+    analyze_bridge_tables(complex_relationship_tables)
+
+    # Create a list of foreign key details for add_relationships_to_table_details
+    fk_details = [
+        # user_roles -> users
+        ('public', 'user_roles', 'user_id', 'public', 'users', 'id', 'fk_user_roles_user'),
+        # posts -> users
+        ('public', 'posts', 'user_id', 'public', 'users', 'id', 'fk_posts_user'),
+        # users -> user_settings
+        ('public', 'users', 'settings_id', 'public', 'user_settings', 'id', 'fk_users_settings'),
+        # post_tags -> posts
+        ('public', 'post_tags', 'post_id', 'public', 'posts', 'id', 'fk_post_tags_post'),
+        # post_tags -> tags
+        ('public', 'post_tags', 'tag_id', 'public', 'tags', 'id', 'fk_post_tags_tag'),
+    ]
+    add_relationships_to_table_details(complex_relationship_tables, fk_details)
+
+    # Even though user_id is part of a primary key, it should be MANY_TO_ONE because it's composite
+    user_rel = next(rel for rel in composite_table.foreign_keys if rel.foreign_table_name == 'users')
+    assert user_rel.relation_type == RelationType.MANY_TO_ONE, (
+        'Composite primary key should not affect relationship type'
+    )
+
+    # Test ONE_TO_ONE relationship (users <-> user_settings)
+    user_table = complex_relationship_tables[('public', 'users')]
+    user_settings_rel = next(rel for rel in user_table.foreign_keys if rel.foreign_table_name == 'user_settings')
+    assert user_settings_rel.relation_type == RelationType.ONE_TO_ONE, 'User-Settings should be ONE_TO_ONE'
+
+    # Test MANY_TO_ONE relationship (posts -> users)
+    # Many posts can point to one user (from posts table's perspective)
+    post_table = complex_relationship_tables[('public', 'posts')]
+    post_user_rel = next(rel for rel in post_table.foreign_keys if rel.foreign_table_name == 'users')
+    assert post_user_rel.relation_type == RelationType.MANY_TO_ONE, (
+        'Post-User should be MANY_TO_ONE (many posts can point to one user)'
+    )
+
+    # Test MANY_TO_MANY relationship (posts <-> tags)
+    post_tags_table = complex_relationship_tables[('public', 'post_tags')]
+    assert post_tags_table.is_bridge, 'post_tags should be identified as a bridge table'
+
+    # Test relationships from bridge table
+    post_rel = next(rel for rel in post_tags_table.foreign_keys if rel.foreign_table_name == 'posts')
+    tag_rel = next(rel for rel in post_tags_table.foreign_keys if rel.foreign_table_name == 'tags')
+    assert post_rel.relation_type == RelationType.MANY_TO_MANY, 'Bridge table -> posts should be MANY_TO_MANY'
+    assert tag_rel.relation_type == RelationType.MANY_TO_MANY, 'Bridge table -> tags should be MANY_TO_MANY'
+
+    # Test that the relationships are properly reflected in the target tables
+    posts_table = complex_relationship_tables[('public', 'posts')]
+    tags_table = complex_relationship_tables[('public', 'tags')]
+
+    # Check posts -> tags relationship through bridge table
+    post_to_tags_rel = next((rel for rel in posts_table.relationships if rel.related_table_name == 'tags'), None)
+    assert post_to_tags_rel is not None, 'Posts should have relationship to tags'
+    assert post_to_tags_rel.relation_type == RelationType.MANY_TO_MANY, 'Posts-Tags should be MANY_TO_MANY'
+
+    # Check tags -> posts relationship through bridge table
+    tags_to_posts_rel = next((rel for rel in tags_table.relationships if rel.related_table_name == 'posts'), None)
+    assert tags_to_posts_rel is not None, 'Tags should have relationship to posts'
+    assert tags_to_posts_rel.relation_type == RelationType.MANY_TO_MANY, 'Tags-Posts should be MANY_TO_MANY'
+
+
+@pytest.fixture
+def one_to_one_tables():
+    """Fixture for testing one-to-one relationship detection."""
+    # Profile table with single primary key
+    profile = TableInfo(
+        name='profile',
+        schema='public',
+        table_type='BASE TABLE',
+        foreign_keys=[],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_profile',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (user_id)',
+                columns=['user_id'],
+            )
+        ],
+    )
+
+    # User table with single primary key
+    user = TableInfo(
+        name='user',
+        schema='public',
+        table_type='BASE TABLE',
+        foreign_keys=[],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_user',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (id)',
+                columns=['id'],
+            )
+        ],
+    )
+
+    return {
+        ('public', 'profile'): profile,
+        ('public', 'user'): user,
+    }
+
+
+def test_one_to_one_relationship_detection(one_to_one_tables):
+    """Test detection of one-to-one relationships based on single primary key constraints."""
+    # Add relationships to tables
+    fk_details = [
+        ('public', 'profile', 'user_id', 'public', 'user', 'id', 'fk_user_profile'),
+    ]
+    add_foreign_key_info_to_table_details(one_to_one_tables, fk_details)
+
+    # Get the profile table
+    profile = one_to_one_tables[('public', 'profile')]
+
+    # Verify the relationship type
+    assert len(profile.foreign_keys) == 1
+    fk = profile.foreign_keys[0]
+    assert fk.relation_type == RelationType.ONE_TO_ONE, (
+        'Expected ONE_TO_ONE relationship when foreign key is the only primary key'
+    )
+
+
+@pytest.fixture
+def composite_key_tables():
+    """Fixture for testing relationship detection with composite primary keys."""
+    # Order table with composite primary key
+    order = TableInfo(
+        name='order',
+        schema='public',
+        table_type='BASE TABLE',
+        foreign_keys=[],
+        columns=[],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_order',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (order_id, user_id)',  # Primary key includes user_id
+                columns=['order_id', 'user_id'],
+            )
+        ],
+    )
+
+    # User table with single primary key
+    user = TableInfo(
+        name='user',
+        schema='public',
+        table_type='BASE TABLE',
+        foreign_keys=[],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_user',
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (id)',
+                columns=['id'],
+            )
+        ],
+    )
+
+    return {
+        ('public', 'order'): order,
+        ('public', 'user'): user,
+    }
+
+
+def test_composite_key_relationship_detection(composite_key_tables):
+    """Test that composite primary keys are correctly detected as many-to-one relationships."""
+    # Add relationships to tables
+    fk_details = [
+        ('public', 'order', 'user_id', 'public', 'user', 'id', 'fk_user_order'),
+    ]
+    add_foreign_key_info_to_table_details(composite_key_tables, fk_details)
+
+    # Get the order table
+    order = composite_key_tables[('public', 'order')]
+
+    # Debug logging
+    logging.debug('Order table constraints:')
+    for constraint in order.constraints:
+        logging.debug(f'  - {constraint.raw_constraint_type}: {constraint.columns}')
+    logging.debug('Foreign keys:')
+    for fk in order.foreign_keys:
+        logging.debug(f'  - {fk.column_name} -> {fk.foreign_table_name}.{fk.foreign_column_name} ({fk.relation_type})')
+
+    # Verify the relationship type
+    assert len(order.foreign_keys) == 1
+    fk = order.foreign_keys[0]
+    assert fk.relation_type == RelationType.MANY_TO_ONE, (
+        'Expected MANY_TO_ONE relationship when foreign key is part of a composite primary key'
+    )

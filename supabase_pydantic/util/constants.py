@@ -83,6 +83,7 @@ class RelationType(str, Enum):
     ONE_TO_ONE = 'One-to-One'
     ONE_TO_MANY = 'One-to-Many'
     MANY_TO_MANY = 'Many-to-Many'
+    MANY_TO_ONE = 'Many-to-One'  # When a table has a foreign key to another table (e.g., File -> Project)
 
 
 class ModelGenerationType(str, Enum):

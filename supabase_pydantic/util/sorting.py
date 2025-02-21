@@ -16,26 +16,19 @@ pp = pprint.PrettyPrinter(indent=4)
 MAX_ROWS = 200
 
 
-def run_isort(file_path: str) -> None:
-    """Run the isort command on the specified file."""
-    try:
-        # Run the isort command on the specified file
-        _ = subprocess.run(['isort', file_path], check=True, capture_output=True, text=True)
-        # print(result.stdout)
-        # print(f'isort ran successfully: {file_path}')
-    except subprocess.CalledProcessError as e:
-        print('An error occurred while running isort:')
-        print(e.stderr)
-
-
 def format_with_ruff(file_path: str) -> None:
-    """Run the ruff formatter and fixer on a specified Python file."""
+    """Run the ruff formatter, import sorter, and fixer on a specified Python file."""
     try:
-        # First run ruff check --fix to handle unused imports and other issues
-        _ = subprocess.run(['ruff', 'check', '--fix', file_path], check=True, text=True, capture_output=True)
+        # First run ruff check --fix to handle imports and other issues
+        _ = subprocess.run(
+            ['ruff', 'check', '--select', 'I', '--fix', file_path], check=True, text=True, capture_output=True
+        )
 
         # Then run ruff format for code formatting
         _ = subprocess.run(['ruff', 'format', file_path], check=True, text=True, capture_output=True)
+
+        # Finally run ruff check --fix for any remaining issues
+        _ = subprocess.run(['ruff', 'check', '--fix', file_path], check=True, text=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         print('Error during Ruff processing:')
         print(e.stderr)  # Print any error output from ruff

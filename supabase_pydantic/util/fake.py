@@ -237,11 +237,15 @@ def generate_fake_data(
     """Generate fake data based on the column datatype."""
     datatype = post_gres_datatype.lower()
 
+    # If user-defined values are provided, use them regardless of data type
+    if user_defined_values:
+        return user_defined_values[0]
+
     if is_nullable and random() < 0.15:
         return 'NULL'
 
     data_base_on_name = guess_and_generate_fake_data(name, fake)
-    if data_base_on_name and not bool(user_defined_values):
+    if data_base_on_name:
         return format_for_postgres(data_base_on_name, post_gres_datatype)
 
     if datatype in ['integer', 'bigint']:

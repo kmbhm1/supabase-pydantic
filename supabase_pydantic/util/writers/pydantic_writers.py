@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Any
 
@@ -260,42 +261,123 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         - ONE_TO_MANY: list of instances (e.g., posts: list[Post] | None)
         - MANY_TO_MANY: list of instances (e.g., tags: list[Tag] | None)
 
-        If a relationship type is not specified, defaults to list type for backward compatibility.
+        Field naming follows these conventions:
+        - ONE_TO_ONE: use foreign table name (e.g., author)
+        - ONE_TO_MANY/MANY_TO_MANY: use pluralized foreign table name (e.g., posts)
         """
         _n = AbstractClassWriter._proper_name
 
         def _col(x: ForeignKeyInfo) -> str:
-            # Get the target table name in proper case
+            # Get the target table name in proper case for type hint
             target_type = _n(x.foreign_table_name)
 
-            # Use column name as is
-            field_name = x.column_name.lower()
+            # Base field name on the foreign table name, not the column name
+            # This prevents naming conflicts and is more semantic
+            base_field_name = x.foreign_table_name.lower()
 
-            # Determine type hint based on relationship type
+            # Determine type hint and field name based on relationship type
+            logging.debug(f'\nProcessing foreign key {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
+            logging.debug(f'  Relationship type: {x.relation_type}')
+
+            # Handle relationships based on whether we're looking at the source or target table
+            # Source table = table that has the foreign key (e.g., file has project_id)
+            # Target table = table being referenced (e.g., project is referenced by file)
+
+            # If we're generating the model for the table that has the foreign key,
+            # then we're the source. Otherwise, we're the target.
+            # Example: if we're generating File model and see project_id -> project.id,
+            # then we're the source because we have the foreign key.
+            table_name = self.table.name.lower()
+            we_have_foreign_key = x.column_name.endswith('_id')
+
+            logging.debug(f'  Table being generated: {table_name}')
+            logging.debug(f'  Foreign key column: {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
+            logging.debug(f'  We have foreign key: {we_have_foreign_key}')
+
+            # Check if this is a self-referential relationship
+            is_self_ref = x.foreign_table_name.lower() == table_name
+
+            # For self-referential relationships, check if there's a matching relationship
+            # that indicates the true nature of the relationship
+            if is_self_ref:
+                # Look for a matching relationship to determine the true type
+                for rel in self.table.relationships:
+                    if rel.related_table_name.lower() == table_name:
+                        x.relation_type = rel.relation_type
+                        break
+
             if x.relation_type == RelationType.ONE_TO_ONE:
-                type_hint = f'{target_type}'
-            else:  # ONE_TO_MANY, MANY_TO_MANY, or unspecified
+                # ONE_TO_ONE is symmetric, so it's the same from both sides
+                type_hint = target_type
+                field_name = base_field_name
+                logging.debug(f'  Using ONE_TO_ONE: {field_name}: {type_hint}')
+            elif x.relation_type == RelationType.MANY_TO_ONE:
+                if we_have_foreign_key:
+                    # We have a foreign key pointing to another table
+                    # e.g., File has project_id pointing to Project
+                    # So we reference a single instance
+                    type_hint = target_type
+                    field_name = base_field_name
+                    logging.debug(f'  Using MANY_TO_ONE (we have the foreign key): {field_name}: {type_hint}')
+                else:
+                    # Another table has a foreign key pointing to us
+                    # e.g., Project being referenced by File.project_id
+                    # So we'll have many records pointing to us
+                    type_hint = f'list[{target_type}]'
+                    field_name = pluralize(base_field_name)
+                    logging.debug(f'  Using ONE_TO_MANY (they have the foreign key): {field_name}: {type_hint}')
+            elif x.relation_type == RelationType.ONE_TO_MANY:
+                if we_have_foreign_key:
+                    # We have a foreign key pointing to another table
+                    # So we reference a single instance
+                    type_hint = target_type
+                    field_name = base_field_name
+                    logging.debug(f'  Using MANY_TO_ONE (we have the foreign key): {field_name}: {type_hint}')
+                else:
+                    # Another table has a foreign key pointing to us
+                    # So we'll have many records pointing to us
+                    type_hint = f'list[{target_type}]'
+                    field_name = pluralize(base_field_name)
+                    logging.debug(f'  Using ONE_TO_MANY (they have the foreign key): {field_name}: {type_hint}')
+            else:  # MANY_TO_MANY
                 type_hint = f'list[{target_type}]'
-                # Pluralize field name for many relationships
-                field_name = pluralize(field_name)
+                field_name = pluralize(base_field_name)
+                logging.debug(f'  Using list type: {field_name}: {type_hint}')
 
             return f'{field_name}: {type_hint} | None = Field(default=None)'
 
+        # Track used field names to prevent duplicates
+        used_fields = set()
+        fks = []
+
         # Generate foreign key fields
-        fks = [_col(fk) for fk in self.table.foreign_keys]
+        for fk in self.table.foreign_keys:
+            field_def = _col(fk)
+            field_name = field_def.split(':')[0].strip()
+
+            # Skip duplicate field names
+            if field_name not in used_fields:
+                used_fields.add(field_name)
+                fks.append(field_def)
 
         # Add relationship fields that aren't covered by foreign keys
         for rel in self.table.relationships:
-            # Skip if this relationship is already covered by a foreign key
-            if any(fk.foreign_table_name == rel.related_table_name for fk in self.table.foreign_keys):
+            # For self-referential tables, we want both the foreign key and relationship fields
+            # For other tables, skip if this relationship is already covered by a foreign key
+            is_self_ref = rel.related_table_name.lower() == self.table.name.lower()
+            if not is_self_ref and any(
+                fk.foreign_table_name == rel.related_table_name for fk in self.table.foreign_keys
+            ):
                 continue
 
             target_type = _n(rel.related_table_name)
-            field_name = rel.related_table_name.lower()
+            field_name = pluralize(rel.related_table_name.lower())  # Always pluralize for relationships
 
-            # For relationships, we always use list type since they represent the 'many' side
-            type_hint = f'list[{target_type}]'
-            fks.append(f'{field_name}: {type_hint} | None = Field(default=None)')
+            # Skip if field name already used
+            if field_name not in used_fields:
+                used_fields.add(field_name)
+                type_hint = f'list[{target_type}]'
+                fks.append(f'{field_name}: {type_hint} | None = Field(default=None)')
 
         return AbstractClassWriter.column_section('Foreign Keys', fks) if len(fks) > 0 else None
 

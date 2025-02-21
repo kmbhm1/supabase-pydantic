@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -54,7 +55,7 @@ def create_connection_from_db_url(db_url: str) -> Any:
     assert database is not None, f'Invalid database URL dbname: {db_url}'
     assert host is not None, f'Invalid database URL host: {db_url}'
 
-    print(f'Connecting to database: {database} on host: {host} with user: {username} and port: {port}')
+    logging.info(f'Connecting to database: {database} on host: {host} with user: {username} and port: {port}')
 
     return create_connection(database, username, password, host, port)
 
@@ -62,10 +63,10 @@ def create_connection_from_db_url(db_url: str) -> Any:
 def check_connection(conn: Any) -> bool:
     """Check if the connection is open."""
     if conn.closed:
-        print('PostGres connection is closed.')
+        logging.info('PostGres connection is closed.')
         return False
     else:
-        print('PostGres connection is open.')
+        logging.info('PostGres connection is open.')
         return True
 
 
@@ -98,7 +99,7 @@ class DBConnection:
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         self.conn.close()
-        print('PostGres connection is closed.')
+        logging.info('PostGres connection is closed.')
         return False
 
 
@@ -126,7 +127,7 @@ def construct_tables(
                     continue
 
                 # Fetch table column details & foreign key details for each schema using parameterized queries
-                print(f'Processing schema: {n}')
+                logging.info(f'Processing schema: {n}')
                 column_details = query_database(conn, GET_ALL_PUBLIC_TABLES_AND_COLUMNS, (n,))
                 fk_details = query_database(conn, GET_TABLE_COLUMN_DETAILS, (n,))
                 constraints = query_database(conn, GET_CONSTRAINTS, (n,))

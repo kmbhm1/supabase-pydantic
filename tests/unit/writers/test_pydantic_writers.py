@@ -344,7 +344,7 @@ def test_PydanticFastAPIClassWriter_write_foreign_columns_basic():
     )
 
     writer = PydanticFastAPIClassWriter(table_info)
-    expected_output = '\t# Foreign Keys\n\tcompany_id: Company | None = Field(default=None)'
+    expected_output = '\t# Foreign Keys\n\tcompany: Company | None = Field(default=None)'
     assert writer.write_foreign_columns() == expected_output
 
     table_info.foreign_keys = []
@@ -396,7 +396,7 @@ def test_PydanticFastAPIClassWriter_write_operational_class_with_foreign_keys(ta
         '"""User Schema for Pydantic.\n\n\t'
         'Inherits from UserBaseSchema. Add any customization here.\n\t"""\n\n'
         '\t# Foreign Keys\n'
-        '\tcompany_id: Company | None = Field(default=None)'
+        '\tcompany: Company | None = Field(default=None)'
     )
     assert writer.write_operational_class() == expected_output
 
@@ -523,8 +523,8 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
         '\tInherits from UserBaseSchema. Add any customization here.\n'
         '\t"""\n\n'
         '\t# Foreign Keys\n'
-        '\tcompany_id: Company | None = Field(default=None)\n'
-        '\tclient_id: Client | None = Field(default=None)\n\n\n'
+        '\tcompany: Company | None = Field(default=None)\n'
+        '\tclient: Client | None = Field(default=None)\n\n\n'
         'class Company(CompanyBaseSchema):\n'
         '\t"""Company Schema for Pydantic.\n\n'
         '\tInherits from CompanyBaseSchema. Add any customization here.\n'
@@ -602,9 +602,9 @@ def test_pluralization_in_relationships():
 
     # Test pluralization in foreign columns
     book_foreign_cols = book_writer.write_foreign_columns()
-    assert 'category_ids: list[Category] | None = Field(default=None)' in book_foreign_cols
-    assert 'child_ids: list[Child] | None = Field(default=None)' in book_foreign_cols
-    assert 'news_ids: list[News] | None = Field(default=None)' in book_foreign_cols
+    assert 'categories: list[Category] | None = Field(default=None)' in book_foreign_cols
+    assert 'children: list[Child] | None = Field(default=None)' in book_foreign_cols
+    assert 'news: list[News] | None = Field(default=None)' in book_foreign_cols
 
 
 def test_relationship_type_handling(relationship_test_tables):
@@ -622,13 +622,76 @@ def test_relationship_type_handling(relationship_test_tables):
 
     # Test Post model foreign keys and relationships
     post_foreign_cols = post_writer.write_foreign_columns()
-    assert 'author_id: User | None = Field(default=None)' in post_foreign_cols  # ONE_TO_ONE with User
-    assert 'tag: list[Tag] | None = Field(default=None)' in post_foreign_cols  # MANY_TO_MANY with Tag
+    assert 'user: User | None = Field(default=None)' in post_foreign_cols  # ONE_TO_ONE with User
+    assert 'tags: list[Tag] | None = Field(default=None)' in post_foreign_cols  # MANY_TO_MANY with Tag
 
     # Test User model relationships
     user_foreign_cols = user_writer.write_foreign_columns()
-    assert 'post: list[Post] | None = Field(default=None)' in user_foreign_cols  # ONE_TO_MANY with Post
+    assert 'posts: list[Post] | None = Field(default=None)' in user_foreign_cols  # ONE_TO_MANY with Post
 
     # Test Tag model relationships
     tag_foreign_cols = tag_writer.write_foreign_columns()
-    assert 'post: list[Post] | None = Field(default=None)' in tag_foreign_cols  # MANY_TO_MANY with Post
+    assert 'posts: list[Post] | None = Field(default=None)' in tag_foreign_cols  # MANY_TO_MANY with Post
+
+
+def test_relationship_type_edge_cases(relationship_test_tables):
+    """Test edge cases in relationship type handling."""
+    # Create a table with circular dependencies
+    employee_table = TableInfo(
+        name='Employee',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(name='name', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+            ColumnInfo(name='manager_id', post_gres_datatype='integer', is_nullable=True, datatype='int'),
+        ],
+        foreign_keys=[
+            ForeignKeyInfo(
+                constraint_name='Employee_manager_id_fkey',
+                column_name='manager_id',
+                foreign_table_name='Employee',  # Self-referential
+                foreign_column_name='id',
+                relation_type=RelationType.ONE_TO_ONE,
+            ),
+        ],
+        relationships=[
+            RelationshipInfo(
+                table_name='Employee',
+                related_table_name='Employee',
+                relation_type=RelationType.ONE_TO_MANY,  # One manager has many employees
+            ),
+        ],
+    )
+
+    writer = PydanticFastAPIClassWriter(employee_table)
+    foreign_cols = writer.write_foreign_columns()
+
+    # Test self-referential relationships
+    assert 'employee: Employee | None = Field(default=None)' in foreign_cols  # ONE_TO_ONE with self
+    assert 'employees: list[Employee] | None = Field(default=None)' in foreign_cols  # ONE_TO_MANY with self
+
+
+def test_relationship_type_error_handling(relationship_test_tables):
+    """Test error handling in relationship type handling."""
+    # Create a table with invalid relationship type
+    invalid_table = TableInfo(
+        name='Invalid',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(name='name', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+        ],
+        relationships=[
+            RelationshipInfo(
+                table_name='Invalid',
+                related_table_name='NonExistent',  # Table doesn't exist
+                relation_type=RelationType.ONE_TO_MANY,
+            ),
+        ],
+    )
+
+    writer = PydanticFastAPIClassWriter(invalid_table)
+    foreign_cols = writer.write_foreign_columns()
+
+    # Should not raise an error, just skip the invalid relationship
+    assert foreign_cols is None or 'NonExistent' not in foreign_cols

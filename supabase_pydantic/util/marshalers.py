@@ -94,7 +94,11 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
 
 
 def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> None:
-    """Add foreign key information to the table details."""
+    """Add foreign key information to the table details.
+
+    Skips foreign keys where either the source or target table is missing.
+    This ensures that all foreign keys have valid relationship types.
+    """
     for row in fk_details:
         (
             table_schema,
@@ -108,11 +112,27 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
         table_key = (table_schema, table_name)
         foreign_table_key = (foreign_table_schema, foreign_table_name)
 
+        # Skip if either table is missing
+        if table_key not in tables or foreign_table_key not in tables:
+            missing_source = table_key not in tables
+            missing_target = foreign_table_key not in tables
+            if missing_target and not missing_source:
+                logging.debug(
+                    f'Foreign key {constraint_name} references table {foreign_table_schema}.{foreign_table_name} '
+                    f'which is not in the current analysis. If you need complete relationship information, '
+                    f'consider including the {foreign_table_schema} schema in your analysis.'
+                )
+            else:
+                logging.debug(
+                    f'Skipping foreign key {constraint_name} - missing source table {table_schema}.{table_name}'
+                )
+            continue
+
         # Determine relationship type
         relation_type = None
         if table_key in tables and foreign_table_key in tables:
             logging.debug(
-                f'\nAnalyzing relationship for {table_key[1]}.{column_name} '
+                f'Analyzing relationship for {table_key[1]}.{column_name} '
                 f'-> {foreign_table_key[1]}.{foreign_column_name}'
             )
 
@@ -430,88 +450,97 @@ def update_columns_with_constraints(tables: dict) -> None:
                             column.constraint_definition = constraint.constraint_definition
 
 
+def determine_relationship_type(
+    source_table: TableInfo, target_table: TableInfo, fk: ForeignKeyInfo
+) -> tuple[RelationType, RelationType]:
+    """Determine the relationship type between two tables based on their constraints.
+
+    Args:
+        source_table: The table containing the foreign key
+        target_table: The table being referenced by the foreign key
+        fk: The foreign key information
+
+    Returns:
+        A tuple of (forward_type, reverse_type) representing the relationship in both directions
+    """
+    # Check primary key constraints
+    source_primary_constraints = [
+        c for c in source_table.constraints if c.raw_constraint_type == 'p' and fk.column_name in c.columns
+    ]
+    target_primary_constraints = [
+        c for c in target_table.constraints if c.raw_constraint_type == 'p' and fk.foreign_column_name in c.columns
+    ]
+
+    # Check if columns are sole primary keys
+    is_source_sole_primary = any(len(c.columns) == 1 for c in source_primary_constraints)
+    is_target_sole_primary = any(len(c.columns) == 1 for c in target_primary_constraints)
+
+    # Check uniqueness constraints
+    is_source_unique = is_source_sole_primary or any(
+        col.name == fk.column_name and col.is_unique for col in source_table.columns
+    )
+    is_target_unique = is_target_sole_primary or any(
+        col.is_unique and col.name == fk.foreign_column_name for col in target_table.columns
+    )
+
+    # Log the analysis
+    logging.debug(
+        f'Analyzing relationship: {source_table.name}.{fk.column_name} -> {target_table.name}.{fk.foreign_column_name}'
+    )
+    logging.debug(f'Source uniqueness: {is_source_unique}, Target uniqueness: {is_target_unique}')
+
+    # Determine relationship type
+    if is_source_unique and is_target_unique:
+        # If both sides are unique, it's a one-to-one relationship
+        logging.debug('ONE_TO_ONE: Both sides are unique')
+        return RelationType.ONE_TO_ONE, RelationType.ONE_TO_ONE
+    elif is_target_unique:
+        # If only target is unique, it's many-to-one from source to target
+        logging.debug('MANY_TO_ONE: Target is unique, source is not')
+        return RelationType.MANY_TO_ONE, RelationType.ONE_TO_MANY
+    elif is_source_unique:
+        # If only source is unique, it's one-to-many from source to target
+        logging.debug('ONE_TO_MANY: Source is unique, target is not')
+        return RelationType.ONE_TO_MANY, RelationType.MANY_TO_ONE
+    else:
+        # If neither side is unique, it's many-to-many
+        logging.debug('MANY_TO_MANY: Neither side is unique')
+        return RelationType.MANY_TO_MANY, RelationType.MANY_TO_MANY
+
+
 def analyze_table_relationships(tables: dict) -> None:
     """Analyze table relationships."""
+    # Keep track of processed relationships to avoid duplicate analysis
+    processed_constraints = set()
+
     for table in tables.values():
         for fk in table.foreign_keys:
-            # Get the foreign table object based on the foreign_table_name and foreign_table_schema.
+            # Skip if we've already processed this constraint
+            if fk.constraint_name in processed_constraints:
+                continue
+
+            # Get the foreign table
             foreign_table = next(
                 (t for t in tables.values() if t.name == fk.foreign_table_name and t.schema == fk.foreign_table_schema),
                 None,
             )
             if not foreign_table:
-                continue  # Skip if no foreign table found
+                continue
 
-            # Checks
-            # For primary keys, we need to check if it's part of a composite key
-            target_primary_constraints = [
-                c
-                for c in foreign_table.constraints
-                if c.raw_constraint_type == 'p' and fk.foreign_column_name in c.columns
-            ]
-            is_target_sole_primary = any(len(c.columns) == 1 for c in target_primary_constraints)
+            # Determine relationship types for both directions
+            forward_type, reverse_type = determine_relationship_type(table, foreign_table, fk)
 
-            source_primary_constraints = [
-                c for c in table.constraints if c.raw_constraint_type == 'p' and fk.column_name in c.columns
-            ]
-            is_source_sole_primary = any(len(c.columns) == 1 for c in source_primary_constraints)
+            # Set the forward relationship type
+            fk.relation_type = forward_type
 
-            # A column is considered unique only if it's the sole primary key or has a unique constraint
-            logging.debug(
-                f'\nAnalyzing relationship for {table.name}.{fk.column_name} -> {foreign_table.name}.{fk.foreign_column_name}'  # noqa: E501
-            )
-            logging.debug(f'Source primary constraints: {source_primary_constraints}')
-            logging.debug(f'Target primary constraints: {target_primary_constraints}')
-            logging.debug(f'Is source sole primary: {is_source_sole_primary}')
-            logging.debug(f'Is target sole primary: {is_target_sole_primary}')
+            # Handle the reverse relationship
+            existing_fk = next((f for f in foreign_table.foreign_keys if f.constraint_name == fk.constraint_name), None)
 
-            is_target_unique = is_target_sole_primary or any(
-                col.is_unique and col.name == fk.foreign_column_name for col in foreign_table.columns
-            )
-            is_source_unique = is_source_sole_primary or any(
-                col.name == fk.column_name and col.is_unique for col in table.columns
-            )
-            logging.debug(f'Is source unique: {is_source_unique}')
-            logging.debug(f'Is target unique: {is_target_unique}')
-
-            # Check for reciprocal foreign keys in the foreign table
-            reciprocal_fks = [
-                f
-                for f in foreign_table.foreign_keys
-                if f.foreign_table_name == table.name and f.foreign_column_name == fk.column_name
-            ]
-
-            # Determine relationship type
-            if reciprocal_fks:
-                # If there's a reciprocal relationship and either side is primary/unique,
-                # it's a ONE_TO_MANY in both directions
-                if is_target_sole_primary or is_target_unique:
-                    fk.relation_type = RelationType.ONE_TO_MANY
-                else:
-                    fk.relation_type = RelationType.MANY_TO_MANY
+            if existing_fk:
+                # Update existing reverse foreign key
+                existing_fk.relation_type = reverse_type
             else:
-                # No reciprocal relationship - use standard rules
-                if is_source_unique and (is_target_sole_primary or is_target_unique):
-                    logging.debug('Setting ONE_TO_ONE: Both sides are unique')
-                    fk.relation_type = RelationType.ONE_TO_ONE  # Both sides are unique
-                elif is_target_sole_primary or is_target_unique:
-                    logging.debug('Setting MANY_TO_ONE: Target is unique/primary, source is not')
-                    fk.relation_type = RelationType.MANY_TO_ONE  # Target is unique/primary, source is not
-                else:
-                    logging.debug('Setting MANY_TO_MANY: Neither side is unique')
-                    fk.relation_type = RelationType.MANY_TO_MANY  # Neither side is unique
-
-            # Ensure the foreign table has a mirrored foreign key info for bidirectional clarity
-            if not any(f.constraint_name == fk.constraint_name for f in foreign_table.foreign_keys):
-                # Set the opposite relationship type for the reverse foreign key
-                if fk.relation_type == RelationType.MANY_TO_ONE:
-                    reverse_type = RelationType.ONE_TO_MANY
-                elif fk.relation_type == RelationType.ONE_TO_MANY:
-                    reverse_type = RelationType.MANY_TO_ONE
-                else:
-                    # ONE_TO_ONE and MANY_TO_MANY stay the same
-                    reverse_type = fk.relation_type
-
+                # Create new reverse foreign key
                 reverse_fk = ForeignKeyInfo(
                     constraint_name=fk.constraint_name,
                     column_name=fk.foreign_column_name,
@@ -521,10 +550,13 @@ def analyze_table_relationships(tables: dict) -> None:
                 )
                 foreign_table.foreign_keys.append(reverse_fk)
 
+            # Mark this constraint as processed
+            processed_constraints.add(fk.constraint_name)
+
 
 def is_bridge_table(table: TableInfo) -> bool:
     """Check if the table is a bridge table."""
-    logging.debug(f'\nAnalyzing if {table.name} is a bridge table')
+    logging.debug(f'Analyzing if {table.name} is a bridge table')
     logging.debug(f'Foreign keys: {[fk.column_name for fk in table.foreign_keys]}')
 
     # Check for at least two foreign keys

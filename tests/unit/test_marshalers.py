@@ -347,15 +347,6 @@ def test_get_table_details_from_columns(column_details):
     assert table.columns[1].datatype == 'str'  # Assuming mapping in PYDANTIC_TYPE_MAP
 
 
-# Test add_foreign_key_info_to_table_details
-def test_add_foreign_key_info_to_table_details(column_details, fk_details):
-    tables = get_table_details_from_columns(column_details)
-    add_foreign_key_info_to_table_details(tables, fk_details)
-    table = tables[('public', 'users')]
-    assert len(table.foreign_keys) == 1
-    assert table.foreign_keys[0].foreign_table_name == 'orders'
-
-
 # Test add_constraints_to_table_details
 def test_add_constraints_to_table_details(column_details, constraints):
     tables = get_table_details_from_columns(column_details)
@@ -1205,3 +1196,267 @@ def test_composite_key_relationship_detection(composite_key_tables):
     assert fk.relation_type == RelationType.MANY_TO_ONE, (
         'Expected MANY_TO_ONE relationship when foreign key is part of a composite primary key'
     )
+
+
+@pytest.fixture
+def relationship_type_tables():
+    """Fixture for testing determine_relationship_type function."""
+    # Create tables with various uniqueness configurations
+    source_table = TableInfo(
+        name='source',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='id',
+                primary=True,
+                is_unique=True,
+                is_foreign_key=False,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+            ColumnInfo(
+                name='target_id',
+                primary=False,
+                is_unique=True,  # This can be varied for different test cases
+                is_foreign_key=True,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+        ],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_source',
+                columns=['id'],
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (id)',
+            ),
+            ConstraintInfo(
+                constraint_name='unique_target_id',
+                columns=['target_id'],
+                raw_constraint_type='u',
+                constraint_definition='UNIQUE (target_id)',
+            ),
+        ],
+    )
+
+    target_table = TableInfo(
+        name='target',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='id',
+                primary=True,
+                is_unique=True,
+                is_foreign_key=False,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+        ],
+        constraints=[
+            ConstraintInfo(
+                constraint_name='pk_target',
+                columns=['id'],
+                raw_constraint_type='p',
+                constraint_definition='PRIMARY KEY (id)',
+            ),
+        ],
+    )
+
+    return source_table, target_table
+
+
+def test_determine_relationship_type(relationship_type_tables):
+    """Test the determine_relationship_type function for various scenarios."""
+    from supabase_pydantic.util.marshalers import determine_relationship_type
+
+    source_table, target_table = relationship_type_tables
+    fk = ForeignKeyInfo(
+        constraint_name='fk_target',
+        column_name='target_id',
+        foreign_table_name='target',
+        foreign_column_name='id',
+    )
+
+    # Test ONE_TO_ONE relationship (both sides unique)
+    forward_type, reverse_type = determine_relationship_type(source_table, target_table, fk)
+    assert forward_type == RelationType.ONE_TO_ONE
+    assert reverse_type == RelationType.ONE_TO_ONE
+
+    # Test MANY_TO_ONE relationship (only target unique)
+    source_table.columns[1].is_unique = False  # Make source column non-unique
+    source_table.constraints = [c for c in source_table.constraints if c.raw_constraint_type != 'u']
+    forward_type, reverse_type = determine_relationship_type(source_table, target_table, fk)
+    assert forward_type == RelationType.MANY_TO_ONE
+    assert reverse_type == RelationType.ONE_TO_MANY
+
+    # Test MANY_TO_MANY relationship (neither side unique)
+    target_table.columns[0].is_unique = False  # Make target column non-unique
+    target_table.constraints = []  # Remove uniqueness constraints
+    forward_type, reverse_type = determine_relationship_type(source_table, target_table, fk)
+    assert forward_type == RelationType.MANY_TO_MANY
+    assert reverse_type == RelationType.MANY_TO_MANY
+
+
+@pytest.fixture
+def foreign_key_tables():
+    """Fixture for testing add_foreign_key_info_to_table_details function."""
+    # Create tables with various foreign key configurations
+    users_table = TableInfo(
+        name='users',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='id',
+                primary=True,
+                is_unique=True,
+                is_foreign_key=False,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+            ColumnInfo(
+                name='profile_id',
+                primary=False,
+                is_unique=True,
+                is_foreign_key=True,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+            ColumnInfo(
+                name='department_id',
+                primary=False,
+                is_unique=False,
+                is_foreign_key=True,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+        ],
+        constraints=[],
+    )
+
+    profiles_table = TableInfo(
+        name='profiles',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='id',
+                primary=True,
+                is_unique=True,
+                is_foreign_key=False,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+        ],
+        constraints=[],
+    )
+
+    departments_table = TableInfo(
+        name='departments',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='id',
+                primary=True,
+                is_unique=True,
+                is_foreign_key=False,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+        ],
+        constraints=[],
+    )
+
+    # Create a table in a different schema
+    auth_users_table = TableInfo(
+        name='users',
+        schema='auth',
+        columns=[
+            ColumnInfo(
+                name='id',
+                primary=True,
+                is_unique=True,
+                is_foreign_key=False,
+                post_gres_datatype='uuid',
+                datatype='str',
+            ),
+        ],
+        constraints=[],
+    )
+
+    tables = {
+        ('public', 'users'): users_table,
+        ('public', 'profiles'): profiles_table,
+        ('public', 'departments'): departments_table,
+        ('auth', 'users'): auth_users_table,
+    }
+
+    return tables
+
+
+def test_add_foreign_key_info_to_table_details_multiple_fks(foreign_key_tables):
+    """Test adding multiple foreign keys to a table."""
+    fk_details = [
+        # ONE_TO_ONE relationship (unique foreign key)
+        ('public', 'users', 'profile_id', 'public', 'profiles', 'id', 'fk_user_profile'),
+        # MANY_TO_ONE relationship (non-unique foreign key)
+        ('public', 'users', 'department_id', 'public', 'departments', 'id', 'fk_user_department'),
+    ]
+
+    add_foreign_key_info_to_table_details(foreign_key_tables, fk_details)
+    users_table = foreign_key_tables[('public', 'users')]
+
+    # Check that both foreign keys were added
+    assert len(users_table.foreign_keys) == 2
+
+    # Check profile foreign key
+    profile_fk = next(fk for fk in users_table.foreign_keys if fk.foreign_table_name == 'profiles')
+    assert profile_fk.column_name == 'profile_id'
+    assert profile_fk.foreign_column_name == 'id'
+    assert profile_fk.constraint_name == 'fk_user_profile'
+
+    # Check department foreign key
+    dept_fk = next(fk for fk in users_table.foreign_keys if fk.foreign_table_name == 'departments')
+    assert dept_fk.column_name == 'department_id'
+    assert dept_fk.foreign_column_name == 'id'
+    assert dept_fk.constraint_name == 'fk_user_department'
+
+
+def test_add_foreign_key_info_cross_schema(foreign_key_tables):
+    """Test adding foreign keys across different schemas."""
+    fk_details = [
+        # Foreign key from public.users to auth.users
+        ('public', 'users', 'profile_id', 'auth', 'users', 'id', 'fk_user_auth'),
+    ]
+
+    add_foreign_key_info_to_table_details(foreign_key_tables, fk_details)
+    users_table = foreign_key_tables[('public', 'users')]
+
+    # Check that the cross-schema foreign key was added
+    assert len(users_table.foreign_keys) == 1
+    fk = users_table.foreign_keys[0]
+    assert fk.foreign_table_name == 'users'
+    assert fk.foreign_table_schema == 'auth'
+
+
+def test_add_foreign_key_info_missing_table(foreign_key_tables):
+    """Test handling of foreign keys with missing tables."""
+    fk_details = [
+        # Foreign key to a non-existent table
+        ('public', 'users', 'role_id', 'public', 'roles', 'id', 'fk_user_role'),
+    ]
+
+    # Should not raise an error, just skip the foreign key
+    add_foreign_key_info_to_table_details(foreign_key_tables, fk_details)
+    users_table = foreign_key_tables[('public', 'users')]
+    assert len(users_table.foreign_keys) == 0
+
+
+def test_add_foreign_key_info_invalid_schema(foreign_key_tables):
+    """Test handling of foreign keys with invalid schemas."""
+    fk_details = [
+        # Foreign key with non-existent schema
+        ('invalid', 'users', 'profile_id', 'public', 'profiles', 'id', 'fk_user_profile'),
+    ]
+
+    # Should not raise an error, just skip the foreign key
+    add_foreign_key_info_to_table_details(foreign_key_tables, fk_details)
+    assert ('invalid', 'users') not in foreign_key_tables

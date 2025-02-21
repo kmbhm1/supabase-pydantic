@@ -276,8 +276,13 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             base_field_name = x.foreign_table_name.lower()
 
             # Determine type hint and field name based on relationship type
-            logging.debug(f'\nProcessing foreign key {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
-            logging.debug(f'  Relationship type: {x.relation_type}')
+            logging.debug('=' * 80)
+            logging.debug(f'Processing foreign key {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
+            logging.debug(f'  Relationship type from analysis: {x.relation_type}')
+            logging.debug('  Foreign key details:')
+            logging.debug(f'    Column name: {x.column_name}')
+            logging.debug(f'    Foreign table: {x.foreign_table_name}')
+            logging.debug(f'    Foreign column: {x.foreign_column_name}')
 
             # Handle relationships based on whether we're looking at the source or target table
             # Source table = table that has the foreign key (e.g., file has project_id)
@@ -290,9 +295,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             table_name = self.table.name.lower()
             we_have_foreign_key = x.column_name.endswith('_id')
 
-            logging.debug(f'  Table being generated: {table_name}')
-            logging.debug(f'  Foreign key column: {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
-            logging.debug(f'  We have foreign key: {we_have_foreign_key}')
+            logging.debug('  Current context:')
+            logging.debug(f'    Table being generated: {table_name}')
+            logging.debug(f'    We have foreign key: {we_have_foreign_key} (column ends with _id)')
 
             # Check if this is a self-referential relationship
             is_self_ref = x.foreign_table_name.lower() == table_name

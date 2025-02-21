@@ -112,7 +112,7 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
         relation_type = None
         if table_key in tables and foreign_table_key in tables:
             logging.debug(
-                f'\nAnalyzing relationship for {table_key[1]}.{column_name} '
+                f'Analyzing relationship for {table_key[1]}.{column_name} '
                 f'-> {foreign_table_key[1]}.{foreign_column_name}'
             )
 
@@ -458,7 +458,7 @@ def analyze_table_relationships(tables: dict) -> None:
 
             # A column is considered unique only if it's the sole primary key or has a unique constraint
             logging.debug(
-                f'\nAnalyzing relationship for {table.name}.{fk.column_name} -> {foreign_table.name}.{fk.foreign_column_name}'  # noqa: E501
+                f'Analyzing relationship for {table.name}.{fk.column_name} -> {foreign_table.name}.{fk.foreign_column_name}'  # noqa: E501
             )
             logging.debug(f'Source primary constraints: {source_primary_constraints}')
             logging.debug(f'Target primary constraints: {target_primary_constraints}')
@@ -524,7 +524,7 @@ def analyze_table_relationships(tables: dict) -> None:
 
 def is_bridge_table(table: TableInfo) -> bool:
     """Check if the table is a bridge table."""
-    logging.debug(f'\nAnalyzing if {table.name} is a bridge table')
+    logging.debug(f'Analyzing if {table.name} is a bridge table')
     logging.debug(f'Foreign keys: {[fk.column_name for fk in table.foreign_keys]}')
 
     # Check for at least two foreign keys

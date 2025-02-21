@@ -276,7 +276,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             base_field_name = x.foreign_table_name.lower()
 
             # Determine type hint and field name based on relationship type
-            logging.debug(f'\nProcessing foreign key {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
+            logging.debug(f'Processing foreign key {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
             logging.debug(f'  Relationship type: {x.relation_type}')
 
             # Handle relationships based on whether we're looking at the source or target table

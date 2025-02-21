@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.17.1 (2025-02-21)
+
+### Bug Fixes
+
+- **models**: Correct foreign key relationship types and field names
+  ([#65](https://github.com/kmbhm1/supabase-pydantic/pull/65),
+  [`368b557`](https://github.com/kmbhm1/supabase-pydantic/commit/368b557013363dc3b91485b7086872e09adecec4))
+
+Generate appropriate types for relationship fields based on cardinality: - ONE_TO_ONE -> single
+  instance (Type | None) - ONE_TO_MANY -> list of instances (list[Type] | None) - MANY_TO_MANY ->
+  list of instances (list[Type] | None)
+
+This fixes issues where: - All relationships were incorrectly generated as lists - Field names were
+  incorrectly using 'ids' suffix - Multiple fields had naming collisions - Referenced table names
+  were inconsistently included
+
+refactor: consolidate tooling and improve logging - Replace isort with ruff for import sorting -
+  Enhance CLI logging with proper configuration - Improve Makefile documentation and organization
+
+
 ## v0.17.0 (2025-02-16)
 
 ### Features

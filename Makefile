@@ -30,7 +30,8 @@ build: ## Build the project using poetry
 
 requirements.txt: ## Generate requirements.txt from poetry dependencies
 	@echo "Creating requirements.txt"
-	@poetry export --output requirements.txt
+	@rm -f requirements.txt
+	@poetry export --without-hashes --output requirements.txt
 
 check-next-version: ## Check next version with semantic-release
 	@echo "Checking next version with semantic-release"

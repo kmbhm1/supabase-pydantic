@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.17.4 (2025-03-15)
+
+### Bug Fixes
+
+- **deps**: Update Jinja2 to ^3.1.6 to resolve security vulnerabilities
+  ([#68](https://github.com/kmbhm1/supabase-pydantic/pull/68),
+  [`7a263bc`](https://github.com/kmbhm1/supabase-pydantic/commit/7a263bc64e70b6579bdb4ab05279d484ee78006f))
+
+
 ## v0.17.3 (2025-03-07)
 
 ### Bug Fixes

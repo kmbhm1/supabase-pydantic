@@ -1,5 +1,6 @@
 import logging
 import re
+from functools import partial
 from typing import Any
 
 from inflection import pluralize
@@ -123,11 +124,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             return ''
 
         # Use enum class as type if this is an enum column, unless generate_enums is False
-        if (
-            getattr(self, 'generate_enums', True)
-            and getattr(c, 'enum_info', None) is not None
-            and c.enum_info is not None
-        ):
+        if self.generate_enums and getattr(c, 'enum_info', None) is not None and c.enum_info is not None:
             base_type = c.enum_info.python_class_name()
         else:
             base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
@@ -402,7 +399,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
     def write_operational_class(self) -> str | None:
         """Method to generate operational class definitions."""
         # Create a base schema writer and get its name
-        base_writer = PydanticFastAPIClassWriter(self.table, WriterClassType.BASE)
+        base_writer = PydanticFastAPIClassWriter(self.table, WriterClassType.BASE, generate_enums=self.generate_enums)
         m = base_writer.write_name()
         op_class = [
             f'class {self.name}({m}):',
@@ -430,7 +427,13 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         generate_crud_models: bool = True,
         generate_enums: bool = True,
     ):
-        super().__init__(tables, file_path, writer, add_null_parent_classes)
+        # Developer's Note:
+        # Use functools.partial to wrap the writer so that it always
+        # receives the correct extra arguments, but only if the concrete
+        # class supports them.
+        writer_with_enums = partial(writer, generate_enums=generate_enums)
+
+        super().__init__(tables, file_path, writer_with_enums, add_null_parent_classes)
         self.generate_crud_models = generate_crud_models
         self.generate_enums = generate_enums
 
@@ -485,11 +488,11 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             def _method(t: TableInfo) -> Any:
                 writer = None
                 if class_type == WriterClassType.PARENT:
-                    writer = self.writer(t, class_type, True)
+                    writer = self.writer(t, class_type, True, generate_enums=self.generate_enums)
                 elif class_type == WriterClassType.BASE_WITH_PARENT:
-                    writer = self.writer(t, class_type, False)
+                    writer = self.writer(t, class_type, False, generate_enums=self.generate_enums)
                 else:
-                    writer = self.writer(t, class_type)  # Pass class_type here
+                    writer = self.writer(t, class_type, generate_enums=self.generate_enums)  # Pass class_type here
 
                 # print(f'\nTable: {t.name}')
                 # print(f'Class type: {class_type}')

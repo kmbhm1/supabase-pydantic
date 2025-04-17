@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
 
 from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
@@ -96,7 +97,7 @@ class AbstractFileWriter(ABC):
         self,
         tables: list[TableInfo],
         file_path: str,
-        writer: type[AbstractClassWriter],
+        writer: Callable[..., AbstractClassWriter],
         add_null_parent_classes: bool = False,
     ):
         self.tables = tables

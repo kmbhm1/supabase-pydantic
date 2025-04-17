@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.18.0 (2025-04-17)
+
+### Features
+
+- Add enum types for BaseModels ([#70](https://github.com/kmbhm1/supabase-pydantic/pull/70),
+  [`b4c060e`](https://github.com/kmbhm1/supabase-pydantic/commit/b4c060e84f5c6858502acb71189a58118a571d80))
+
+* feat: Add enum types for BaseModels * feat: Add --no-enums cli argument * feat: Add enum example
+  article * test: Add testing for enum generation * refactor: typing issues * fix: Type check error
+
+
 ## v0.17.4 (2025-03-15)
 
 ### Bug Fixes

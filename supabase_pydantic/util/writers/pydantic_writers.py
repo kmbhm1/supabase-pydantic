@@ -17,10 +17,14 @@ from supabase_pydantic.util.writers.util import get_section_comment
 
 class PydanticFastAPIClassWriter(AbstractClassWriter):
     def __init__(
-        self, table: TableInfo, class_type: WriterClassType = WriterClassType.BASE, null_defaults: bool = False
+        self,
+        table: TableInfo,
+        class_type: WriterClassType = WriterClassType.BASE,
+        null_defaults: bool = False,
+        generate_enums: bool = True,
     ):
         super().__init__(table, class_type, null_defaults)
-
+        self.generate_enums = generate_enums
         self.separated_columns: SortedColumns = self.table.sort_and_separate_columns(
             separate_nullable=False, separate_primary_key=True
         )
@@ -118,8 +122,12 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         if (self.class_type in [WriterClassType.INSERT, WriterClassType.UPDATE]) and c.is_identity:
             return ''
 
-        # Use enum class as type if this is an enum column
-        if getattr(c, 'enum_info', None) is not None and c.enum_info is not None:
+        # Use enum class as type if this is an enum column, unless generate_enums is False
+        if (
+            getattr(self, 'generate_enums', True)
+            and getattr(c, 'enum_info', None) is not None
+            and c.enum_info is not None
+        ):
             base_type = c.enum_info.python_class_name()
         else:
             base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
@@ -420,9 +428,11 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         writer: type[AbstractClassWriter] = PydanticFastAPIClassWriter,
         add_null_parent_classes: bool = False,
         generate_crud_models: bool = True,
+        generate_enums: bool = True,
     ):
         super().__init__(tables, file_path, writer, add_null_parent_classes)
         self.generate_crud_models = generate_crud_models
+        self.generate_enums = generate_enums
 
     def _dt_imports(self, imports: set, default_import: tuple[Any, Any | None] = (Any, None)) -> None:
         """Update the imports with the necessary data types."""
@@ -446,7 +456,9 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             imports.add('from __future__ import annotations')
 
         # Check if any column uses an enum type
-        if any(any(getattr(c, 'enum_info', None) is not None for c in t.columns) for t in self.tables):
+        if self.generate_enums and any(
+            any(getattr(c, 'enum_info', None) is not None for c in t.columns) for t in self.tables
+        ):
             imports.add('from enum import Enum')
 
         # column data types
@@ -495,6 +507,8 @@ class PydanticFastAPIWriter(AbstractFileWriter):
 
     def write_enum_types(self) -> str | None:
         """Generate a section of Python Enum classes for all unique enums used in the schema."""
+        if not getattr(self, 'generate_enums', True):
+            return None
         # Collect all EnumInfo objects from all columns in all tables
         enums = {}
         for table in self.tables:

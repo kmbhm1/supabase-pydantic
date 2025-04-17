@@ -220,6 +220,12 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     help='Do not generate Insert and Update model variants. Only generate the base Row models.',  # noqa: E501
 )
 @click.option(
+    '--no-enums',
+    is_flag=True,
+    default=False,
+    help='Do not generate Enum classes for enum columns (default: enums are generated).',
+)
+@click.option(
     '--debug/--no-debug',
     is_flag=True,
     default=False,
@@ -239,6 +245,7 @@ def gen(
     db_url: str | None = None,
     # project_id: str | None = None,
     no_crud_models: bool = False,
+    no_enums: bool = False,
     debug: bool = False,
 ) -> None:
     """Generate models from a PostgreSQL database."""
@@ -320,6 +327,7 @@ def gen(
                 c.framework_type,
                 add_null_parent_classes=null_parent_classes,
                 generate_crud_models=not no_crud_models,
+                generate_enums=not no_enums,
             ).save(overwrite)
             paths += [p, vf] if vf is not None else [p]
             logging.info(f"{job} models generated successfully for schema '{s}': {p}")

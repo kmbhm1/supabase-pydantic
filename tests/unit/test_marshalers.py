@@ -22,6 +22,7 @@ from supabase_pydantic.util.marshalers import (
     is_bridge_table,
     parse_constraint_definition_for_fk,
     standardize_column_name,
+    string_is_reserved,
     update_column_constraint_definitions,
     update_columns_with_constraints,
 )
@@ -268,6 +269,22 @@ def construct_enum_mapping():
     return [
         ('username', 'users', 'public', 'type_name', 'category_1', 'foo'),
     ]
+
+
+@pytest.mark.parametrize(
+    'value, expected',
+    [
+        ('int', True),  # Python built-in
+        ('print', True),  # Python built-in
+        ('for', True),  # Python keyword
+        ('def', True),  # Python keyword
+        ('username', False),  # Not reserved
+        ('customfield', False),  # Not reserved
+        ('id', True),  # Built-in
+    ],
+)
+def test_string_is_reserved(value, expected):
+    assert string_is_reserved(value) == expected, f'Failed for {value}'
 
 
 @pytest.mark.parametrize(

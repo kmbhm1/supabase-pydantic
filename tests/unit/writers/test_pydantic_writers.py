@@ -1,7 +1,14 @@
 import pytest
 
 from supabase_pydantic.util.constants import RelationType, WriterClassType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.dataclasses import (
+    ColumnInfo,
+    ConstraintInfo,
+    EnumInfo,
+    ForeignKeyInfo,
+    RelationshipInfo,
+    TableInfo,
+)
 from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIClassWriter, PydanticFastAPIWriter
 
 
@@ -552,6 +559,56 @@ def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
         'from pydantic.types import StringConstraints'
     )
     assert fastapi_file_writer.write_imports() == expected_imports
+
+
+@pytest.fixture
+def fastapi_file_writer_with_enum_tables():
+    tables = [
+        TableInfo(
+            name='State',
+            schema='public',
+            columns=[
+                ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+                ColumnInfo(
+                    name='us_state',
+                    post_gres_datatype='USER-DEFINED',
+                    is_nullable=False,
+                    datatype='us_state',
+                    user_defined_values=['CA', 'NY', 'TX', 'IN'],
+                    enum_info=EnumInfo(name='us_state', values=['CA', 'NY', 'TX', 'IN'], schema='public'),
+                ),
+            ],
+        ),
+        TableInfo(
+            name='Country',
+            schema='public',
+            columns=[
+                ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+                ColumnInfo(name='name', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+            ],
+        ),
+    ]
+    return PydanticFastAPIWriter(tables, 'dummy_path.py')
+
+
+def test_PydanticFastAPIWriter_enum_generation(fastapi_file_writer_with_enum_tables):
+    """
+    Integration test for enum generation in PydanticFastAPIWriter.
+    Verifies that enums are generated when enabled, and omitted when disabled.
+    """
+    # Test with enums enabled
+    output_with_enums = fastapi_file_writer_with_enum_tables.write()
+    assert 'class UsStateEnum' not in output_with_enums
+    assert 'class PublicUsStateEnum' in output_with_enums
+    assert 'us_state: PublicUsStateEnum' in output_with_enums
+
+    # Test with enums disabled
+    writer_with_no_enums = PydanticFastAPIWriter(
+        fastapi_file_writer_with_enum_tables.tables, 'dummy_path.py', generate_enums=False
+    )
+    output_no_enums = writer_with_no_enums.write()
+    assert 'class PublicUsStateEnum' not in output_no_enums
+    assert 'us_state: str' in output_no_enums
 
 
 def test_pluralization_in_relationships():

@@ -6,6 +6,7 @@ from inflection import pluralize
 
 from supabase_pydantic.util.constants import CUSTOM_MODEL_NAME, RelationType, WriterClassType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
+from supabase_pydantic.util.marshalers import column_name_reserved_exceptions, string_is_reserved
 from supabase_pydantic.util.util import get_pydantic_type
 from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
 from supabase_pydantic.util.writers.util import get_base_class_post_script as post
@@ -117,7 +118,11 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         if (self.class_type in [WriterClassType.INSERT, WriterClassType.UPDATE]) and c.is_identity:
             return ''
 
-        base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
+        # Use enum class as type if this is an enum column
+        if getattr(c, 'enum_info', None) is not None and c.enum_info is not None:
+            base_type = c.enum_info.python_class_name()
+        else:
+            base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
 
         # For Update models, all fields are optional
         force_optional = self.class_type == WriterClassType.UPDATE
@@ -440,6 +445,10 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         if any([len(t.table_dependencies()) > 0 for t in self.tables]):
             imports.add('from __future__ import annotations')
 
+        # Check if any column uses an enum type
+        if any(any(getattr(c, 'enum_info', None) is not None for c in t.columns) for t in self.tables):
+            imports.add('from enum import Enum')
+
         # column data types
         self._dt_imports(imports)
 
@@ -483,6 +492,36 @@ class PydanticFastAPIWriter(AbstractFileWriter):
                 classes = [_method(t)() for t in self.tables]
 
         return self.join([sxn, *classes])
+
+    def write_enum_types(self) -> str | None:
+        """Generate a section of Python Enum classes for all unique enums used in the schema."""
+        # Collect all EnumInfo objects from all columns in all tables
+        enums = {}
+        for table in self.tables:
+            for col in table.columns:
+                enum_info = getattr(col, 'enum_info', None)
+                if enum_info:
+                    # Use (schema, name) as a unique key to avoid duplicates
+                    key = (enum_info.schema, enum_info.name)
+                    enums[key] = enum_info
+
+        if not enums:
+            return None
+
+        # Build the section string
+        lines = ['# ENUM TYPES', '# These are generated from Postgres user-defined enum types.\n']
+        for enum in enums.values():
+            lines.append(f'class {enum.python_class_name()}(str, Enum):')
+            for value in enum.values:
+                member = enum.python_member_name(value)
+                comment = ''
+                if string_is_reserved(member.lower()) or column_name_reserved_exceptions(member.lower()):
+                    member = f'{member.upper()}_'
+                    comment = f'  # Note: original name was {value} (reserved keyword)'
+                lines.append(f'\t{member.upper()} = "{value}"{comment}')
+            lines.append('')  # Blank line after each enum
+
+        return '\n'.join(lines)
 
     def write_custom_classes(self) -> str | None:
         """Method to generate the custom classes for the file."""
@@ -559,3 +598,16 @@ class PydanticFastAPIWriter(AbstractFileWriter):
     def write_operational_classes(self) -> str | None:
         """Method to generate the operational classes for the file."""
         return self._class_writer_helper('Operational Classes', is_base=False)
+
+    def write(self) -> str:
+        """Override to include enum types after imports and before custom classes."""
+        parts = [
+            self.write_imports(),
+            self.write_enum_types(),
+            self.write_custom_classes(),
+            self.write_base_classes(),
+            self.write_operational_classes(),
+        ]
+
+        # filter None and join parts using self.jstr (which is '\\n\\n\\n')
+        return self.jstr.join(p for p in parts if p is not None) + '\n'

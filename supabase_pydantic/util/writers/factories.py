@@ -14,6 +14,7 @@ class FileWriterFactory:
         framework_type: FrameWorkType = FrameWorkType.FASTAPI,
         add_null_parent_classes: bool = False,
         generate_crud_models: bool = True,
+        generate_enums: bool = True,
     ) -> AbstractFileWriter:
         """Get the file writer based on the provided parameters.
 
@@ -24,6 +25,7 @@ class FileWriterFactory:
             framework_type (FrameWorkType, optional): The framework type. Defaults to FrameWorkType.FASTAPI.
             add_null_parent_classes (bool, optional): Add null parent classes for base classes. Defaults to False.
             generate_crud_models (bool, optional): Generate CRUD models. (i.e., Insert, Update) Defaults to True.
+            generate_enums (bool, optional): Generate Enum classes for enum columns. Defaults to True.
 
         Returns:
             The file writer instance.
@@ -37,6 +39,7 @@ class FileWriterFactory:
                     file_path,
                     add_null_parent_classes=add_null_parent_classes,
                     generate_crud_models=generate_crud_models,
+                    generate_enums=generate_enums,
                 )
             case _:
                 raise ValueError(f'Unsupported file type or framework type: {file_type}, {framework_type}')

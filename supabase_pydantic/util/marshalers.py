@@ -9,6 +9,7 @@ from supabase_pydantic.util.constants import PYDANTIC_TYPE_MAP, RelationType
 from supabase_pydantic.util.dataclasses import (
     ColumnInfo,
     ConstraintInfo,
+    EnumInfo,
     ForeignKeyInfo,
     RelationshipInfo,
     TableInfo,
@@ -19,9 +20,14 @@ from supabase_pydantic.util.dataclasses import (
 pp = pprint.PrettyPrinter(indent=4)
 
 
+def string_is_reserved(value: str) -> bool:
+    """Check if the string is a reserved keyword or built-in name."""
+    return value in dir(builtins) or value in keyword.kwlist
+
+
 def column_name_is_reserved(column_name: str) -> bool:
     """Check if the column name is a reserved keyword or built-in name or starts with model_."""
-    return column_name in dir(builtins) or column_name in keyword.kwlist or column_name.startswith('model_')
+    return string_is_reserved(column_name) or column_name.startswith('model_')
 
 
 def column_name_reserved_exceptions(column_name: str) -> bool:
@@ -385,12 +391,18 @@ def add_user_defined_types_to_tables(
 
     for mapping in mappings:
         table_key = (schema, mapping.table_name)
-        enum_values = next((e.enum_values for e in enums if e.type_name == mapping.type_name), None)
+        enum_info = next((e for e in enums if e.type_name == mapping.type_name), None)
+        enum_values = enum_info.enum_values if enum_info else None
         if table_key in tables:
             if mapping.column_name in [c.name for c in tables[table_key].columns]:
                 for col in tables[table_key].columns:
                     if col.name == mapping.column_name:
-                        col.user_defined_values = enum_values
+                        col.user_defined_values = enum_values  # backward compatibility
+                        col.enum_info = None
+                        if enum_info:
+                            col.enum_info = EnumInfo(
+                                name=enum_info.type_name, values=enum_info.enum_values, schema=schema
+                            )
                         break
             else:
                 print('Column name not found in table columns for adding user defined values: ', mapping.column_name)

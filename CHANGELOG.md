@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.18.1 (2025-04-19)
+
+### Documentation
+
+- Update copyright ([#71](https://github.com/kmbhm1/supabase-pydantic/pull/71),
+  [`345df88`](https://github.com/kmbhm1/supabase-pydantic/commit/345df88c2ad0b495e920aee8174231a2741ab3ae))
+
+
 ## v0.18.0 (2025-04-17)
 
 ### Features

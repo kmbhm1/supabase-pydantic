@@ -464,11 +464,12 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             imports.add('from enum import Enum')
 
         # Check if Annotated is needed (used with StringConstraints for text columns with length constraints)
+        # Look for text columns with constraint definitions containing 'length' function
         needs_annotated = any(
             any(
                 c.post_gres_datatype.lower() == 'text'
                 and c.constraint_definition
-                and self._parse_length_constraint(c.constraint_definition) is not None
+                and 'length(' in c.constraint_definition.lower()
                 for c in t.columns
             )
             for t in self.tables

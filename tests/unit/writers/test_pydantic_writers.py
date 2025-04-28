@@ -750,3 +750,76 @@ def test_relationship_type_error_handling(relationship_test_tables):
 
     # Should not raise an error, just skip the invalid relationship
     assert foreign_cols is None or 'NonExistent' not in foreign_cols
+
+
+def test_conditional_annotated_import():
+    """Test that Annotated is only imported when string constraints are present.
+
+    This test verifies:
+    1. When there are columns with text type and length constraints, 'from typing import Annotated' is included
+    2. When there are text columns with constraints but no length functions, 'Annotated' is not included
+    3. When there are no constraints at all, 'Annotated' is not included
+    """
+    # Case 1: Table with string length constraints - should trigger Annotated import
+    table_with_length_constraints = TableInfo(
+        name='Product',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(
+                name='sku',
+                post_gres_datatype='text',
+                is_nullable=False,
+                datatype='str',
+                constraint_definition='CHECK (length(sku) = 10)',
+            ),
+        ],
+    )
+
+    # Case 2: Table with text columns and constraints, but no length function
+    table_with_other_constraints = TableInfo(
+        name='Article',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(
+                name='title',
+                post_gres_datatype='text',
+                is_nullable=False,
+                datatype='str',
+                constraint_definition="CHECK (title <> '')",
+            ),
+        ],
+    )
+
+    # Case 3: Table with no constraints at all
+    table_without_constraints = TableInfo(
+        name='Simple',
+        schema='public',
+        columns=[
+            ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
+            ColumnInfo(name='name', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
+            ColumnInfo(name='active', post_gres_datatype='boolean', is_nullable=True, datatype='bool'),
+        ],
+    )
+
+    # Test case 1: With string length constraints - should include Annotated import
+    writer_with_length = PydanticFastAPIWriter([table_with_length_constraints], 'test_length_constraints.py')
+    imports_with_length = writer_with_length.write_imports()
+    assert 'from typing import Annotated' in imports_with_length
+
+    # Test case 2: With text constraints but no length function - should NOT include Annotated
+    writer_with_other = PydanticFastAPIWriter([table_with_other_constraints], 'test_other_constraints.py')
+    imports_with_other = writer_with_other.write_imports()
+    assert 'from typing import Annotated' not in imports_with_other
+
+    # Test case 3: Without any constraints - should NOT include Annotated import
+    writer_without = PydanticFastAPIWriter([table_without_constraints], 'test_no_constraints.py')
+    imports_without = writer_without.write_imports()
+    assert 'from typing import Annotated' not in imports_without
+
+    # Test mixed case: Tables with and without constraints
+    writer_mixed = PydanticFastAPIWriter([table_with_length_constraints, table_without_constraints], 'test_mixed.py')
+    imports_mixed = writer_mixed.write_imports()
+    # Should include Annotated because at least one table has length constraints
+    assert 'from typing import Annotated' in imports_mixed

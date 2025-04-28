@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.18.3 (2025-04-28)
+
+### Bug Fixes
+
+- **security**: Limit GitHub Actions workflow permissions
+  ([#74](https://github.com/kmbhm1/supabase-pydantic/pull/74),
+  [`7465830`](https://github.com/kmbhm1/supabase-pydantic/commit/7465830f027236aaa9dd116f45074073b1c822bc))
+
+Adds explicit read-only permissions to the build job in python-publish.yml to follow least privilege
+  principle and address GitHub security alert.
+
+
 ## v0.18.2 (2025-04-28)
 
 ### Bug Fixes

@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## v0.18.2 (2025-04-28)
+
+### Bug Fixes
+
+- Bug Annotated imported incorrectly ([#73](https://github.com/kmbhm1/supabase-pydantic/pull/73),
+  [`41f911c`](https://github.com/kmbhm1/supabase-pydantic/commit/41f911c13d5a0da1c7f58c14b0a2d0be33724550))
+
+* fix: Incorrect Annotated addition * test: Add test for condition
+
+
 ## v0.18.1 (2025-04-19)
 
 ### Documentation

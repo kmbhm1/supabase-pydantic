@@ -452,7 +452,6 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         imports = {
             'from pydantic import BaseModel',
             'from pydantic import Field',
-            'from pydantic import Annotated',
             'from pydantic.types import StringConstraints',
         }
         if any([len(t.table_dependencies()) > 0 for t in self.tables]):
@@ -463,6 +462,20 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             any(getattr(c, 'enum_info', None) is not None for c in t.columns) for t in self.tables
         ):
             imports.add('from enum import Enum')
+
+        # Check if Annotated is needed (used with StringConstraints for text columns with length constraints)
+        # Look for text columns with constraint definitions containing 'length' function
+        needs_annotated = any(
+            any(
+                c.post_gres_datatype.lower() == 'text'
+                and c.constraint_definition
+                and 'length(' in c.constraint_definition.lower()
+                for c in t.columns
+            )
+            for t in self.tables
+        )
+        if needs_annotated:
+            imports.add('from typing import Annotated')
 
         # column data types
         self._dt_imports(imports)

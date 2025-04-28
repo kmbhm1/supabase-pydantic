@@ -421,7 +421,6 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
     expected_output = (
         # Imports
         'from __future__ import annotations\n'
-        'from pydantic import Annotated\n'
         'from pydantic import BaseModel\n'
         'from pydantic import Field\n'
         'from pydantic import Json\n'
@@ -551,7 +550,6 @@ def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
     """Validate the imports for the Pydantic FastAPI writer."""
     expected_imports = (
         'from __future__ import annotations\n'
-        'from pydantic import Annotated\n'
         'from pydantic import BaseModel\n'
         'from pydantic import Field\n'
         'from pydantic import Json\n'

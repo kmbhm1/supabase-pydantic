@@ -6,7 +6,15 @@
 .PHONY: help
 help: ## Display this help message
 	@echo "Available commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Project Setup & Housekeeping:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*setup.*|^[a-zA-Z_-]+:.*?## .*clean.*' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Testing & Quality:"
+	@grep -E '^test|^coverage|^tox|^lint|^check-types|^smoke-test:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Building & Documentation:"
+	@grep -E '^build|^requirements|^check-next-version|^serve-docs:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 
 clean: ## Clean up Python compiled directories and caches
 	@echo "Cleaning up Python compiled directories"
@@ -17,6 +25,7 @@ clean: ## Clean up Python compiled directories and caches
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} +
 	@find . -type f -name "*.py[co]" -exec rm -f {} +
 	@find . -type f -name "*.pyo" -exec rm -f {} +
+	@find . -type d -name ".tox" -exec rm -rf {} +
 	@poetry run pre-commit clean
 
 
@@ -77,6 +86,34 @@ test: ## Run all tests with coverage report
 coverage: ## Generate detailed HTML coverage report
 	@echo "Running tests with coverage"
 	@poetry run pytest --cov=supabase_pydantic --cov-report=term-missing --cov-report=html --cov-config=pyproject.toml
+
+tox: clean ## Run tests across multiple Python versions using tox
+	@echo "Running tox for multiple Python versions"
+	@poetry run tox
+
+tox-py310: clean ## Run tests for Python 3.10 only
+	@echo "Running tox for Python 3.10"
+	@poetry run tox -e py310
+
+tox-py311: clean ## Run tests for Python 3.11 only
+	@echo "Running tox for Python 3.11"
+	@poetry run tox -e py311
+
+tox-py312: clean ## Run tests for Python 3.12 only
+	@echo "Running tox for Python 3.12"
+	@poetry run tox -e py312
+
+tox-py313: clean ## Run tests for Python 3.13 only
+	@echo "Running tox for Python 3.13"
+	@poetry run tox -e py313
+
+tox-lint: clean ## Run linting with tox
+	@echo "Running linting with tox"
+	@poetry run tox -e lint
+
+tox-mypy: clean ## Run type checking with tox
+	@echo "Running type checking with tox"
+	@poetry run tox -e mypy
 
 smoke-test: ## Run a quick test generating FastAPI models
 	@echo "Running smoke test"

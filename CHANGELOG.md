@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.19.1 (2025-04-30)
+
+### Bug Fixes
+
+- Upgrade version of tox ([#76](https://github.com/kmbhm1/supabase-pydantic/pull/76),
+  [`8f9d8be`](https://github.com/kmbhm1/supabase-pydantic/commit/8f9d8be2e7af701c19d6b9a950926907c7c3040d))
+
+
 ## v0.19.0 (2025-04-30)
 
 ### Features

@@ -37,7 +37,7 @@ jobs:
 
     - name: Install tox directly
       run: |
-        pip install "tox<4"
+        pip install "tox>=4.11.3"
 
     - name: Run tests
       run: |

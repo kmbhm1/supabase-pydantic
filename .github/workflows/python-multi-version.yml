@@ -34,7 +34,7 @@ jobs:
     - name: Install dependencies
       run: |
         poetry install
-        poetry add tox<4 tox-pyenv
+        poetry add tox<4
 
     - name: Run tests
       run: |

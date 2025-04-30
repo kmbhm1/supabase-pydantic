@@ -33,9 +33,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        poetry install
-        poetry add tox<4
+        poetry install --without dev || poetry install
+
+    - name: Install tox directly
+      run: |
+        pip install tox<4
 
     - name: Run tests
       run: |
-        poetry run tox -e py$(echo ${{ matrix.python-version }} | tr -d '.')
+        tox -e py$(echo ${{ matrix.python-version }} | tr -d '.')

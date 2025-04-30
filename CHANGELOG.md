@@ -1,6 +1,40 @@
 # CHANGELOG
 
 
+## v0.19.0 (2025-04-30)
+
+### Features
+
+- **cicd**: Integrate tox for py3.{10,11,12,13} validation in cicd
+  ([#75](https://github.com/kmbhm1/supabase-pydantic/pull/75),
+  [`efe0c88`](https://github.com/kmbhm1/supabase-pydantic/commit/efe0c885392bf201f08b6b310a8750dd5104e40f))
+
+* refactor: rm .python-version
+
+* chore: Remove poc
+
+* feat: Integrate tox for multiple Python versions
+
+* feat(cicd): Add tox action(s) for testing with multiple versions
+
+* fix: Potential fix for code scanning alert no. 6: Workflow does not contain permissions
+
+Co-authored-by: Copilot Autofix powered by AI
+  <62310815+github-advanced-security[bot]@users.noreply.github.com>
+
+Signed-off-by: kmbhm1 <kmbhm1@gmail.com>
+
+* fix: Failing dependency install
+
+* fix: Remove dev dependency installation from multi-version tests
+
+* fix: Quotes in pip instal
+
+* chore: Update poetry lock
+
+---------
+
+
 ## v0.18.3 (2025-04-28)
 
 ### Bug Fixes

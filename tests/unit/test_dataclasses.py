@@ -1,12 +1,12 @@
 import json
 
-from supabase_pydantic.util.constants import OrmType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
+from src.supabase_pydantic.core.constants import OrmType
+from src.supabase_pydantic.core.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
 
 
 def test_ConstraintInfo_methods():
     """Test ConstraintInfo methods."""
-    from supabase_pydantic.util.dataclasses import ConstraintInfo
+    from src.supabase_pydantic.utils.dataclasses import ConstraintInfo
 
     constraint_info = ConstraintInfo(
         constraint_name='test',

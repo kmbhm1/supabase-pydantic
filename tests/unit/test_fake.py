@@ -5,7 +5,7 @@ import pytest
 from dateutil.parser import parse
 from faker import Faker
 
-from supabase_pydantic.util.fake import (
+from src.supabase_pydantic.utils.fake import (
     generate_fake_data,
     guess_and_generate_fake_data,
     guess_datetime_order,
@@ -16,7 +16,9 @@ from supabase_pydantic.util.fake import (
 @pytest.fixture
 def fake_faker():
     """Fixture to mock Faker methods used in generate_fake_data."""
-    with patch('supabase_pydantic.util.fake.Faker') as mock_faker:  # Adjust the patch location to where Faker is used
+    with patch(
+        'src.supabase_pydantic.utils.fake.Faker'
+    ) as mock_faker:  # Adjust the patch location to where Faker is used
         fake = mock_faker.return_value
         fake.random_number.return_value = 12345
         fake.email.return_value = 'example@example.com'
@@ -45,7 +47,7 @@ def test_integer_datatype(fake_faker, mock_random):
 
 def test_nullable_field(fake_faker, monkeypatch):
     """Test that nullable fields can return 'NULL'."""
-    monkeypatch.setattr('supabase_pydantic.util.fake.random', lambda: 0.01)  # Below the threshold to simulate null
+    monkeypatch.setattr('src.supabase_pydantic.utils.fake.random', lambda: 0.01)  # Below the threshold to simulate null
     result = generate_fake_data('text', True, None, 'foo', None, fake_faker)
     assert result == 'NULL'
 

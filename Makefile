@@ -59,6 +59,7 @@ lint: ## Run ruff linter and sort imports
 format: ## Run ruff formatter
 	@echo "Running ruff formatter"
 	@poetry run ruff format .
+	@poetry run ruff check --select I,F401,UP006,F841 --fix .
 
 check-types: ## Run mypy type checker
 	@echo "Type checking with mypy"

@@ -7,6 +7,7 @@ license = "MIT"
 repository = "https://github.com/kmbhm1/supabase-pydantic"
 homepage = "https://kmbhm1.github.io/supabase-pydantic"
 readme = "README.md"
+packages = [{include = "supabase_pydantic", from = "src"}]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Console",
@@ -28,8 +29,8 @@ classifiers = [
 keywords = ["supabase", "pydantic", "fastapi", "sqlalchemy", "REST", "generator", "schema", "model"]
 
 [tool.poetry.scripts]
-sb-pydantic = 'supabase_pydantic.cli:cli'
-supabase-pydantic = 'supabase_pydantic.cli:cli'
+sb-pydantic = 'supabase_pydantic.cli.main:cli'
+supabase-pydantic = 'supabase_pydantic.cli.main:cli'
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
@@ -178,7 +179,8 @@ exclude = [
     "dist",
     "tests/*",
     'entities/*', # generated files
-    'poc'
+    'poc',
+    'src/supabase_pydantic/utils',  # transitional code
 ]
 python_version = "3.10"
 mypy_path = "."
@@ -218,7 +220,7 @@ deps =
     pytest-mypy
     pytest-mock
 commands =
-    pytest {posargs:tests} --cov=supabase_pydantic --cov-report=term-missing
+    pytest {posargs:tests} --cov=src/supabase_pydantic --cov-report=term-missing
 
 [testenv:lint]
 basepython = {env:HOME}/.pyenv/versions/3.10.14/bin/python

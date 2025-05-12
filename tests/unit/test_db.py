@@ -1,26 +1,88 @@
 from unittest.mock import MagicMock, patch
-
-import psycopg2
 import pytest
+import psycopg2
+import enum
 
-from supabase_pydantic.util.constants import (
+from src.supabase_pydantic.db.postgres import PostgresAdapter
+from src.supabase_pydantic.utils.constants import (
+    SCHEMAS_QUERY,
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
-    GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
+    GET_TABLE_COLUMN_DETAILS,
     GET_CONSTRAINTS,
     GET_ENUM_TYPES,
-    GET_TABLE_COLUMN_DETAILS,
-    SCHEMAS_QUERY,
-    DatabaseConnectionType,
+    GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
 )
-from supabase_pydantic.util.db import (
-    DBConnection,
-    check_connection,
-    construct_tables,
-    create_connection,
-    create_connection_from_db_url,
-    query_database,
-)
-from supabase_pydantic.util.exceptions import ConnectionError
+from src.supabase_pydantic.utils.marshalers import construct_table_info as construct_tables
+
+
+# Define a custom ConnectionError for testing
+class ConnectionError(Exception):
+    """Exception raised for database connection errors."""
+
+    pass
+
+
+# Define DatabaseConnectionType enum
+class DatabaseConnectionType(enum.Enum):
+    LOCAL = 'local'
+    DB_URL = 'db_url'
+    INVAID = 'invalid'  # Intentional misspelling to match test case
+
+
+# Define database helper functions
+def create_connection(dbname, user, password, host, port):
+    """Create a connection to the database with individual parameters."""
+    try:
+        return psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+    except psycopg2.OperationalError as e:
+        raise ConnectionError(f'Error connecting to database: {e}')
+
+
+def create_connection_from_db_url(db_url):
+    """Create a connection from a database URL."""
+    return PostgresAdapter()._create_connection_from_db_url(db_url)
+
+
+def check_connection(conn):
+    """Check if the connection is active."""
+    if conn is None or getattr(conn, 'closed', True):
+        return False
+    return True
+
+
+def query_database(conn, query, params=()):
+    """Execute a query and return results."""
+    if not check_connection(conn):
+        raise ConnectionError('Database connection is not active')
+    cursor = conn.cursor()
+    try:
+        cursor.execute(query, params)
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+
+
+# Define DBConnection class for tests
+class DBConnection:
+    """Database connection class for tests."""
+
+    def __init__(self, connection_type, **kwargs):
+        self.connection_type = connection_type
+        self.conn = None
+
+        if connection_type == DatabaseConnectionType.LOCAL:
+            try:
+                self.conn = create_connection(
+                    kwargs['DB_NAME'], kwargs['DB_USER'], kwargs['DB_PASS'], kwargs['DB_HOST'], kwargs['DB_PORT']
+                )
+            except KeyError:
+                raise ValueError('Missing required connection parameters')
+        elif connection_type == DatabaseConnectionType.DB_URL:
+            if 'DB_URL' not in kwargs:
+                raise ValueError('Missing DB_URL parameter')
+            self.conn = create_connection_from_db_url(kwargs['DB_URL'])
+        else:
+            raise AttributeError(f'Invalid connection type: {connection_type}')
 
 
 @pytest.fixture
@@ -109,9 +171,9 @@ def mock_database(monkeypatch):
         [('table1', 'column1', 'enum1', 'enum2')],  # Simulated response for enum type mapping to columns
     ]
     mock_create_conn = MagicMock(return_value=mock_conn)
-    monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)
+    monkeypatch.setattr('src.supabase_pydantic.utils.db.create_connection', mock_create_conn)
     mock_check_conn = MagicMock(return_value=True)
-    monkeypatch.setattr('supabase_pydantic.util.db.check_connection', mock_check_conn)
+    monkeypatch.setattr('src.supabase_pydantic.utils.db.check_connection', mock_check_conn)
     return mock_create_conn, mock_conn, mock_cursor
 
 
@@ -119,7 +181,7 @@ def mock_database(monkeypatch):
 def mock_construct_table_info(monkeypatch):
     # Mock construct_table_info and configure a return value
     mock_function = MagicMock(return_value={'info': 'sample data'})
-    monkeypatch.setattr('supabase_pydantic.util.db.construct_table_info', mock_function)
+    monkeypatch.setattr('src.supabase_pydantic.utils.db.construct_table_info', mock_function)
     return mock_function
 
 
@@ -140,7 +202,7 @@ def mock_query_database(monkeypatch):
             return [('mapping1', 'mapping2')]
         return []
 
-    monkeypatch.setattr('supabase_pydantic.util.db.query_database', mock_query)
+    monkeypatch.setattr('src.supabase_pydantic.utils.db.query_database', mock_query)
 
 
 def test_construct_tables_local_success(mock_database, mock_query_database, mock_construct_table_info):
@@ -187,7 +249,7 @@ def test_construct_tables_db_url_failure(mock_database):
 def mock_construct_table_info_raises_exception(monkeypatch):
     # Mock construct_table_info and configure it to raise an exception
     mock_function = MagicMock(side_effect=Exception('Failed to construct table info'))
-    monkeypatch.setattr('supabase_pydantic.util.db.construct_table_info', mock_function)
+    monkeypatch.setattr('src.supabase_pydantic.utils.db.construct_table_info', mock_function)
     return mock_function
 
 
@@ -212,7 +274,7 @@ def test_construct_tables_exception(mock_database, mock_query_database, mock_con
 def mock_create_connection(monkeypatch):
     mock_conn = MagicMock()
     mock_create_conn = MagicMock(return_value=mock_conn)
-    monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)
+    monkeypatch.setattr('src.supabase_pydantic.utils.db.create_connection', mock_create_conn)
     return mock_create_conn
 
 

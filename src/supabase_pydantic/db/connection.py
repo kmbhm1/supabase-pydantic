@@ -1,12 +1,10 @@
-"""Database utility functions for the supabase-pydantic package."""
-
 import logging
 from typing import Any, Literal
 from urllib.parse import urlparse
 
 import psycopg2
 
-from src.supabase_pydantic.utils.constants import (
+from src.supabase_pydantic.db.constants import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
     GET_CONSTRAINTS,
@@ -15,14 +13,9 @@ from src.supabase_pydantic.utils.constants import (
     SCHEMAS_QUERY,
     DatabaseConnectionType,
 )
-from src.supabase_pydantic.utils.dataclasses import TableInfo
-from src.supabase_pydantic.utils.marshalers import construct_table_info
-
-
-class ConnectionError(Exception):
-    """Exception raised for database connection errors."""
-
-    pass
+from src.supabase_pydantic.db.exceptions import ConnectionError
+from src.supabase_pydantic.db.marshaler import construct_table_info
+from src.supabase_pydantic.db.models import TableInfo
 
 
 def query_database(conn: Any, query: str, params: tuple = ()) -> Any:
@@ -78,8 +71,6 @@ def check_connection(conn: Any) -> bool:
 
 
 class DBConnection:
-    """Database connection class for the supabase-pydantic package."""
-
     def __init__(self, conn_type: DatabaseConnectionType, **kwargs: Any) -> None:
         self.conn_type = conn_type
         self.kwargs = kwargs
@@ -153,3 +144,14 @@ def construct_tables(
             raise e
 
     return all_tables_info
+
+
+def local_default_env_configuration() -> dict[str, str]:
+    """Get the default environment configuration for local connections."""
+    return {
+        'DB_NAME': 'postgres',
+        'DB_USER': 'postgres',
+        'DB_PASS': 'postgres',
+        'DB_HOST': 'localhost',
+        'DB_PORT': '5432',
+    }

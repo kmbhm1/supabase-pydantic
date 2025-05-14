@@ -4,7 +4,7 @@ import psycopg2
 import enum
 
 from src.supabase_pydantic.db.postgres import PostgresAdapter
-from src.supabase_pydantic.utils.constants import (
+from src.supabase_pydantic.db.constants import (
     SCHEMAS_QUERY,
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_TABLE_COLUMN_DETAILS,
@@ -12,7 +12,7 @@ from src.supabase_pydantic.utils.constants import (
     GET_ENUM_TYPES,
     GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
 )
-from src.supabase_pydantic.utils.marshalers import construct_table_info as construct_tables
+from src.supabase_pydantic.db.marshaler import construct_table_info as construct_tables
 
 
 # Define a custom ConnectionError for testing
@@ -171,9 +171,9 @@ def mock_database(monkeypatch):
         [('table1', 'column1', 'enum1', 'enum2')],  # Simulated response for enum type mapping to columns
     ]
     mock_create_conn = MagicMock(return_value=mock_conn)
-    monkeypatch.setattr('src.supabase_pydantic.utils.db.create_connection', mock_create_conn)
+    monkeypatch.setattr('src.supabase_pydantic.db.postgres.create_connection', mock_create_conn)
     mock_check_conn = MagicMock(return_value=True)
-    monkeypatch.setattr('src.supabase_pydantic.utils.db.check_connection', mock_check_conn)
+    monkeypatch.setattr('src.supabase_pydantic.db.postgres.check_connection', mock_check_conn)
     return mock_create_conn, mock_conn, mock_cursor
 
 
@@ -181,7 +181,7 @@ def mock_database(monkeypatch):
 def mock_construct_table_info(monkeypatch):
     # Mock construct_table_info and configure a return value
     mock_function = MagicMock(return_value={'info': 'sample data'})
-    monkeypatch.setattr('src.supabase_pydantic.utils.db.construct_table_info', mock_function)
+    monkeypatch.setattr('src.supabase_pydantic.db.marshalers.construct_table_info', mock_function)
     return mock_function
 
 
@@ -202,7 +202,7 @@ def mock_query_database(monkeypatch):
             return [('mapping1', 'mapping2')]
         return []
 
-    monkeypatch.setattr('src.supabase_pydantic.utils.db.query_database', mock_query)
+    monkeypatch.setattr('src.supabase_pydantic.db.postgres.query_database', mock_query)
 
 
 def test_construct_tables_local_success(mock_database, mock_query_database, mock_construct_table_info):
@@ -249,7 +249,7 @@ def test_construct_tables_db_url_failure(mock_database):
 def mock_construct_table_info_raises_exception(monkeypatch):
     # Mock construct_table_info and configure it to raise an exception
     mock_function = MagicMock(side_effect=Exception('Failed to construct table info'))
-    monkeypatch.setattr('src.supabase_pydantic.utils.db.construct_table_info', mock_function)
+    monkeypatch.setattr('src.supabase_pydantic.db.marshalers.construct_table_info', mock_function)
     return mock_function
 
 
@@ -274,7 +274,7 @@ def test_construct_tables_exception(mock_database, mock_query_database, mock_con
 def mock_create_connection(monkeypatch):
     mock_conn = MagicMock()
     mock_create_conn = MagicMock(return_value=mock_conn)
-    monkeypatch.setattr('src.supabase_pydantic.utils.db.create_connection', mock_create_conn)
+    monkeypatch.setattr('src.supabase_pydantic.db.postgres.create_connection', mock_create_conn)
     return mock_create_conn
 
 

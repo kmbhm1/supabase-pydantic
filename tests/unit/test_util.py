@@ -3,21 +3,23 @@ from unittest.mock import call, mock_open, patch
 
 import pytest
 
-from src.supabase_pydantic.core.constants import FrameWorkType, OrmType, WriterConfig
-from src.supabase_pydantic.core.utils import (
+from src.supabase_pydantic.db.constants import FrameWorkType, OrmType, WriterConfig
+from src.supabase_pydantic.utils.types import (
+    get_enum_member_from_string,
+    get_pydantic_type,
+    get_sqlalchemy_type,
+    local_default_env_configuration,
+    to_pascal_case,
+)
+from src.supabase_pydantic.utils.io import (
     chunk_text,
     clean_directories,
     clean_directory,
     create_directories_if_not_exist,
-    get_enum_member_from_string,
-    get_pydantic_type,
-    get_sqlalchemy_type,
-    get_standard_jobs,
     get_working_directories,
-    local_default_env_configuration,
-    to_pascal_case,
 )
-from src.supabase_pydantic.writers.util import get_latest_filename, write_seed_file
+from src.supabase_pydantic.utils.config import get_standard_jobs
+from src.supabase_pydantic.core.writers.util import get_latest_filename, write_seed_file
 
 
 def test_to_pascal_case():

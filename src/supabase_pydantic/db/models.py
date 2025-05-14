@@ -2,8 +2,8 @@ import json
 from dataclasses import asdict, dataclass, field
 from typing import Literal
 
-from src.supabase_pydantic.utils.constants import CONSTRAINT_TYPE_MAP, OrmType, RelationType
-from src.supabase_pydantic.utils.util import get_pydantic_type, get_sqlalchemy_type
+from src.supabase_pydantic.db.constants import CONSTRAINT_TYPE_MAP, OrmType, RelationType
+from src.supabase_pydantic.utils.types import get_pydantic_type, get_sqlalchemy_type
 
 
 @dataclass
@@ -137,11 +137,11 @@ class ColumnInfo(AsDictParent):
 
     def is_user_defined_type(self) -> bool:
         """Check if the column is a user-defined type."""
-        return bool(self.user_defined_values)
+        return self.post_gres_datatype.lower() in ('user-defined',)
 
     def nullable(self) -> bool:
         """Check if the column is nullable."""
-        return bool(self.is_nullable)
+        return self.is_nullable is True
 
 
 @dataclass
@@ -179,7 +179,7 @@ class RelationshipInfo(AsDictParent):
 
 
 @dataclass
-class TableInfo:
+class TableInfo(AsDictParent):
     name: str
     schema: str = 'public'
     table_type: Literal['BASE TABLE', 'VIEW'] = 'BASE TABLE'

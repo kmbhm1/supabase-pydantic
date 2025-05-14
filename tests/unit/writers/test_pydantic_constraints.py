@@ -1,7 +1,7 @@
 import pytest
 
-from src.supabase_pydantic.core.models import ColumnInfo, TableInfo
-from src.supabase_pydantic.writers.pydantic_writers import PydanticFastAPIClassWriter
+from src.supabase_pydantic.db.models import ColumnInfo, TableInfo
+from src.supabase_pydantic.core.writers.pydantic_writers import PydanticFastAPIClassWriter
 
 
 @pytest.fixture

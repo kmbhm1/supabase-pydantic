@@ -1,7 +1,7 @@
 import pytest
 
-from src.supabase_pydantic.core.constants import RelationType, WriterClassType
-from src.supabase_pydantic.core.models import (
+from src.supabase_pydantic.db.constants import RelationType, WriterClassType
+from src.supabase_pydantic.db.models import (
     ColumnInfo,
     ConstraintInfo,
     EnumInfo,
@@ -9,7 +9,7 @@ from src.supabase_pydantic.core.models import (
     RelationshipInfo,
     TableInfo,
 )
-from src.supabase_pydantic.writers.pydantic_writers import PydanticFastAPIClassWriter, PydanticFastAPIWriter
+from src.supabase_pydantic.core.writers.pydantic_writers import PydanticFastAPIClassWriter, PydanticFastAPIWriter
 
 
 @pytest.fixture

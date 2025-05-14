@@ -1,7 +1,7 @@
 import json
 
-from src.supabase_pydantic.core.constants import OrmType
-from src.supabase_pydantic.core.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
+from src.supabase_pydantic.db.constants import OrmType
+from src.supabase_pydantic.db.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo
 
 
 def test_ConstraintInfo_methods():

@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from src.supabase_pydantic.core.constants import WriterClassType
-from src.supabase_pydantic.writers.util import (
+from src.supabase_pydantic.db.constants import WriterClassType
+from src.supabase_pydantic.core.writers.util import (
     generate_unique_filename,
     get_base_class_post_script,
     get_section_comment,

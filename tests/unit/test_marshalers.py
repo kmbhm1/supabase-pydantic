@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 import logging
 
-from src.supabase_pydantic.core.constants import RelationType
-from src.supabase_pydantic.core.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
-from src.supabase_pydantic.core.marshalers import (
+from src.supabase_pydantic.db.constants import RelationType
+from src.supabase_pydantic.db.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from src.supabase_pydantic.db.marshaler import (
     add_constraints_to_table_details,
     add_foreign_key_info_to_table_details,
     add_relationships_to_table_details,

@@ -4,21 +4,25 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.supabase_pydantic.core.constants import RelationType
-from src.supabase_pydantic.core.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
-from src.supabase_pydantic.core.formatters import (
+from src.supabase_pydantic.db.constants import RelationType
+from src.supabase_pydantic.db.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+
+# Import from new locations after refactoring
+from src.supabase_pydantic.db.graph import (
     build_dependency_graph,
-    format_with_ruff,
-    generate_seed_data,
-    pick_random_foreign_key,
     reorganize_tables_by_relationships,
     separate_tables_list_by_type,
     sort_tables_by_in_degree,
     sort_tables_for_insert,
     topological_sort,
+)
+from src.supabase_pydantic.db.seed.generator import (
+    generate_seed_data,
+    pick_random_foreign_key,
     total_possible_combinations,
     unique_data_rows,
 )
+from src.supabase_pydantic.utils.formatting import format_with_ruff
 
 
 def test_format_with_ruff_failure_fails_silently(mocker, capsys):
@@ -527,6 +531,6 @@ def test_unique_data_rows_with_foreign_keys():
             )
         ],
     )
-    with patch('src.supabase_pydantic.utils.sorting.pick_random_foreign_key', return_value=1):
+    with patch('src.supabase_pydantic.db.seed.generator.pick_random_foreign_key', return_value=1):
         result = unique_data_rows(table, remember_fn=Mock())
     assert len(result) == 2  # Should generate 2 rows, one for each name

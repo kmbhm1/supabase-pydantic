@@ -2,11 +2,11 @@ from typing import Any
 
 from inflection import pluralize
 
-from src.supabase_pydantic.utils.constants import RelationType, WriterClassType
-from src.supabase_pydantic.utils.dataclasses import ColumnInfo, SortedColumns, TableInfo
-from src.supabase_pydantic.utils.util import get_sqlalchemy_v2_type, to_pascal_case
-from src.supabase_pydantic.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
-from src.supabase_pydantic.writers.util import get_section_comment
+from supabase_pydantic.util.constants import RelationType, WriterClassType
+from supabase_pydantic.util.dataclasses import ColumnInfo, SortedColumns, TableInfo
+from supabase_pydantic.util.util import get_sqlalchemy_v2_type, to_pascal_case
+from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
+from supabase_pydantic.util.writers.util import get_section_comment
 
 # FastAPI
 

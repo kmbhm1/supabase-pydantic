@@ -1,10 +1,10 @@
 import pytest
 
-from src.supabase_pydantic.core.constants import FrameWorkType, OrmType
-from src.supabase_pydantic.core.models import TableInfo
-from src.supabase_pydantic.writers.factories import FileWriterFactory  # Updated import path
-from src.supabase_pydantic.writers.pydantic_writers import PydanticFastAPIWriter
-from src.supabase_pydantic.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
+from src.supabase_pydantic.db.constants import FrameWorkType, OrmType
+from src.supabase_pydantic.db.models import TableInfo
+from src.supabase_pydantic.core.writers.factories import FileWriterFactory  # Updated import path
+from src.supabase_pydantic.core.writers.pydantic_writers import PydanticFastAPIWriter
+from src.supabase_pydantic.core.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
 
 
 @pytest.fixture

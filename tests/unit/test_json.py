@@ -3,7 +3,7 @@ import json
 from datetime import date, datetime
 
 
-from src.supabase_pydantic.core.formatters import CustomJsonEncoder
+from src.supabase_pydantic.utils.serialization import CustomJsonEncoder
 
 
 def test_encode_decimal():

@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from faker import Faker
 
-from src.supabase_pydantic.core.formatters import CustomJsonEncoder
+from src.supabase_pydantic.utils.serialization import CustomJsonEncoder
 
 faker = Faker()
 
@@ -27,7 +27,7 @@ def format_for_postgres(value: Any, data_type: str) -> str:
     # String types in PostgreSQL
     if data_type in ['char', 'varchar', 'text']:
         # Replace single quotes in the string to avoid SQL injection issues
-        value = str(value).replace("'", "\\'")
+        value = str(value).replace("'", "''")
         return f"'{value}'"
 
     # Numeric types in PostgreSQL
@@ -107,85 +107,84 @@ def guess_datetime_order(row: dict[str, tuple[int, str, Any]]) -> list[Any]:
             seconds=randint(0, 59),
         )
 
-    # Initialize group dict with each column's value and group
-    grouped = {}
-    output_values = []
+    # Create a mapping of datetime group to actual datetime
+    datetime_map = {
+        'dob': dob_date,
+        'created': base_time,
+        'published': base_time + _time_step(),
+        'modified': base_time + _time_step() + _time_step(),
+        'accessed': base_time + _time_step() + _time_step() + _time_step(),
+        'updated': base_time + _time_step() + _time_step() + _time_step() + _time_step(),
+        'inserted': base_time,
+        'started': base_time,
+        'completed': base_time + _time_step() + _time_step(),
+        'archived': base_time + _time_step() + _time_step() + _time_step(),
+        'logging': base_time + _time_step(),
+        'deleted': base_time + _time_step() + _time_step() + _time_step() + _time_step(),
+        'expired': base_time + _time_step() + _time_step() + _time_step(),
+        'hired': base_time,
+        'termination': base_time + _time_step() + _time_step() + _time_step(),
+    }
 
-    # Prepare list of values to be returned, initialized to None
-    for order, (col_name, (col_order, col_type, col_value)) in enumerate(row.items()):
-        output_values.append(None)
-
-    # Sort values by their group and add to output list
-    for col_name, (col_order, col_type, col_value) in row.items():
-        # Check if this column is a datetime column and assign to appropriate group
-        if col_type in postgres_date_datatypes:
-            # Determine the group by matching the column name against the group patterns
-            group = None
-            for pattern, group_name in datetime_groups:
+    result = []
+    for col_name, (order, data_type, value) in row.items():
+        # Assign datetimes to columns based on their names, default is base_time
+        if data_type in postgres_date_datatypes:
+            for pattern, group in datetime_groups:
                 if re.search(pattern, col_name, re.IGNORECASE):
-                    group = group_name
+                    value = datetime_map[group]
                     break
+            else:  # If no pattern matched
+                value = base_time
 
-            # If no match found, keep the column in its original place
-            if group is None:
-                output_values[col_order] = format_for_postgres(col_value, col_type)
-                continue
+        result.append((order, value))
 
-            # Add to group dictionary
-            if group not in grouped:
-                grouped[group] = []
-            grouped[group].append((col_order, col_type, col_value))
-
-    # Process DOB group first if exists
-    if 'dob' in grouped:
-        for col_order, col_type, _ in grouped['dob']:
-            output_values[col_order] = format_for_postgres(dob_date, col_type)
-
-    # Process other groups in order
-    current_time = base_time
-    for group_name, group_items in grouped.items():
-        if group_name == 'dob':
-            continue  # Already processed
-
-        for col_order, col_type, _ in group_items:
-            output_values[col_order] = format_for_postgres(current_time, col_type)
-
-        # Increment time for next group
-        current_time += _time_step()
-
-    return output_values
+    # Sort by order and extract just the values
+    return [value for _, value in sorted(result, key=lambda x: x[0])]
 
 
 def guess_and_generate_fake_data(
     column_name: str, faker: Faker = faker, data_type: Literal['int', 'float', 'bool', 'str'] | None = None
 ) -> Any:
     """Guess the data type based on the column name and generate fake data."""
-    # Define patterns for different data types and the corresponding faker method
+    # Define patterns to match against column names
     patterns = {
-        'id': (r'^id$|_id$', lambda: faker.random_number(digits=5)),
-        'name': (r'name', faker.name),
+        'id': (r'^id$|.*_id$', faker.random_number),
         'first_name': (r'first.*name', faker.first_name),
         'last_name': (r'last.*name', faker.last_name),
+        'name': (r'^name$', faker.name),
         'username': (r'username', faker.user_name),
         'email': (r'email', faker.email),
+        'company_email': (r'company.*email', faker.company_email),
+        'password': (r'password', faker.password),
+        'phone': (r'phone', faker.phone_number),
+        'code': (r'code', faker.currency_code),
         'address': (r'address', faker.address),
         'street': (r'street', faker.street_address),
         'city': (r'city', faker.city),
-        'state': (r'state', faker.state),
-        'zipcode': (r'zipcode|postal_code', faker.zipcode),
+        'state': (r'state|province', faker.state),
+        'zipcode': (r'zip|postal', faker.zipcode),
         'country': (r'country', faker.country),
-        'phone': (r'phone', faker.phone_number),
-        'company': (r'company', faker.company),
-        'job': (r'job|profession|occupation', faker.job),
-        'description': (r'description|summary|detail', faker.text),
-        'title': (r'title', faker.sentence),
-        'content': (r'content|body', faker.paragraph),
-        'created_at': (r'created_at', faker.date_time),
-        'updated_at': (r'updated_at', faker.date_time),
-        'birthdate': (r'birthdate|dob|birth_date', faker.date_of_birth),
-        'password': (r'password', faker.password),
-        'website': (r'website', faker.url),
-        'ip_address': (r'ip.*address', faker.ipv4),
+        'company': (r'company|business', faker.company),
+        'job': (r'job|position|title', faker.job),
+        'description': (r'description|overview|summary', faker.text),
+        'date': (r'date', faker.date_this_decade),
+        'birthday': (r'bday|birthday|birth.*date|dob', faker.date_of_birth),
+        'timestamp': (r'timestamp|datetime', faker.date_time_this_year),
+        'category': (r'category', faker.word),
+        'tag': (r'tag', faker.word),
+        'amount': (r'amount|price|cost', faker.pydecimal),
+        'quantity': (r'quantity|count', faker.random_number),
+        'status': (r'status', lambda: faker.random_element(['active', 'inactive', 'pending'])),
+        'avatar': (r'avatar|picture|profile.*image', faker.image_url),
+        'token': (r'token|api_key', faker.sha256),
+        'age': (r'age', lambda: faker.random_int(min=18, max=90)),
+        'gender': (r'gender', lambda: faker.random_element(['M', 'F', 'O'])),
+        'language': (r'language', faker.language_name),
+        'currency': (r'currency', faker.currency_name),
+        'tweet': (r'tweet|post|message', faker.paragraph),
+        'hashtag': (r'hashtag', lambda: f'#{faker.word()}'),
+        'isbn': (r'isbn', faker.isbn13),
         'domain_name': (r'domain.*name', faker.domain_name),
         'url': (r'url', faker.url),
         'image_url': (r'image.*url', faker.image_url),

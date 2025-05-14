@@ -5,13 +5,13 @@ from typing import Any
 
 from inflection import pluralize
 
-from src.supabase_pydantic.utils.constants import CUSTOM_MODEL_NAME, RelationType, WriterClassType
-from src.supabase_pydantic.utils.dataclasses import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
-from src.supabase_pydantic.utils.marshalers import column_name_reserved_exceptions, string_is_reserved
-from src.supabase_pydantic.utils.util import get_pydantic_type
-from src.supabase_pydantic.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
-from src.supabase_pydantic.writers.util import get_base_class_post_script as post
-from src.supabase_pydantic.writers.util import get_section_comment
+from src.supabase_pydantic.core.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter
+from src.supabase_pydantic.core.writers.util import get_base_class_post_script as post
+from src.supabase_pydantic.core.writers.util import get_section_comment
+from src.supabase_pydantic.db.constants import CUSTOM_MODEL_NAME, RelationType, WriterClassType
+from src.supabase_pydantic.db.marshaler import column_name_reserved_exceptions, string_is_reserved
+from src.supabase_pydantic.db.models import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
+from src.supabase_pydantic.utils.types import get_pydantic_type
 
 # FastAPI
 

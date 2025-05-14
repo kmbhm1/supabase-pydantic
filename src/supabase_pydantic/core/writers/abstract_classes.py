@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from pathlib import Path
 
-from src.supabase_pydantic.utils.constants import BASE_CLASS_POSTFIX, WriterClassType
-from src.supabase_pydantic.utils.dataclasses import TableInfo
-from src.supabase_pydantic.utils.util import to_pascal_case
-from src.supabase_pydantic.writers.util import generate_unique_filename
+from supabase_pydantic.util.constants import BASE_CLASS_POSTFIX, WriterClassType
+from supabase_pydantic.util.dataclasses import TableInfo
+from supabase_pydantic.util.util import to_pascal_case
+from supabase_pydantic.util.writers.util import generate_unique_filename
 
 
 class AbstractClassWriter(ABC):

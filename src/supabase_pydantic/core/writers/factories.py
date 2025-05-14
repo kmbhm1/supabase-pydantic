@@ -1,8 +1,8 @@
-from src.supabase_pydantic.utils.constants import FrameWorkType, OrmType
-from src.supabase_pydantic.utils.dataclasses import TableInfo
-from src.supabase_pydantic.writers.abstract_classes import AbstractFileWriter
-from src.supabase_pydantic.writers.pydantic_writers import PydanticFastAPIWriter
-from src.supabase_pydantic.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
+from supabase_pydantic.util.constants import FrameWorkType, OrmType
+from supabase_pydantic.util.dataclasses import TableInfo
+from supabase_pydantic.util.writers.abstract_classes import AbstractFileWriter
+from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter
+from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
 
 
 class FileWriterFactory:

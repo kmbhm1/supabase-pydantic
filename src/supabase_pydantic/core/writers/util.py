@@ -2,8 +2,8 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.supabase_pydantic.utils.constants import BASE_CLASS_POSTFIX, WriterClassType
-from src.supabase_pydantic.utils.util import chunk_text
+from src.supabase_pydantic.db.constants import BASE_CLASS_POSTFIX, WriterClassType
+from src.supabase_pydantic.utils.io import chunk_text
 
 
 def get_base_class_post_script(table_type: str, class_type: WriterClassType) -> str:

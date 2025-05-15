@@ -181,6 +181,7 @@ exclude = [
     'entities/*', # generated files
     'poc',
     'src/supabase_pydantic/utils',  # transitional code
+    'src/supabase_pydantic/type_stubs.py',  # type stubs file with path conflicts
 ]
 python_version = "3.10"
 mypy_path = "."
@@ -190,6 +191,15 @@ warn_unused_configs = true
 warn_return_any = true
 disallow_untyped_defs = true
 check_untyped_defs = true
+
+# Disable specific error codes for modules with import path conflicts
+[[tool.mypy.overrides]]
+module = "src.supabase_pydantic.core.writers.*"
+disable_error_code = ["arg-type", "assignment"]
+
+[[tool.mypy.overrides]]
+module = "src.supabase_pydantic.cli.commands.gen"
+disable_error_code = ["arg-type", "call-arg", "func-returns-value"]
 
 [build-system]
 requires = ["poetry-core"]

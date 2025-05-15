@@ -184,7 +184,7 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
         fk_info = ForeignKeyInfo(
             column_name=column_name,
             constraint_name=constraint_name,
-            foreign_schema=foreign_table_key[0],
+            foreign_table_schema=foreign_table_key[0],
             foreign_table_name=foreign_table_name,
             foreign_column_name=foreign_column_name,
         )
@@ -213,10 +213,10 @@ def add_constraints_to_table_details(tables: dict, schema: str, constraints: lis
 
         # Create constraint info and add it to the table
         constraint_info = ConstraintInfo(
-            name=constraint_name,
-            type=constraint_type,
-            column_name=column_name,
-            definition=constraint_definition,
+            constraint_name=constraint_name,
+            raw_constraint_type=constraint_type,
+            constraint_definition=constraint_definition,
+            columns=[column_name],
         )
         tables[table_key].add_constraint(constraint_info)
 
@@ -243,22 +243,14 @@ def add_relationships_to_table_details(tables: dict, fk_details: list) -> None:
 
             # Create relationship info objects for both tables
             source_to_target = RelationshipInfo(
-                source_table=table.name,
-                source_schema=table.schema,
-                source_column=fk.column_name,
-                target_table=fk.foreign_table_name,
-                target_schema=fk.foreign_schema,
-                target_column=fk.foreign_column_name,
+                table_name=table.name,
+                related_table_name=fk.foreign_table_name,
                 relation_type=forward_type,
             )
 
             target_to_source = RelationshipInfo(
-                source_table=fk.foreign_table_name,
-                source_schema=fk.foreign_schema,
-                source_column=fk.foreign_column_name,
-                target_table=table.name,
-                target_schema=table.schema,
-                target_column=fk.column_name,
+                table_name=fk.foreign_table_name,
+                related_table_name=table.name,
                 relation_type=reverse_type,
             )
 
@@ -314,7 +306,15 @@ def add_user_defined_types_to_tables(tables: dict, schema: str, enum_types: list
     enums = {}
     for row in enum_types:
         enum_name, enum_values = row
-        enums[enum_name] = UserEnumType(name=enum_name, values=enum_values)
+        enums[enum_name] = UserEnumType(
+            type_name=enum_name,
+            namespace="",  # Default values for required fields
+            owner="",
+            category="",
+            is_defined=True,
+            type="e",
+            enum_values=enum_values
+        )
 
     # Add enum types to tables and columns
     for row in enum_type_mapping:
@@ -335,10 +335,17 @@ def add_user_defined_types_to_tables(tables: dict, schema: str, enum_types: list
         if data_type in enums:
             enum_info = EnumInfo(
                 name=data_type,
-                values=enums[data_type].values,
+                values=enums[data_type].enum_values,
             )
             tables[table_key].add_enum(enum_info)
-            column.user_type = UserTypeMapping(data_type=data_type, enum_type=enum_info)
+            column.user_type = UserTypeMapping(
+                column_name=column_name,
+                table_name=table_name,
+                namespace=schema,
+                type_name=data_type,
+                type_category='enum',
+                type_description='Generated enum'
+            )
 
 
 def update_columns_with_constraints(tables: dict) -> None:

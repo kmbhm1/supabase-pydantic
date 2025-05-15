@@ -23,7 +23,7 @@ from src.supabase_pydantic.db.models import TableInfo
 class PostgresAdapter:
     """Adapter for PostgreSQL database connections and operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the PostgresAdapter."""
         self.conn = None
 
@@ -76,7 +76,9 @@ class PostgresAdapter:
         cursor = conn.cursor()
         try:
             cursor.execute(query, params)
-            return cursor.fetchall()
+            results = cursor.fetchall()
+            # Ensure we return a list of tuples as specified in the return type
+            return [tuple(row) for row in results] if results else []
         except Exception as e:
             conn.rollback()
             logging.error(f'Error executing query: {query} with params {params}')

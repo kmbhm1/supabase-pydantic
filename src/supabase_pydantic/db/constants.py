@@ -85,6 +85,7 @@ class RelationType(str, Enum):
     ONE_TO_MANY = 'One-to-Many'
     MANY_TO_MANY = 'Many-to-Many'
     MANY_TO_ONE = 'Many-to-One'  # When a table has a foreign key to another table (e.g., File -> Project)
+    UNDEFINED = 'Undefined'  # Used when relationship type cannot be determined
 
 
 class ModelGenerationType(str, Enum):
@@ -105,74 +106,6 @@ BASE_CLASS_POSTFIX = 'BaseSchema'
 CONSTRAINT_TYPE_MAP = {'p': 'PRIMARY KEY', 'f': 'FOREIGN KEY', 'u': 'UNIQUE', 'c': 'CHECK', 'x': 'EXCLUDE'}
 USER_DEFINED_TYPE_MAP = {'d': 'DOMAIN', 'c': 'COMPOSITE', 'e': 'ENUM', 'r': 'RANGE'}
 
-PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
-    'integer': ('int', None),
-    'bigint': ('int', None),
-    'smallint': ('int', None),
-    'numeric': ('float', None),
-    'decimal': ('float', None),
-    'real': ('float', None),
-    'double precision': ('float', None),
-    'serial': ('int', None),
-    'bigserial': ('int', None),
-    'money': ('Decimal', 'from decimal import Decimal'),
-    'character varying': ('str', None),
-    'character varying(n)': ('str', None),
-    'varchar(n)': ('str', None),
-    'character(n)': ('str', None),
-    'char(n)': ('str', None),
-    'text': ('str', None),
-    'bytea': ('bytes', None),
-    'timestamp': ('datetime.datetime', 'import datetime'),
-    'timestamp with time zone': ('datetime.datetime', 'import datetime'),
-    'timestamp without time zone': ('datetime.datetime', 'import datetime'),
-    'date': ('datetime.date', 'import datetime'),
-    'time': ('datetime.time', 'import datetime'),
-    'time with time zone': ('datetime.time', 'import datetime'),
-    'interval': ('timedelta', 'from datetime import timedelta'),
-    'boolean': ('bool', None),
-    'enum': ('str', None),  # Enums need specific handling depending on their defined values
-    'point': ('Tuple[float, float]', 'from typing import Tuple'),
-    'line': ('Any', 'from typing import Any'),  # Special geometric types may need custom handling
-    'lseg': ('Any', 'from typing import Any'),
-    'box': ('Any', 'from typing import Any'),
-    'path': ('Any', 'from typing import Any'),
-    'polygon': ('Any', 'from typing import Any'),
-    'circle': ('Any', 'from typing import Any'),
-    'cidr': ('str', None),
-    'inet': ('str', None),
-    'macaddr': ('str', None),
-    'macaddr8': ('str', None),
-    'bit': ('str', None),
-    'bit varying': ('str', None),
-    'bit varying(n)': ('str', None),
-    'tsvector': ('str', None),
-    'tsquery': ('str', None),
-    'UUID': ('UUID', 'from uuid import UUID'),
-    'uuid': ('UUID', 'from uuid import UUID'),
-    'XML': ('str', None),
-    'xml': ('str', None),
-    'JSON': ('Any', 'from typing import Any'),
-    'json': ('Any', 'from typing import Any'),
-    'jsonb': ('Any', 'from typing import Any'),
-    'int4range': ('Any', 'from typing import Any'),
-    'int8range': ('Any', 'from typing import Any'),
-    'numrange': ('Any', 'from typing import Any'),
-    'tsrange': ('Any', 'from typing import Any'),
-    'tstzrange': ('Any', 'from typing import Any'),
-    'daterange': ('Any', 'from typing import Any'),
-    'ARRAY': ('List[Any]', 'from typing import List, Any'),
-    'array': ('List[Any]', 'from typing import List, Any'),
-    'USER-DEFINED': ('Any', 'from typing import Any'),
-    'user-defined': ('Any', 'from typing import Any'),
-    'DOMAIN': ('Any', 'from typing import Any'),
-    'domain': ('Any', 'from typing import Any'),
-    'COMPOSITE': ('Any', 'from typing import Any'),
-    'composite': ('Any', 'from typing import Any'),
-    'ENUM': ('Any', 'from typing import Any'),
-    'RANGE': ('Any', 'from typing import Any'),
-    'range': ('Any', 'from typing import Any'),
-}
 
 # PostgreSQL-specific constants
 # -----------------------------------------
@@ -376,6 +309,7 @@ PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'jsonb': ('dict | Json', 'from pydantic import Json'),
     'ARRAY': ('list', None),  # Generic list; specify further based on the array's element type
 }
+
 
 SQLALCHEMY_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'integer': ('Integer', 'from sqlalchemy import Integer'),

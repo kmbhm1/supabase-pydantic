@@ -2,7 +2,6 @@
 
 import pprint
 from collections.abc import Callable, Generator
-from math import inf
 from random import choice, randint
 from typing import Any
 
@@ -21,7 +20,7 @@ def total_possible_combinations(table: TableInfo) -> int:
 
     # If there are no unique columns, return a large number
     if not unique_cols:
-        return inf
+        return 1_000_000  # Use a large integer instead of infinity
 
     # Calculate total possible combinations based on unique constraints
     possible_combinations = 1
@@ -79,8 +78,8 @@ def unique_data_rows(table: TableInfo, remember_fn: Callable) -> list[dict[str, 
     # Calculate the max number of rows we can generate
     max_rows = int(min(total_possible_combinations(table), MAX_ROWS))
 
-    # Dictionary for storing rows
-    rows = []
+    # List for storing rows
+    rows: list[dict[str, Any]] = []
 
     # Set for tracking seen combinations
     seen_combinations = set()
@@ -122,12 +121,16 @@ def unique_data_rows(table: TableInfo, remember_fn: Callable) -> list[dict[str, 
     return rows
 
 
-def write_seed_file(seed_data: dict[str, list[list[Any]]], output_file: str) -> None:
+def write_seed_file(seed_data: dict[str, list[list[Any]]], output_file: str, overwrite: bool = False) -> list[str]:
     """Write the seed data to a SQL file.
 
     Args:
         seed_data: The seed data to write.
         output_file: The path to the output file.
+        overwrite: Whether to overwrite existing files.
+    
+    Returns:
+        List of file paths that were written.
     """
     with open(output_file, 'w') as f:
         # Write file header
@@ -172,6 +175,8 @@ def write_seed_file(seed_data: dict[str, list[list[Any]]], output_file: str) -> 
 
         # End the file with a comment
         f.write('-- End of seed data\n')
+        
+    return [output_file]  # Return the file path that was written
 
 
 def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:

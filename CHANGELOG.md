@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.19.4 (2025-05-22)
+
+### Bug Fixes
+
+- Incorrect tox placement in pyproject.toml
+  ([#79](https://github.com/kmbhm1/supabase-pydantic/pull/79),
+  [`5036905`](https://github.com/kmbhm1/supabase-pydantic/commit/50369058913bfca1973a62b04020316396ae8948))
+
+
 ## v0.19.3 (2025-05-22)
 
 ### Bug Fixes

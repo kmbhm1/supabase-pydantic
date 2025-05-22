@@ -9,6 +9,7 @@ from typing import Any
 
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.exceptions import RuffNotFoundError
 from supabase_pydantic.util.fake import format_for_postgres, generate_fake_data, guess_datetime_order
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -34,9 +35,7 @@ def format_with_ruff(file_path: str) -> None:
         print(e.stderr)
         print('The file was generated, but not formatted.')
     except FileNotFoundError:
-        print(f'WARNING: `ruff` command not found. Skipping formatting for {file_path}.')
-        print('To enable auto-formatting, please install ruff in your environment')
-        print('(e.g., `pip install ruff` or add it to your project dependencies).')
+        raise RuffNotFoundError(file_path=file_path)
 
 
 def build_dependency_graph(tables: list[TableInfo]) -> tuple[defaultdict[str, list[str]], dict[str, int]]:

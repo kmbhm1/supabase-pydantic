@@ -15,6 +15,7 @@ from .constants import (
 )
 from .dataclasses import AsDictParent, ColumnInfo, ForeignKeyInfo, TableInfo
 from .db import check_connection, construct_tables, create_connection, query_database
+from .exceptions import RuffNotFoundError
 from .fake import generate_fake_data
 from .json import CustomJsonEncoder
 from .sorting import (
@@ -75,4 +76,5 @@ __all__ = [
     'to_pascal_case',
     'topological_sort',
     'write_seed_file',
+    'RuffNotFoundError',
 ]

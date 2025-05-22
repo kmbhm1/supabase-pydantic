@@ -14,6 +14,7 @@ from supabase_pydantic.util import (
     AppConfig,
     DatabaseConnectionType,
     FileWriterFactory,
+    RuffNotFoundError,
     ToolConfig,
     WriterConfig,
     clean_directories,
@@ -333,13 +334,15 @@ def gen(
             logging.info(f"{job} models generated successfully for schema '{s}': {p}")
 
     # Format the generated files
-    try:
-        for p in paths:
+    # Format the generated files
+    for p in paths:
+        try:
             format_with_ruff(p)
             logging.info(f'File formatted successfully: {p}')
-    except Exception as e:
-        logging.error('An error occurred while running ruff:')
-        logging.error(str(e))
+        except RuffNotFoundError as e:
+            logging.warning(str(e))  # The exception message is already descriptive
+        except Exception as e:  # Catch any other unexpected errors during formatting
+            logging.error(f'An unexpected error occurred while formatting {p}: {str(e)}')
 
     # Generate seed data
     if create_seed_data:

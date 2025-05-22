@@ -117,10 +117,18 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       #----------------------------------------------
+      #   Build Package
+      #----------------------------------------------
+      - name: Build package
+        run: poetry build
+        if: steps.release.outputs.released == 'true'
+
+      #----------------------------------------------
       #   Publish to PyPI & GitHub Release
       #----------------------------------------------
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        if: steps.release.outputs.released == 'true'
       - name: Publish package to GitHub Release
         uses: python-semantic-release/upload-to-gh-release@v9.8.5
         if: steps.release.outputs.released == 'true'

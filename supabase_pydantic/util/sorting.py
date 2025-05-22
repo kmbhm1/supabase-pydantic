@@ -30,8 +30,13 @@ def format_with_ruff(file_path: str) -> None:
         # Finally run ruff check --fix for any remaining issues
         _ = subprocess.run(['ruff', 'check', '--fix', file_path], check=True, text=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        print('Error during Ruff processing:')
-        print(e.stderr)  # Print any error output from ruff
+        print(f'WARNING: An error occurred while trying to format {file_path} with ruff:')
+        print(e.stderr)
+        print('The file was generated, but not formatted.')
+    except FileNotFoundError:
+        print(f'WARNING: `ruff` command not found. Skipping formatting for {file_path}.')
+        print('To enable auto-formatting, please install ruff in your environment')
+        print('(e.g., `pip install ruff` or add it to your project dependencies).')
 
 
 def build_dependency_graph(tables: list[TableInfo]) -> tuple[defaultdict[str, list[str]], dict[str, int]]:

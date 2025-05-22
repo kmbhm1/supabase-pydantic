@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.19.3 (2025-05-22)
+
+### Bug Fixes
+
+- Build step in release ([#78](https://github.com/kmbhm1/supabase-pydantic/pull/78),
+  [`a5d729d`](https://github.com/kmbhm1/supabase-pydantic/commit/a5d729d63de03d8aacc3f6b4a928426a23ff824b))
+
+
 ## v0.19.2 (2025-05-22)
 
 ### Bug Fixes

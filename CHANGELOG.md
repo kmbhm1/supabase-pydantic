@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v0.19.2 (2025-05-22)
+
+### Bug Fixes
+
+- **gen**: Gracefully handle missing ruff during code generation
+  ([#77](https://github.com/kmbhm1/supabase-pydantic/pull/77),
+  [`cec7784`](https://github.com/kmbhm1/supabase-pydantic/commit/cec7784d07bce5884d3f7330f886a0c2100113cf))
+
+* fix(gen): Gracefully handle missing ruff during code generation
+
+The
+  [format_with_ruff](cci:1://file:///Users/godel/Projects/personal/supabase-pydantic/supabase_pydantic/util/sorting.py:18:0-38:83)
+  utility now catches `FileNotFoundError` if the ruff executable is not found in the environment.
+  Instead of crashing, it prints a warning and skips the formatting step.
+
+This allows the `sb-pydantic gen` command to complete successfully even when ruff (a dev dependency)
+  is not installed, improving robustness for users who install supabase-pydantic as a library.
+
+* refactor: Add RuffNotFoundError for catching in parent
+
+* fix(cli): resolve configuration loading and CLI test failures
+
+- Improve configuration loading to locate pyproject.toml in parent directories - Modify option
+  defaults to avoid Click initialization errors - Fix clean command to handle configuration properly
+  - Ensure CLI returns expected exit codes when invoked without commands - Restore expected output
+  messages for test compatibility
+
+
 ## v0.19.1 (2025-04-30)
 
 ### Bug Fixes

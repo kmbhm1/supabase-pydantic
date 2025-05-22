@@ -71,7 +71,7 @@ config_dict: AppConfig = load_config()
 # click
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.pass_context
 def cli(ctx: Any) -> None:
     """A CLI tool for generating Pydantic models from a Supabase/PostgreSQL database.
@@ -87,6 +87,11 @@ def cli(ctx: Any) -> None:
     # by means other than the `if` block below)
     ctx.ensure_object(dict)
 
+    # When invoked without a subcommand, just show help
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        return
+
 
 @cli.command('clean', short_help='Cleans generated files.')
 @click.pass_context
@@ -99,14 +104,17 @@ def cli(ctx: Any) -> None:
     required=False,
     help='The directory to clear of generated files and directories. Defaults to "entities".',
 )
-def clean(ctx: Any, directory: str) -> None:
+def clean(ctx: Any, directory: str | None) -> None:
     """Clean the project directory by removing generated files and clearing caches."""
     click.echo('Cleaning up the project...')
+    cfg_default_dir = ctx.obj.get('default_directory', 'entities')
+    actual_directory = directory if directory is not None else cfg_default_dir
+    logging.info(f'Cleaning directory: {actual_directory}')
     try:
-        directories = get_working_directories(directory, tuple(framework_choices), auto_create=False)
+        directories = get_working_directories(actual_directory, tuple(framework_choices), auto_create=False)
         clean_directories(directories)
     except (FileExistsError, FileNotFoundError):
-        click.echo(f'Directory doesn\'t exist: "{directory}". Exiting...')
+        click.echo(f'Directory doesn\'t exist: "{actual_directory}". Exiting...')
         return
     except Exception as e:
         click.echo(f'An error occurred while cleaning the project: {e}')

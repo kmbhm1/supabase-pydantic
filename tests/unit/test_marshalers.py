@@ -640,14 +640,18 @@ def test_add_user_defined_types_valid_input(
 
 
 def test_table_key_not_found(
-    mock_tables, mock_enum_types, mock_enum_type_mapping, get_enum_types_mock, get_user_type_mappings_mock
+    mock_tables, mock_enum_types, mock_enum_type_mapping, get_enum_types_mock, get_user_type_mappings_mock, capsys
 ):
     # Adjust the mapping to a non-existent table
     get_user_type_mappings_mock.return_value = [
         MagicMock(table_name='nonexistent_table', column_name='type', type_name='my_enum')
     ]
-    with pytest.raises(KeyError):
-        add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
+    add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
+    captured = capsys.readouterr()
+    # Assert that the warning message was printed
+    assert (
+        "Table key ('public', 'nonexistent_table') not found in tables for adding user-defined values" in captured.out
+    )
 
 
 def test_column_name_not_found(

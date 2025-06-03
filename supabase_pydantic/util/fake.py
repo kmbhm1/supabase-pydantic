@@ -129,7 +129,7 @@ def guess_datetime_order(row: dict[str, tuple[int, str, Any]]) -> list[Any]:
     non_datetime_fields = {key: value for key, value in row.items() if key not in modified_datetimes}
 
     # Reassemble the final list in the correct order
-    final_order = [None] * len(row)
+    final_order: list[Any] = [None] * len(row)
     for key, (order, _, value) in non_datetime_fields.items():
         final_order[order] = value
     for key, (order, _, value) in modified_datetimes.items():

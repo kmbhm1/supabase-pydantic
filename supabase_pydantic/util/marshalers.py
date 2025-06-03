@@ -406,10 +406,11 @@ def add_user_defined_types_to_tables(
                         break
             else:
                 print(
-                    f'Column name "{mapping.column_name}" not found in table columns for adding user-defined values: {table_key}'
+                    f'Column name "{mapping.column_name}" not found in table '
+                    f'columns for adding user-defined values: {table_key}'
                 )
         else:
-            print(f"Table key {table_key} not found in tables for adding user-defined values")
+            print(f'Table key {table_key} not found in tables for adding user-defined values')
 
 
 def get_unique_columns_from_constraints(constraint: ConstraintInfo) -> list[str | Any]:

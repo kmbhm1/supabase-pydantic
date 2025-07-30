@@ -461,6 +461,7 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             'from pydantic import BaseModel',
             'from pydantic import Field',
             'from pydantic.types import StringConstraints',
+            'from typing import Any',
         }
         if any([len(t.table_dependencies()) > 0 for t in self.tables]):
             imports.add('from __future__ import annotations')

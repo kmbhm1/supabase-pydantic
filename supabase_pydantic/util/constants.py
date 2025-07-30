@@ -329,7 +329,8 @@ SELECT
     c.data_type,
     c.character_maximum_length,
     t.table_type,
-    c.identity_generation
+    c.identity_generation,
+    c.udt_name
 FROM
     information_schema.columns AS c
 JOIN

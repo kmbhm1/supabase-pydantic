@@ -32,7 +32,7 @@ def column_name_is_reserved(column_name: str) -> bool:
 
 def column_name_reserved_exceptions(column_name: str) -> bool:
     """Check for select exceptions to the reserved column name check."""
-    exceptions = ['id', 'credits']
+    exceptions = ['id', 'credits', 'copyright', 'license', 'help', 'property', 'sum']
     return column_name.lower() in exceptions
 
 

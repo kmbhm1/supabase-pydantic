@@ -96,7 +96,7 @@ def get_sqlalchemy_v2_type(
 
 def get_pydantic_type(postgres_type: str, default: tuple[str, str | None] = ('Any', None)) -> tuple[str, str | None]:
     """Get the Pydantic type from the PostgreSQL type."""
-    return adapt_type_map(postgres_type, default, PYDANTIC_TYPE_MAP, is_pydantic=True)
+    return adapt_type_map(postgres_type, default, PYDANTIC_TYPE_MAP)
 
 
 # file helpers

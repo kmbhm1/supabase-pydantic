@@ -123,11 +123,19 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         if (self.class_type in [WriterClassType.INSERT, WriterClassType.UPDATE]) and c.is_identity:
             return ''
 
-        # Use enum class as type if this is an enum column, unless generate_enums is False
-        if self.generate_enums and getattr(c, 'enum_info', None) is not None and c.enum_info is not None:
-            base_type = c.enum_info.python_class_name()
+        is_array = c.datatype.startswith('list[')
+        has_enum = getattr(c, 'enum_info', None) is not None and c.enum_info is not None
+
+        if self.generate_enums and has_enum:
+            enum_type = c.enum_info.python_class_name()
+
+            if is_array:
+                base_type = f'list[{enum_type}]'
+            else:
+                base_type = enum_type
         else:
-            base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
+            # For non-enum types, use the datatype that was already processed in the marshaler
+            base_type = c.datatype
 
         # For Update models, all fields are optional
         force_optional = self.class_type == WriterClassType.UPDATE

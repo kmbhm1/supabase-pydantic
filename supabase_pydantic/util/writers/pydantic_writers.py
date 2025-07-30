@@ -126,16 +126,36 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         is_array = c.datatype.startswith('list[')
         has_enum = getattr(c, 'enum_info', None) is not None and c.enum_info is not None
 
-        if self.generate_enums and has_enum:
-            enum_type = c.enum_info.python_class_name()
+        if has_enum:
+            # Check if this is an array type in PostgreSQL (ends with [])
+            is_array_in_postgres = c.post_gres_datatype.endswith('[]')
 
-            if is_array:
-                base_type = f'list[{enum_type}]'
+            if self.generate_enums:
+                if c.enum_info is not None:
+                    enum_type = c.enum_info.python_class_name()
+                    if is_array or is_array_in_postgres:
+                        base_type = f'list[{enum_type}]'
+                    else:
+                        base_type = enum_type
+                else:
+                    base_type = 'str'
             else:
-                base_type = enum_type
+                # For enums with generation disabled, use str instead
+                if is_array or is_array_in_postgres:
+                    base_type = 'list[str]'
+                else:
+                    base_type = 'str'
         else:
-            # For non-enum types, use the datatype that was already processed in the marshaler
-            base_type = c.datatype
+            # Check if the type is in ARRAY(x) format from SQLAlchemy style
+            array_match = re.match(r'^ARRAY\(([^)]+)\)$', c.datatype)
+
+            if array_match:
+                # Convert ARRAY(x) format to list[x] format for Pydantic
+                inner_type = array_match.group(1)
+                base_type = f'list[{inner_type}]'
+            else:
+                # For non-array types, use the datatype as is
+                base_type = c.datatype
 
         # For Update models, all fields are optional
         force_optional = self.class_type == WriterClassType.UPDATE

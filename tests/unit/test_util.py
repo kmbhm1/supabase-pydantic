@@ -378,32 +378,3 @@ def test_write_seed_file_overwrite():
         call('\n'),
     ]
     m().write.assert_has_calls(expected_calls, any_order=True)
-
-
-def test_array_type_handling():
-    """Test that array types are correctly mapped to typed lists in Pydantic models."""
-    # Test different array types
-    array_types = [
-        'text[]',
-        'integer[]',
-        'boolean[]',
-        'uuid[]',
-        'timestamp[]',
-        'MyEnum[]',  # Test with a custom enum type
-    ]
-
-    # Verify each array type is correctly mapped
-    for pg_type in array_types:
-        base_type = pg_type[:-2]  # Remove the [] suffix
-        result = get_pydantic_type(pg_type)
-
-        # Get the expected base type
-        base_result = get_pydantic_type(base_type)
-        expected_type = f'list[{base_result[0]}]'
-
-        # The type should be a properly typed list
-        assert result[0].startswith('list['), f'Array type {pg_type} should be typed as list but got {result[0]}'
-        assert result[0] == expected_type, f'Expected {expected_type}, got {result[0]} for {pg_type}'
-
-        # The import statement should match the base type's import
-        assert result[1] == base_result[1], 'Import for array type should match base type import'

@@ -66,6 +66,50 @@ def parse_constraint_definition_for_fk(constraint_definition: str) -> tuple[str,
     return None
 
 
+def process_udt_field(udt_name: str, data_type: str) -> str:
+    """Process a user-defined type field."""
+    pydantic_type: str
+    is_array = udt_name.startswith('_')
+
+    if is_array:  # This is an array type
+        # Extract the element type by removing the underscore
+        element_type_name = udt_name[1:]
+
+        # Map the PostgreSQL element type to a Pydantic type
+        # First, try to find a direct mapping for the element type
+        element_type_mapping = PYDANTIC_TYPE_MAP.get(element_type_name)
+        if element_type_mapping:
+            element_pydantic_type = element_type_mapping[0]
+        else:
+            # Fall back to a heuristic mapping based on common types
+            if element_type_name in ('text', 'varchar', 'char', 'bpchar', 'name'):
+                element_pydantic_type = 'str'
+            elif element_type_name in ('int2', 'int4', 'int8', 'serial2', 'serial4', 'serial8'):
+                element_pydantic_type = 'int'
+            elif element_type_name in ('float4', 'float8', 'numeric', 'decimal'):
+                element_pydantic_type = 'float'
+            elif element_type_name == 'bool':
+                element_pydantic_type = 'bool'
+            elif element_type_name == 'uuid':
+                element_pydantic_type = 'UUID'
+            elif element_type_name in ('timestamp', 'timestamptz', 'date', 'time', 'timetz'):
+                element_pydantic_type = 'datetime'
+            elif element_type_name == 'json' or element_type_name == 'jsonb':
+                element_pydantic_type = 'dict'
+            else:
+                # For custom types like enums, use a temporary 'Any' type
+                # We'll properly handle this with enum_info later
+                element_pydantic_type = 'Any'
+
+        # Create a properly typed list
+        pydantic_type = f'list[{element_pydantic_type}]'
+    else:
+        # Regular non-array type
+        pydantic_type = PYDANTIC_TYPE_MAP.get(data_type, ('Any', 'from typing import Any'))[0]
+
+    return pydantic_type
+
+
 def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str], TableInfo]:
     """Get the table details from the column details."""
     tables = {}
@@ -80,6 +124,8 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
             max_length,
             table_type,
             identity_generation,
+            udt_name,
+            array_element_type,
         ) = row
         table_key: tuple[str, str] = (schema, table_name)
         if table_key not in tables:
@@ -88,11 +134,12 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
             name=standardize_column_name(column_name) or column_name,
             alias=get_alias(column_name),
             post_gres_datatype=data_type,
-            datatype=PYDANTIC_TYPE_MAP.get(data_type, ('Any, from typing import Any'))[0],
+            datatype=process_udt_field(udt_name, data_type),
             default=default,
             is_nullable=is_nullable == 'YES',
             max_length=max_length,
             is_identity=identity_generation is not None,
+            array_element_type=array_element_type,
         )
         tables[table_key].add_column(column_info)
 
@@ -389,6 +436,7 @@ def add_user_defined_types_to_tables(
     enums = get_enum_types(enum_types, schema)
     mappings = get_user_type_mappings(enum_type_mapping, schema)
 
+    # First, process direct enum mappings
     for mapping in mappings:
         table_key = (schema, mapping.table_name)
         enum_info = next((e for e in enums if e.type_name == mapping.type_name), None)
@@ -404,13 +452,35 @@ def add_user_defined_types_to_tables(
                                 name=enum_info.type_name, values=enum_info.enum_values, schema=schema
                             )
                         break
-            else:
-                print(
-                    f'Column name "{mapping.column_name}" not found in table '
-                    f'columns for adding user-defined values: {table_key}'
-                )
-        else:
-            print(f'Table key {table_key} not found in tables for adding user-defined values')
+
+    # Now, process array columns with enum element types
+    for table_key, table in tables.items():
+        for col in table.columns:
+            # Skip columns that already have enum_info or are not arrays
+            if col.enum_info is not None or not col.datatype.startswith('list['):
+                continue
+
+            # Check if this is an array column with array_element_type
+            if col.array_element_type:
+                # Clean up the array_element_type by removing array brackets if present
+                clean_element_type = col.array_element_type
+                if clean_element_type and clean_element_type.endswith('[]'):
+                    clean_element_type = clean_element_type[:-2]  # Remove the trailing []
+
+                for enum in enums:
+                    if enum.type_name == clean_element_type:
+                        col.enum_info = EnumInfo(name=enum.type_name, values=enum.enum_values, schema=table.schema)
+                        break
+                    else:
+                        # Check if the array_element_type is a qualified type name (schema.typename)
+                        # and extract just the type name part for comparison
+                        if '.' in clean_element_type:
+                            type_name = clean_element_type.split('.')[-1]
+                            if enum.type_name == type_name:
+                                col.enum_info = EnumInfo(
+                                    name=enum.type_name, values=enum.enum_values, schema=table.schema
+                                )
+                                break
 
 
 def get_unique_columns_from_constraints(constraint: ConstraintInfo) -> list[str | Any]:

@@ -107,6 +107,7 @@ class ColumnInfo(AsDictParent):
     constraint_definition: str | None = None
     is_identity: bool = False  # For auto-generated identity columns
     enum_info: EnumInfo | None = None  # New field for enum metadata
+    array_element_type: str | None = None  # Stores element type for array columns
 
     @property
     def has_default(self) -> bool:

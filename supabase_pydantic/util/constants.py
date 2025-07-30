@@ -329,7 +329,12 @@ SELECT
     c.data_type,
     c.character_maximum_length,
     t.table_type,
-    c.identity_generation
+    c.identity_generation,
+    c.udt_name,
+    CASE
+        WHEN c.data_type = 'ARRAY' THEN pg_catalog.format_type(pg_catalog.regtype(c.udt_name)::oid, NULL)
+        ELSE NULL
+    END as array_element_type
 FROM
     information_schema.columns AS c
 JOIN

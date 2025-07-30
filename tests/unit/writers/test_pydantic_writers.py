@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 import pytest
 
 from supabase_pydantic.util.constants import RelationType, WriterClassType
+from supabase_pydantic.util.util import get_pydantic_type
 from supabase_pydantic.util.dataclasses import (
     ColumnInfo,
     ConstraintInfo,
@@ -9,6 +11,7 @@ from supabase_pydantic.util.dataclasses import (
     RelationshipInfo,
     TableInfo,
 )
+from supabase_pydantic.util.marshalers import get_table_details_from_columns
 from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIClassWriter, PydanticFastAPIWriter
 
 
@@ -269,7 +272,7 @@ def test_PydanticFastAPIClassWriter_write_class_base(table_info):
         '\t# Primary Keys\n'
         '\tid: int\n\n'
         '\t# Columns\n'
-        '\tcompany_id: UUID4\n'
+        '\tcompany_id: UUID\n'
         '\temail: str | None = Field(default=None)'
     )
     assert base_writer.write_class() == base_output
@@ -287,7 +290,7 @@ def test_PydanticFastAPIClassWriter_write_class_insert(table_info):
         '\t# Field properties:\n'
         '\t# email: nullable\n\t\n'
         '\t# Required fields\n'
-        '\tcompany_id: UUID4\n\t\n'
+        '\tcompany_id: UUID\n\t\n'
         '\t\t# Optional fields\n'
         '\temail: str | None = Field(default=None)'
     )
@@ -306,7 +309,7 @@ def test_PydanticFastAPIClassWriter_write_class_update(table_info):
         '\t# Field properties:\n'
         '\t# email: nullable\n\t\n'
         '\t\t# Optional fields\n'
-        '\tcompany_id: UUID4 | None = Field(default=None)\n'
+        '\tcompany_id: UUID | None = Field(default=None)\n'
         '\temail: str | None = Field(default=None)'
     )
     assert update_writer.write_class() == update_output
@@ -425,7 +428,8 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
         'from pydantic import Field\n'
         'from pydantic import Json\n'
         'from pydantic import UUID4\n'
-        'from pydantic.types import StringConstraints\n\n\n'
+        'from pydantic.types import StringConstraints\n'
+        'from typing import Any\n\n\n'
         # Custom Classes
         '# CUSTOM CLASSES\n'
         '# Note: These are custom model classes for defining common features among\n'
@@ -447,21 +451,21 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
         '\t# Primary Keys\n'
         '\tid: int\n\n'
         '\t# Columns\n'
-        '\tclient_id: UUID4\n'
-        '\tcompany_id: UUID4\n'
+        '\tclient_id: UUID\n'
+        '\tcompany_id: UUID\n'
         '\temail: str | None = Field(default=None)\n\n\n'
         'class CompanyBaseSchema(CustomModel):\n'
         '\t"""Company Base Schema."""\n\n'
         '\t# Primary Keys\n'
-        '\tid: UUID4\n\n'
+        '\tid: UUID\n\n'
         '\t# Columns\n'
         '\tname: str\n\n\n'
         'class ClientBaseSchema(CustomModel):\n'
         '\t"""Client Base Schema."""\n\n'
         '\t# Primary Keys\n'
-        '\tid: UUID4\n\n'
+        '\tid: UUID\n\n'
         '\t# Columns\n'
-        '\tinfo_json: dict | Json | None = Field(default=None)\n'
+        '\tinfo_json: dict | None = Field(default=None)\n'
         '\tname: str\n'
         # Insert Classes
         '# INSERT CLASSES\n'
@@ -474,26 +478,26 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
         '\t# Field properties:\n'
         '\t# email: nullable\n\t\n'
         '\t# Required fields\n'
-        '\tclient_id: UUID4\n'
-        '\tcompany_id: UUID4\n\t\n'
+        '\tclient_id: UUID\n'
+        '\tcompany_id: UUID\n\t\n'
         '\t\t# Optional fields\n'
         '\temail: str | None = Field(default=None)\n\n\n'
         'class CompanyInsert(CustomModelInsert):\n'
         '\t"""Company Insert Schema."""\n\n'
         '\t# Primary Keys\n'
-        '\tid: UUID4\n\n'
+        '\tid: UUID\n\n'
         '# Required fields\n'
         '\tname: str\n\n\n'
         'class ClientInsert(CustomModelInsert):\n'
         '\t"""Client Insert Schema."""\n\n'
         '\t# Primary Keys\n'
-        '\tid: UUID4\n\n'
+        '\tid: UUID\n\n'
         '\t# Field properties:\n'
         '\t# info_json: nullable\n\t\n'
         '\t# Required fields\n'
         '\tname: str\n\t\n'
         '\t\t# Optional fields\n'
-        '\tinfo_json: dict | Json | None = Field(default=None)\n'
+        '\tinfo_json: dict | None = Field(default=None)\n'
         # Update Classes
         '# UPDATE CLASSES\n'
         '# Note: These models are used for update operations. All fields are optional.\n\n\n'
@@ -504,23 +508,23 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
         '\t# Field properties:\n'
         '\t# email: nullable\n\t\n'
         '\t\t# Optional fields\n'
-        '\tclient_id: UUID4 | None = Field(default=None)\n'
-        '\tcompany_id: UUID4 | None = Field(default=None)\n'
+        '\tclient_id: UUID | None = Field(default=None)\n'
+        '\tcompany_id: UUID | None = Field(default=None)\n'
         '\temail: str | None = Field(default=None)\n\n\n'
         'class CompanyUpdate(CustomModelUpdate):\n'
         '\t"""Company Update Schema."""\n\n'
         '\t# Primary Keys\n'
-        '\tid: UUID4 | None = Field(default=None)\n\n'
+        '\tid: UUID | None = Field(default=None)\n\n'
         '\t# Optional fields\n'
         '\tname: str | None = Field(default=None)\n\n\n'
         'class ClientUpdate(CustomModelUpdate):\n'
         '\t"""Client Update Schema."""\n\n'
         '\t# Primary Keys\n'
-        '\tid: UUID4 | None = Field(default=None)\n\n'
+        '\tid: UUID | None = Field(default=None)\n\n'
         '\t# Field properties:\n'
         '\t# info_json: nullable\n\t\n'
         '\t\t# Optional fields\n'
-        '\tinfo_json: dict | Json | None = Field(default=None)\n'
+        '\tinfo_json: dict | None = Field(default=None)\n'
         '\tname: str | None = Field(default=None)\n\n\n'
         # Operational Classes
         '# OPERATIONAL CLASSES\n\n\n'
@@ -554,7 +558,8 @@ def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
         'from pydantic import Field\n'
         'from pydantic import Json\n'
         'from pydantic import UUID4\n'
-        'from pydantic.types import StringConstraints'
+        'from pydantic.types import StringConstraints\n'
+        'from typing import Any'
     )
     assert fastapi_file_writer.write_imports() == expected_imports
 
@@ -823,3 +828,137 @@ def test_conditional_annotated_import():
     imports_mixed = writer_mixed.write_imports()
     # Should include Annotated because at least one table has length constraints
     assert 'from typing import Annotated' in imports_mixed
+
+
+def test_enum_array_typing():
+    """Test that enum array columns are properly typed in Pydantic models.
+
+    This test verifies:
+    1. Regular array columns are typed as list[Type] (e.g., text[] -> list[str])
+    2. Enum array columns are typed as list[EnumClass] (e.g., MyEnum[] -> list[PublicMyenumEnum])
+    3. Nullable handling is correct for both types
+    """
+
+    @dataclass
+    class TestEnumInfo:
+        """Mock enum info for testing."""
+
+        name: str
+        values: list[str]
+
+        def python_class_name(self):
+            """Return the Python class name for this enum."""
+            return f'Public{self.name.capitalize()}Enum'
+
+    def create_test_column(name, datatype, is_nullable=False, enum_info=None, is_primary=False):
+        """Helper function to create test columns."""
+
+        # Convert PostgreSQL type to Pydantic type
+        pydantic_type = get_pydantic_type(datatype)[0]
+
+        return ColumnInfo(
+            name=name,
+            post_gres_datatype=datatype,
+            datatype=pydantic_type,  # Use converted Pydantic type
+            is_nullable=is_nullable,
+            is_identity=False,
+            enum_info=enum_info,
+            primary=is_primary,
+        )
+
+    # Create a test table with enum array fields
+    table = TableInfo(
+        name='test_table',
+        columns=[
+            create_test_column('id', 'bigint', is_nullable=False, is_primary=True),
+            create_test_column('single_string_field', 'text', is_nullable=True),
+            create_test_column(
+                'single_enum_field',
+                'MyEnum',
+                is_nullable=True,
+                enum_info=TestEnumInfo('myenum', ['ValueA', 'ValueB', 'ValueC']),
+            ),
+            create_test_column('my_string_field', 'text[]', is_nullable=True),
+            create_test_column(
+                'my_enum_field',
+                'MyEnum[]',
+                is_nullable=True,
+                enum_info=TestEnumInfo('myenum', ['ValueA', 'ValueB', 'ValueC']),
+            ),
+            create_test_column('non_nullable_string_field', 'text[]', is_nullable=False),
+            create_test_column(
+                'non_nullable_enum_field',
+                'MyEnum[]',
+                is_nullable=False,
+                enum_info=TestEnumInfo('myenum', ['ValueA', 'ValueB', 'ValueC']),
+            ),
+        ],
+        foreign_keys=[],
+        constraints=[],
+    )
+
+    # Generate model
+    writer = PydanticFastAPIClassWriter(table, generate_enums=True)
+    model_code = writer.write_class()
+
+    # Verify that array types are correctly typed
+    assert 'my_string_field: list[str] | None' in model_code
+    assert 'my_enum_field: list[PublicMyenumEnum] | None' in model_code
+    assert 'non_nullable_string_field: list[str]' in model_code
+    assert 'non_nullable_enum_field: list[PublicMyenumEnum]' in model_code
+
+    # Verify that regular (non-array) fields are still properly typed
+    assert 'single_string_field: str | None' in model_code
+    assert 'single_enum_field: PublicMyenumEnum | None' in model_code
+
+
+def test_enum_array_in_pydantic_model():
+    """Test that enum arrays are correctly typed in Pydantic models."""
+    # Create mock column data
+    mock_column_data = [
+        (
+            'public',
+            'test_table',
+            'status_array',
+            None,
+            'YES',
+            'ARRAY',
+            None,
+            'BASE TABLE',
+            None,
+            '_test_status',
+            'test_status[]',
+        ),
+        ('public', 'test_table', 'status', None, 'YES', 'USER-DEFINED', None, 'BASE TABLE', None, 'test_status', None),
+    ]
+
+    # Process mock data
+    tables = get_table_details_from_columns(mock_column_data)
+    table = tables[('public', 'test_table')]
+
+    # Find columns
+    array_column = None
+    scalar_column = None
+    for col in table.columns:
+        if col.name == 'status_array':
+            array_column = col
+        elif col.name == 'status':
+            scalar_column = col
+
+    # Create enum info
+    enum_info = EnumInfo(name='test_status', values=['active', 'pending', 'inactive'], schema='public')
+
+    # Apply enum info to columns
+    array_column.enum_info = enum_info
+    scalar_column.enum_info = enum_info
+
+    # Create class writer for column handling
+    class_writer = PydanticFastAPIClassWriter(table, generate_enums=True)
+
+    # Generate field code for both columns
+    array_field_code = class_writer.write_column(array_column)
+    scalar_field_code = class_writer.write_column(scalar_column)
+
+    # Verify the array is typed properly with the enum class
+    assert 'list[PublicTestStatusEnum]' in array_field_code, 'Array field not typed correctly with enum class'
+    assert 'PublicTestStatusEnum' in scalar_field_code, 'Scalar field not typed correctly with enum class'

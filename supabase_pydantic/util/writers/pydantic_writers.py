@@ -123,11 +123,39 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         if (self.class_type in [WriterClassType.INSERT, WriterClassType.UPDATE]) and c.is_identity:
             return ''
 
-        # Use enum class as type if this is an enum column, unless generate_enums is False
-        if self.generate_enums and getattr(c, 'enum_info', None) is not None and c.enum_info is not None:
-            base_type = c.enum_info.python_class_name()
+        is_array = c.datatype.startswith('list[')
+        has_enum = getattr(c, 'enum_info', None) is not None and c.enum_info is not None
+
+        if has_enum:
+            # Check if this is an array type in PostgreSQL (ends with [])
+            is_array_in_postgres = c.post_gres_datatype.endswith('[]')
+
+            if self.generate_enums:
+                if c.enum_info is not None:
+                    enum_type = c.enum_info.python_class_name()
+                    if is_array or is_array_in_postgres:
+                        base_type = f'list[{enum_type}]'
+                    else:
+                        base_type = enum_type
+                else:
+                    base_type = 'str'
+            else:
+                # For enums with generation disabled, use str instead
+                if is_array or is_array_in_postgres:
+                    base_type = 'list[str]'
+                else:
+                    base_type = 'str'
         else:
-            base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
+            # Check if the type is in ARRAY(x) format from SQLAlchemy style
+            array_match = re.match(r'^ARRAY\(([^)]+)\)$', c.datatype)
+
+            if array_match:
+                # Convert ARRAY(x) format to list[x] format for Pydantic
+                inner_type = array_match.group(1)
+                base_type = f'list[{inner_type}]'
+            else:
+                # For non-array types, use the datatype as is
+                base_type = c.datatype
 
         # For Update models, all fields are optional
         force_optional = self.class_type == WriterClassType.UPDATE
@@ -453,6 +481,7 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             'from pydantic import BaseModel',
             'from pydantic import Field',
             'from pydantic.types import StringConstraints',
+            'from typing import Any',
         }
         if any([len(t.table_dependencies()) > 0 for t in self.tables]):
             imports.add('from __future__ import annotations')

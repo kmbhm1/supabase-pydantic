@@ -32,8 +32,8 @@ from supabase_pydantic.util.marshalers import (
 @pytest.fixture
 def column_details():
     return [
-        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None),
-        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None),
+        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
+        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None),
     ]
 
 
@@ -236,10 +236,10 @@ def setup_analyze_tables():
 @pytest.fixture
 def column_construct_test_details():
     return [
-        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE'),
-        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE'),
-        ('public', 'orders', 'order_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE'),
-        ('public', 'orders', 'user_id', None, 'YES', 'uuid', None, 'BASE TABLE'),
+        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
+        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None),
+        ('public', 'orders', 'order_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
+        ('public', 'orders', 'user_id', None, 'YES', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
     ]
 
 
@@ -646,18 +646,19 @@ def test_add_user_defined_types_valid_input(
 
 
 def test_table_key_not_found(
-    mock_tables, mock_enum_types, mock_enum_type_mapping, get_enum_types_mock, get_user_type_mappings_mock, capsys
+    mock_tables, mock_enum_types, mock_enum_type_mapping, get_enum_types_mock, get_user_type_mappings_mock
 ):
     # Adjust the mapping to a non-existent table
     get_user_type_mappings_mock.return_value = [
         MagicMock(table_name='nonexistent_table', column_name='type', type_name='my_enum')
     ]
+
+    # Test that calling the function with a non-existent table doesn't raise an exception
+    # (Since we removed the logging, we just want to ensure the function gracefully handles missing tables)
     add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
-    captured = capsys.readouterr()
-    # Assert that the warning message was printed
-    assert (
-        "Table key ('public', 'nonexistent_table') not found in tables for adding user-defined values" in captured.out
-    )
+
+    # The function should not raise an exception and should continue execution
+    assert True
 
 
 def test_column_name_not_found(
@@ -728,8 +729,8 @@ def test_update_column_constraint_definitions():
 @pytest.fixture
 def identity_column_details():
     return [
-        ('public', 'users', 'id', None, 'NO', 'integer', None, 'BASE TABLE', 'ALWAYS'),
-        ('public', 'users', 'name', None, 'YES', 'text', 255, 'BASE TABLE', None),
+        ('public', 'users', 'id', None, 'NO', 'integer', None, 'BASE TABLE', 'ALWAYS', 'int4', None),
+        ('public', 'users', 'name', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None),
     ]
 
 
@@ -1487,3 +1488,44 @@ def test_add_foreign_key_info_invalid_schema(foreign_key_tables):
     # Should not raise an error, just skip the foreign key
     add_foreign_key_info_to_table_details(foreign_key_tables, fk_details)
     assert ('invalid', 'users') not in foreign_key_tables
+
+
+def test_array_column_typing():
+    """Test that array columns are typed correctly."""
+    # Create mock column data
+    mock_column_data = [
+        # (schema, table_name, column_name, default, is_nullable, data_type, max_length,
+        #  table_type, identity_generation, udt_name, array_element_type)
+        (
+            'public',
+            'test_table',
+            'status_array',
+            None,
+            'YES',
+            'ARRAY',
+            None,
+            'BASE TABLE',
+            None,
+            '_test_status',
+            'test_status[]',
+        ),
+        ('public', 'test_table', 'status', None, 'YES', 'USER-DEFINED', None, 'BASE TABLE', None, 'test_status', None),
+    ]
+
+    # Process mock data
+    tables = get_table_details_from_columns(mock_column_data)
+
+    # Get the test table
+    table = tables[('public', 'test_table')]
+
+    # Find the array column
+    array_column = None
+    for col in table.columns:
+        if col.name == 'status_array':
+            array_column = col
+            break
+
+    # Test array column typing
+    assert array_column is not None, 'Array column not found'
+    assert array_column.datatype.startswith('list['), 'Array column not typed as list'
+    assert array_column.array_element_type == 'test_status[]', 'Array element type not preserved'

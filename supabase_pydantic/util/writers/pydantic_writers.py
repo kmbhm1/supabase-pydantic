@@ -123,9 +123,14 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         if (self.class_type in [WriterClassType.INSERT, WriterClassType.UPDATE]) and c.is_identity:
             return ''
 
+        # Check if this is an array type
+        is_array = c.post_gres_datatype.endswith('[]')
+
         # Use enum class as type if this is an enum column, unless generate_enums is False
         if self.generate_enums and getattr(c, 'enum_info', None) is not None and c.enum_info is not None:
             base_type = c.enum_info.python_class_name()
+            if is_array:
+                base_type = f'list[{base_type}]'
         else:
             base_type = get_pydantic_type(c.post_gres_datatype, ('str', None))[0]
 

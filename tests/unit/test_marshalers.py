@@ -317,6 +317,12 @@ def test_column_name_reserved_exceptions(column_name, expected):
         ('model_abc', 'field_model_abc'),  # Starts with 'model_'
         ('username', 'username'),  # Not a reserved name
         ('id', 'id'),  # Exception, should not be modified
+        ('credits', 'credits'),  # Business term exception, should not be modified
+        ('copyright', 'copyright'),  # Business term exception, should not be modified
+        ('license', 'license'),  # Business term exception, should not be modified
+        ('help', 'help'),  # Business term exception, should not be modified
+        ('property', 'property'),  # Business term exception, should not be modified
+        ('sum', 'sum'),  # Business term exception, should not be modified
     ],
 )
 def test_standardize_column_name(column_name, expected):

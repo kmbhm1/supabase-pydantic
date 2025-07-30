@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import pytest
 
 from supabase_pydantic.util.constants import RelationType, WriterClassType
@@ -823,3 +824,81 @@ def test_conditional_annotated_import():
     imports_mixed = writer_mixed.write_imports()
     # Should include Annotated because at least one table has length constraints
     assert 'from typing import Annotated' in imports_mixed
+
+
+def test_enum_array_typing():
+    """Test that enum array columns are properly typed in Pydantic models.
+
+    This test verifies:
+    1. Regular array columns are typed as list[Type] (e.g., text[] -> list[str])
+    2. Enum array columns are typed as list[EnumClass] (e.g., MyEnum[] -> list[PublicMyenumEnum])
+    3. Nullable handling is correct for both types
+    """
+
+    @dataclass
+    class TestEnumInfo:
+        """Mock enum info for testing."""
+
+        name: str
+        values: list[str]
+
+        def python_class_name(self):
+            """Return the Python class name for this enum."""
+            return f'Public{self.name.capitalize()}Enum'
+
+    def create_test_column(name, datatype, is_nullable=False, enum_info=None, is_primary=False):
+        """Helper function to create test columns."""
+        return ColumnInfo(
+            name=name,
+            post_gres_datatype=datatype,
+            datatype=datatype,
+            is_nullable=is_nullable,
+            is_identity=False,
+            enum_info=enum_info,
+            primary=is_primary,
+        )
+
+    # Create a test table with enum array fields
+    table = TableInfo(
+        name='test_table',
+        columns=[
+            create_test_column('id', 'bigint', is_nullable=False, is_primary=True),
+            create_test_column('single_string_field', 'text', is_nullable=True),
+            create_test_column(
+                'single_enum_field',
+                'MyEnum',
+                is_nullable=True,
+                enum_info=TestEnumInfo('myenum', ['ValueA', 'ValueB', 'ValueC']),
+            ),
+            create_test_column('my_string_field', 'text[]', is_nullable=True),
+            create_test_column(
+                'my_enum_field',
+                'MyEnum[]',
+                is_nullable=True,
+                enum_info=TestEnumInfo('myenum', ['ValueA', 'ValueB', 'ValueC']),
+            ),
+            create_test_column('non_nullable_string_field', 'text[]', is_nullable=False),
+            create_test_column(
+                'non_nullable_enum_field',
+                'MyEnum[]',
+                is_nullable=False,
+                enum_info=TestEnumInfo('myenum', ['ValueA', 'ValueB', 'ValueC']),
+            ),
+        ],
+        foreign_keys=[],
+        constraints=[],
+    )
+
+    # Generate model
+    writer = PydanticFastAPIClassWriter(table, generate_enums=True)
+    model_code = writer.write_class()
+
+    # Verify that array types are correctly typed
+    assert 'my_string_field: list[str] | None' in model_code
+    assert 'my_enum_field: list[PublicMyenumEnum] | None' in model_code
+    assert 'non_nullable_string_field: list[str]' in model_code
+    assert 'non_nullable_enum_field: list[PublicMyenumEnum]' in model_code
+
+    # Verify that regular (non-array) fields are still properly typed
+    assert 'single_string_field: str | None' in model_code
+    assert 'single_enum_field: PublicMyenumEnum | None' in model_code

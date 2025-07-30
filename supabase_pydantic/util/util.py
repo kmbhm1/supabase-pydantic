@@ -62,25 +62,16 @@ def adapt_type_map(
     postgres_type: str,
     default_type: tuple[str, str | None],
     type_map: dict[str, tuple[str, str | None]],
-    is_pydantic: bool = False,
 ) -> tuple[str, str | None]:
     """Adapt a PostgreSQL data type to a Pydantic and SQLAlchemy type."""
     array_suffix = '[]'
     if postgres_type.endswith(array_suffix):
         base_type = postgres_type[: -len(array_suffix)]
-        base_adapted_type, import_statement = type_map.get(base_type, default_type)
-
-        if is_pydantic:
-            # For Pydantic, create a properly typed list
-            adapted_type = f'list[{base_adapted_type}]'
-            # If there was an import statement for the base type, keep it
-            # No need to add List import as it's available in Python 3.9+
-        else:
-            # For SQLAlchemy, use ARRAY type
-            adapted_type = f'ARRAY({base_adapted_type})'
-            import_statement = (
-                f'{import_statement}, ARRAY' if import_statement else 'from sqlalchemy.dialects.postgresql import ARRAY'
-            )
+        sqlalchemy_type, import_statement = type_map.get(base_type, default_type)
+        adapted_type = f'ARRAY({sqlalchemy_type})'
+        import_statement = (
+            f'{import_statement}, ARRAY' if import_statement else 'from sqlalchemy.dialects.postgresql import ARRAY'
+        )
     else:
         adapted_type, import_statement = type_map.get(postgres_type, default_type)
 

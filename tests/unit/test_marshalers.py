@@ -4,7 +4,14 @@ import pytest
 import logging
 
 from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.util.dataclasses import (
+    ColumnInfo,
+    ConstraintInfo,
+    EnumInfo,
+    ForeignKeyInfo,
+    RelationshipInfo,
+    TableInfo,
+)
 from supabase_pydantic.util.marshalers import (
     add_constraints_to_table_details,
     add_foreign_key_info_to_table_details,
@@ -1529,3 +1536,93 @@ def test_array_column_typing():
     assert array_column is not None, 'Array column not found'
     assert array_column.datatype.startswith('list['), 'Array column not typed as list'
     assert array_column.array_element_type == 'test_status[]', 'Array element type not preserved'
+
+
+def test_enum_array_column_type_handling():
+    """
+    Test that enum array columns are correctly processed in add_user_defined_types_to_tables.
+
+    This test verifies:
+    1. Array columns with enum element types get proper EnumInfo assigned
+    2. Different array notation formats are properly handled
+    3. Qualified schema.type_name formats are handled correctly
+    """
+    # Setup tables with array columns using different notations
+    tables = {
+        ('public', 'items'): TableInfo(
+            name='items',
+            schema='public',
+            columns=[
+                # Standard array notation
+                ColumnInfo(
+                    name='statuses',
+                    post_gres_datatype='status_type[]',
+                    datatype='list[str]',
+                    array_element_type='status_type',
+                ),
+                # Array with explicit schema notation
+                ColumnInfo(
+                    name='colors',
+                    post_gres_datatype='app.color_type[]',
+                    datatype='list[str]',
+                    array_element_type='app.color_type',
+                ),
+                # Non-array column (should be skipped)
+                ColumnInfo(name='name', post_gres_datatype='text', datatype='str'),
+                # Array column that already has enum_info (should be skipped)
+                ColumnInfo(
+                    name='pre_processed',
+                    post_gres_datatype='size_type[]',
+                    datatype='list[str]',
+                    array_element_type='size_type',
+                    enum_info=EnumInfo(name='size_type', values=['small', 'medium', 'large'], schema='app'),
+                ),
+            ],
+            foreign_keys=[],
+            relationships=[],
+        )
+    }
+
+    # Mock raw enum types data as returned from database
+    # Format: (type_name, namespace, owner, category, is_defined, typtype, enum_values)
+    enum_types = [
+        ('status_type', 'public', 'postgres', None, True, 'e', ['active', 'inactive', 'pending']),
+        ('color_type', 'public', 'postgres', None, True, 'e', ['red', 'green', 'blue']),
+        ('size_type', 'app', 'postgres', None, True, 'e', ['small', 'medium', 'large']),
+    ]
+
+    # Mock raw enum type mappings data
+    # We don't need this for our test case
+    enum_type_mapping = []
+
+    # Set schema for the test
+    schema = 'public'
+
+    # Call the function
+    add_user_defined_types_to_tables(tables, schema, enum_types, enum_type_mapping)
+
+    # Verify results
+    columns = tables[('public', 'items')].columns
+
+    # Check standard array notation column
+    assert columns[0].name == 'statuses'
+    assert columns[0].enum_info is not None
+    assert columns[0].enum_info.name == 'status_type'
+    assert columns[0].enum_info.schema == 'public'
+    assert columns[0].enum_info.values == ['active', 'inactive', 'pending']
+
+    # Check qualified schema.type_name notation column
+    assert columns[1].name == 'colors'
+    assert columns[1].enum_info is not None
+    assert columns[1].enum_info.name == 'color_type'
+    assert columns[1].enum_info.schema == 'public'
+    assert columns[1].enum_info.values == ['red', 'green', 'blue']
+
+    # Non-array column should not have enum_info
+    assert columns[2].name == 'name'
+    assert columns[2].enum_info is None
+
+    # Pre-processed column should still have its original enum_info
+    assert columns[3].name == 'pre_processed'
+    assert columns[3].enum_info is not None
+    assert columns[3].enum_info.name == 'size_type'

@@ -23,9 +23,11 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         class_type: WriterClassType = WriterClassType.BASE,
         null_defaults: bool = False,
         generate_enums: bool = True,
+        disable_model_prefix_protection: bool = False,
     ):
         super().__init__(table, class_type, null_defaults)
         self.generate_enums = generate_enums
+        self.disable_model_prefix_protection = disable_model_prefix_protection
         self.separated_columns: SortedColumns = self.table.sort_and_separate_columns(
             separate_nullable=False, separate_primary_key=True
         )
@@ -444,6 +446,32 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
 
         return '\n'.join(op_class)
 
+    def write_class(self, add_fk: bool = False) -> str:
+        """Method to write the complete class definition.
+
+        Override to add model_config for disabling protected namespaces when configured.
+        """
+        class_lines = [self.write_definition() + self.write_docs()]
+
+        # Add model_config to disable protected namespaces if configured
+        if self.disable_model_prefix_protection:
+            # Check if any original column names start with model_ (case insensitive)
+            has_model_prefix_columns = any(
+                # Check original column names that would be aliased
+                (c.alias and c.alias.lower().startswith('model_'))
+                # Or check prefixed field names that were added because the original started with model_
+                or (c.name.lower().startswith('field_model_'))
+                # Or check direct column names starting with model or model_
+                or (c.name.lower().startswith('model'))
+                for c in self.table.columns
+            )
+
+            if has_model_prefix_columns:
+                class_lines.append('\tmodel_config = ConfigDict(protected_namespaces=())\n\n')
+
+        class_lines.append(self.write_columns(add_fk))
+        return ''.join(class_lines)
+
 
 class PydanticFastAPIWriter(AbstractFileWriter):
     def __init__(
@@ -454,16 +482,20 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         add_null_parent_classes: bool = False,
         generate_crud_models: bool = True,
         generate_enums: bool = True,
+        disable_model_prefix_protection: bool = False,
     ):
         # Developer's Note:
         # Use functools.partial to wrap the writer so that it always
         # receives the correct extra arguments, but only if the concrete
         # class supports them.
-        writer_with_enums = partial(writer, generate_enums=generate_enums)  # type: ignore
+        writer_with_options = partial(
+            writer, generate_enums=generate_enums, disable_model_prefix_protection=disable_model_prefix_protection
+        )  # type: ignore
 
-        super().__init__(tables, file_path, writer_with_enums, add_null_parent_classes)
+        super().__init__(tables, file_path, writer_with_options, add_null_parent_classes)
         self.generate_crud_models = generate_crud_models
         self.generate_enums = generate_enums
+        self.disable_model_prefix_protection = disable_model_prefix_protection
 
     def _dt_imports(self, imports: set, default_import: tuple[Any, Any | None] = (Any, None)) -> None:
         """Update the imports with the necessary data types."""
@@ -483,6 +515,19 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             'from pydantic.types import StringConstraints',
             'from typing import Any',
         }
+
+        # Add ConfigDict import if needed for protected namespace configuration
+        if self.disable_model_prefix_protection and any(
+            any(
+                # Check columns with model_ prefix in their original name or alias
+                (c.alias and c.alias.lower().startswith('model_'))
+                or (c.name.lower().startswith('field_model_'))
+                or (c.name.lower().startswith('model_'))
+                for c in table.columns
+            )
+            for table in self.tables
+        ):
+            imports.add('from pydantic import ConfigDict')
         if any([len(t.table_dependencies()) > 0 for t in self.tables]):
             imports.add('from __future__ import annotations')
 

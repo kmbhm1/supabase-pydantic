@@ -29,6 +29,7 @@ class AppConfig(TypedDict, total=False):
     default_directory: str
     overwrite_existing_files: bool
     nullify_base_schema: bool
+    disable_model_prefix_protection: bool
 
 
 class ToolConfig(TypedDict):

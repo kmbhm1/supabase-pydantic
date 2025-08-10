@@ -25,9 +25,17 @@ def string_is_reserved(value: str) -> bool:
     return value in dir(builtins) or value in keyword.kwlist
 
 
-def column_name_is_reserved(column_name: str) -> bool:
-    """Check if the column name is a reserved keyword or built-in name or starts with model_."""
-    return string_is_reserved(column_name) or column_name.startswith('model_')
+def column_name_is_reserved(column_name: str, disable_model_prefix_protection: bool = False) -> bool:
+    """Check if the column name is a reserved keyword or built-in name or starts with model_.
+
+    If disable_model_prefix_protection is True, only check for reserved keywords, not model_ prefix.
+    """
+    if disable_model_prefix_protection:
+        # Only check if it's a reserved keyword, ignore model_ prefix
+        return string_is_reserved(column_name)
+    else:
+        # Check both reserved keywords and model_ prefix (original behavior)
+        return string_is_reserved(column_name) or column_name.startswith('model_')
 
 
 def column_name_reserved_exceptions(column_name: str) -> bool:
@@ -36,20 +44,28 @@ def column_name_reserved_exceptions(column_name: str) -> bool:
     return column_name.lower() in exceptions
 
 
-def standardize_column_name(column_name: str) -> str | None:
-    """Check if the column name is a reserved keyword or built-in name and replace it if necessary."""
+def standardize_column_name(column_name: str, disable_model_prefix_protection: bool = False) -> str | None:
+    """Check if the column name is a reserved keyword or built-in name and replace it if necessary.
+
+    If disable_model_prefix_protection is True, only process reserved keywords, not model_ prefix.
+    """
     return (
         f'field_{column_name}'
-        if column_name_is_reserved(column_name) and not column_name_reserved_exceptions(column_name)
+        if column_name_is_reserved(column_name, disable_model_prefix_protection)
+        and not column_name_reserved_exceptions(column_name)
         else column_name
     )
 
 
-def get_alias(column_name: str) -> str | None:
-    """Provide the original column name as an alias for Pydantic."""
+def get_alias(column_name: str, disable_model_prefix_protection: bool = False) -> str | None:
+    """Provide the original column name as an alias for Pydantic.
+
+    If disable_model_prefix_protection is True, don't create aliases for model_ prefixed columns.
+    """
     return (
         column_name
-        if column_name_is_reserved(column_name) and not column_name_reserved_exceptions(column_name)
+        if column_name_is_reserved(column_name, disable_model_prefix_protection)
+        and not column_name_reserved_exceptions(column_name)
         else None
     )
 
@@ -110,8 +126,18 @@ def process_udt_field(udt_name: str, data_type: str) -> str:
     return pydantic_type
 
 
-def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str], TableInfo]:
-    """Get the table details from the column details."""
+def get_table_details_from_columns(
+    column_details: list, disable_model_prefix_protection: bool = False
+) -> dict[tuple[str, str], TableInfo]:
+    """Get the table details from the column details.
+
+    Args:
+        column_details: List of column details from database query
+        disable_model_prefix_protection: If True, don't protect model_ prefixed columns
+
+    Returns:
+        Dictionary mapping schema and table names to TableInfo objects
+    """
     tables = {}
     for row in column_details:
         (
@@ -131,8 +157,8 @@ def get_table_details_from_columns(column_details: list) -> dict[tuple[str, str]
         if table_key not in tables:
             tables[table_key] = TableInfo(name=table_name, schema=schema, table_type=table_type)
         column_info = ColumnInfo(
-            name=standardize_column_name(column_name) or column_name,
-            alias=get_alias(column_name),
+            name=standardize_column_name(column_name, disable_model_prefix_protection) or column_name,
+            alias=get_alias(column_name, disable_model_prefix_protection),
             post_gres_datatype=data_type,
             datatype=process_udt_field(udt_name, data_type),
             default=default,
@@ -696,10 +722,24 @@ def construct_table_info(
     enum_types: list,
     enum_type_mapping: list,
     schema: str = 'public',
+    disable_model_prefix_protection: bool = False,
 ) -> list[TableInfo]:
-    """Construct TableInfo objects from column and foreign key details."""
+    """Construct TableInfo objects from column and foreign key details.
+
+    Args:
+        column_details: List of column details from database query
+        fk_details: List of foreign key details
+        constraints: List of constraints
+        enum_types: List of enum types
+        enum_type_mapping: List of enum type mappings
+        schema: Database schema name
+        disable_model_prefix_protection: If True, don't prefix model_ fields
+
+    Returns:
+        List of TableInfo objects
+    """
     # Construct table information
-    tables = get_table_details_from_columns(column_details)
+    tables = get_table_details_from_columns(column_details, disable_model_prefix_protection)
     add_foreign_key_info_to_table_details(tables, fk_details)
     add_constraints_to_table_details(tables, schema, constraints)
     add_relationships_to_table_details(tables, fk_details)

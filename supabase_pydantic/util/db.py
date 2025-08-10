@@ -104,7 +104,10 @@ class DBConnection:
 
 
 def construct_tables(
-    conn_type: DatabaseConnectionType, schemas: tuple[str, ...] = ('public',), **kwargs: Any
+    conn_type: DatabaseConnectionType,
+    schemas: tuple[str, ...] = ('public',),
+    disable_model_prefix_protection: bool = False,
+    **kwargs: Any,
 ) -> dict[str, list[TableInfo]]:
     """Construct table information from database."""
     assert kwargs, 'Invalid or empty connection parameters.'
@@ -136,7 +139,13 @@ def construct_tables(
 
                 # Construct table info for the current schema
                 tables_info = construct_table_info(
-                    column_details, fk_details, constraints, enum_types, enum_type_mapping, n
+                    column_details,
+                    fk_details,
+                    constraints,
+                    enum_types,
+                    enum_type_mapping,
+                    n,
+                    disable_model_prefix_protection=disable_model_prefix_protection,
                 )
                 all_tables_info[n] = tables_info
 

@@ -235,6 +235,13 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     help='Do not generate Enum classes for enum columns (default: enums are generated).',
 )
 @click.option(
+    '--disable-model-prefix-protection',
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help='Disable Pydantic\'s "model_" prefix protection to allow fields with "model_" prefix without aliasing.',
+)
+@click.option(
     '--debug/--no-debug',
     is_flag=True,
     default=False,
@@ -255,6 +262,7 @@ def gen(
     # project_id: str | None = None,
     no_crud_models: bool = False,
     no_enums: bool = False,
+    disable_model_prefix_protection: bool = False,
     debug: bool = False,
 ) -> None:
     """Generate models from a PostgreSQL database."""
@@ -303,7 +311,12 @@ def gen(
     # Get the database schema and table details
     # Determine schemas to process
     schemas = ('*',) if all_schemas else tuple(schema)  # Use '*' as an indicator to fetch all schemas
-    table_dict = construct_tables(conn_type=conn_type, schemas=schemas, **env_vars)
+    table_dict = construct_tables(
+        conn_type=conn_type,
+        schemas=schemas,
+        disable_model_prefix_protection=disable_model_prefix_protection,
+        **env_vars
+    )
 
     schemas_with_no_tables = [k for k, v in table_dict.items() if len(v) == 0]
     if len(schemas_with_no_tables) > 0:
@@ -337,6 +350,7 @@ def gen(
                 add_null_parent_classes=null_parent_classes,
                 generate_crud_models=not no_crud_models,
                 generate_enums=not no_enums,
+                disable_model_prefix_protection=disable_model_prefix_protection,
             ).save(overwrite)
             paths += [p, vf] if vf is not None else [p]
             logging.info(f"{job} models generated successfully for schema '{s}': {p}")

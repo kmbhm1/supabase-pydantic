@@ -315,7 +315,7 @@ def gen(
         conn_type=conn_type,
         schemas=schemas,
         disable_model_prefix_protection=disable_model_prefix_protection,
-        **env_vars
+        **env_vars,
     )
 
     schemas_with_no_tables = [k for k, v in table_dict.items() if len(v) == 0]

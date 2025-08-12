@@ -4,18 +4,31 @@ from unittest.mock import call, mock_open, patch
 import pytest
 
 from supabase_pydantic.util.constants import FrameWorkType, OrmType, WriterConfig
-from supabase_pydantic.util.util import (
+# String utilities
+from supabase_pydantic.utils.strings import (
     chunk_text,
+    to_pascal_case,
+)
+
+# File I/O utilities
+from supabase_pydantic.utils.io import (
     clean_directories,
     clean_directory,
     create_directories_if_not_exist,
+    get_working_directories,
+)
+
+# Type utilities
+from supabase_pydantic.utils.types import (
     get_enum_member_from_string,
     get_pydantic_type,
     get_sqlalchemy_type,
+)
+
+# Configuration utilities
+from supabase_pydantic.utils.config import (
     get_standard_jobs,
-    get_working_directories,
     local_default_env_configuration,
-    to_pascal_case,
 )
 from supabase_pydantic.util.writers.util import get_latest_filename, write_seed_file
 

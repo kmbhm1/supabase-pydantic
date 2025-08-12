@@ -297,7 +297,7 @@ commands =
 
 [tool.pytest.ini_options]
 pythonpath = [
-    ".",
+    "src",
 ]
 log_level = "INFO"
 [tool.coverage]

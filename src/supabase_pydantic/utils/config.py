@@ -1,3 +1,7 @@
+from supabase_pydantic.core.config import WriterConfig
+from supabase_pydantic.core.constants import FrameWorkType, OrmType
+
+
 def get_standard_jobs(
     models: tuple[str], frameworks: tuple[str], dirs: dict[str, str | None], schemas: tuple[str, ...] = ('public',)
 ) -> dict[str, dict[str, WriterConfig]]:

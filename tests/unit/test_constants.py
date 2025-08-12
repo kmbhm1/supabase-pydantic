@@ -1,6 +1,8 @@
 import re
 
-from supabase_pydantic.util.constants import POSTGRES_SQL_CONN_REGEX, FrameWorkType, OrmType, WriterConfig
+from supabase_pydantic.core.config import WriterConfig
+from supabase_pydantic.core.constants import FrameWorkType, OrmType
+from supabase_pydantic.db.constants import POSTGRES_SQL_CONN_REGEX
 
 
 def test_WriterConfig_methods():

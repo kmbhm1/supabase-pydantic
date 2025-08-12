@@ -3,7 +3,8 @@ from unittest.mock import call, mock_open, patch
 
 import pytest
 
-from supabase_pydantic.util.constants import FrameWorkType, OrmType, WriterConfig
+from supabase_pydantic.core.constants import FrameWorkType, OrmType, WriterConfig
+
 # String utilities
 from supabase_pydantic.utils.strings import (
     chunk_text,

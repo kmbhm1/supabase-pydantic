@@ -6,19 +6,21 @@ import pytest
 
 from supabase_pydantic.util.constants import RelationType
 from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
-from supabase_pydantic.util.sorting import (
+from supabase_pydantic.db.graph import (
     build_dependency_graph,
-    format_with_ruff,
-    generate_seed_data,
-    pick_random_foreign_key,
     reorganize_tables_by_relationships,
     separate_tables_list_by_type,
     sort_tables_by_in_degree,
     sort_tables_for_insert,
     topological_sort,
+)
+from supabase_pydantic.db.seed.generator import (
+    generate_seed_data,
+    pick_random_foreign_key,
     total_possible_combinations,
     unique_data_rows,
 )
+from supabase_pydantic.utils.formatting import format_with_ruff
 
 
 def test_format_with_ruff_failure_fails_silently(mocker, capsys):

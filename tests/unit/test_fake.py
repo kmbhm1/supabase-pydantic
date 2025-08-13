@@ -5,7 +5,7 @@ import pytest
 from dateutil.parser import parse
 from faker import Faker
 
-from supabase_pydantic.util.fake import (
+from supabase_pydantic.db.seed.fake import (
     generate_fake_data,
     guess_and_generate_fake_data,
     guess_datetime_order,
@@ -16,7 +16,9 @@ from supabase_pydantic.util.fake import (
 @pytest.fixture
 def fake_faker():
     """Fixture to mock Faker methods used in generate_fake_data."""
-    with patch('supabase_pydantic.util.fake.Faker') as mock_faker:  # Adjust the patch location to where Faker is used
+    with patch(
+        'supabase_pydantic.db.seed.fake.Faker'
+    ) as mock_faker:  # Adjust the patch location to where Faker is used
         fake = mock_faker.return_value
         fake.random_number.return_value = 12345
         fake.email.return_value = 'example@example.com'

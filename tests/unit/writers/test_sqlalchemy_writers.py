@@ -1,7 +1,7 @@
 import pytest
 
-from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.db.models import ColumnInfo, ConstraintInfo, RelationshipInfo, TableInfo, ForeignKeyInfo
+from supabase_pydantic.core.constants import RelationType
 from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIClassWriter, SqlAlchemyFastAPIWriter
 
 

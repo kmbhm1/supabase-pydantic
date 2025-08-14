@@ -3,35 +3,48 @@ from unittest.mock import MagicMock, patch
 import pytest
 import logging
 
-from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import (
+# Updated imports for constants
+from supabase_pydantic.db.constants import RelationType
+
+# Updated imports for models
+from supabase_pydantic.core.models import EnumInfo
+from supabase_pydantic.db.models import (
     ColumnInfo,
     ConstraintInfo,
-    EnumInfo,
     ForeignKeyInfo,
     RelationshipInfo,
     TableInfo,
 )
-from supabase_pydantic.util.marshalers import (
-    add_constraints_to_table_details,
-    add_foreign_key_info_to_table_details,
-    add_relationships_to_table_details,
-    add_user_defined_types_to_tables,
-    analyze_bridge_tables,
+
+# Updated imports for marshaler functions
+from supabase_pydantic.db.marshalers import (
+    construct_table_info,
+    standardize_column_name,
+    get_alias,
     analyze_table_relationships,
+    add_constraints_to_table_details,
+)
+from supabase_pydantic.db.marshalers.column import (
     column_name_is_reserved,
     column_name_reserved_exceptions,
-    construct_table_info,
-    get_alias,
+    string_is_reserved,
+)
+from supabase_pydantic.db.marshalers.constraints import (
+    parse_constraint_definition_for_fk,
+    update_column_constraint_definitions,
+    update_columns_with_constraints,
+)
+from supabase_pydantic.db.marshalers.relationships import (
+    add_foreign_key_info_to_table_details,
+    add_relationships_to_table_details,
+    analyze_bridge_tables,
+    is_bridge_table,
+)
+from supabase_pydantic.db.marshalers.schema import (
     get_enum_types,
     get_table_details_from_columns,
     get_user_type_mappings,
-    is_bridge_table,
-    parse_constraint_definition_for_fk,
-    standardize_column_name,
-    string_is_reserved,
-    update_column_constraint_definitions,
-    update_columns_with_constraints,
+    add_user_defined_types_to_tables,
 )
 
 

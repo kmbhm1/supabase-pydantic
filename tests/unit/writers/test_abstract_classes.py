@@ -3,7 +3,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Import the abstract classes
-from supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter, TableInfo
+from supabase_pydantic.core.writers.abstract import AbstractClassWriter, AbstractFileWriter
+from supabase_pydantic.db.models import TableInfo
 
 
 class ConcreteClassWriter(AbstractClassWriter):

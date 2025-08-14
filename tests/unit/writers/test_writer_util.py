@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from supabase_pydantic.util.constants import WriterClassType
-from supabase_pydantic.util.writers.util import (
+from supabase_pydantic.core.constants import WriterClassType
+from supabase_pydantic.core.writers.utils import (
     generate_unique_filename,
     get_base_class_post_script,
     get_section_comment,
@@ -30,7 +30,7 @@ def test_generate_unique_filename():
     extension = '.py'
     directory = '/fake/directory'
 
-    with patch('os.path.exists', side_effect=lambda x: x.endswith('test.py') or x.endswith('test_1.py')) as mock_exists:
+    with patch('os.path.exists', side_effect=lambda x: x.endswith('test.py') or x.endswith('test_1.py')) as _:
         unique_filename = generate_unique_filename(base_name, extension, directory)
         match = re.search(r'test_(\d{20})\.py$', unique_filename)
         assert match is not None, f'Filename does not match the expected pattern: {unique_filename}'

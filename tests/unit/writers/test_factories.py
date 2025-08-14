@@ -1,10 +1,10 @@
 import pytest
 
-from supabase_pydantic.util.constants import FrameWorkType, OrmType
-from supabase_pydantic.util.dataclasses import TableInfo
-from supabase_pydantic.util.writers.factories import FileWriterFactory  # Make sure the import path is correct
-from supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter
-from supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
+from supabase_pydantic.db.models import TableInfo
+from supabase_pydantic.core.constants import FrameWorkType, OrmType
+from supabase_pydantic.core.writers.factories import FileWriterFactory
+from supabase_pydantic.core.writers.pydantic_writers import PydanticFastAPIWriter
+from supabase_pydantic.core.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter
 
 
 @pytest.fixture

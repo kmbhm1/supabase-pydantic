@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from datetime import datetime, timedelta
 from random import randint, random
@@ -8,6 +9,10 @@ from faker import Faker
 
 from supabase_pydantic.utils.serialization import CustomJsonEncoder
 
+# Get Logger
+logger = logging.getLogger(__name__)
+
+# Setup Faker seed
 faker = Faker()
 
 
@@ -218,8 +223,8 @@ def guess_and_generate_fake_data(
                     elif data_type == 'str':
                         return str(data)
                 except ValueError as e:
-                    print(f'Error converting data_type "{data_type}" with data "{data}"')
-                    print(f'Error: {e}')
+                    logger.error(f'Error converting data_type "{data_type}" with data "{data}"')
+                    logger.error(f'Error: {e}')
                     return data  # Return original data if conversion fails
             return data
 

@@ -1,7 +1,11 @@
+import logging
 from collections import defaultdict
 
 from supabase_pydantic.db.constants import RelationType
 from supabase_pydantic.db.models import RelationshipInfo, TableInfo
+
+# Get Logger
+logger = logging.getLogger(__name__)
 
 
 def build_dependency_graph(tables: list[TableInfo]) -> tuple[defaultdict[str, list[str]], dict[str, int]]:
@@ -74,7 +78,7 @@ def separate_tables_list_by_type(tables: list[TableInfo], table_list: list[str])
     for t in table_list:
         table = next((table for table in tables if table.name == t), None)
         if table is None:
-            print(f'Could not find table {t}')
+            logger.warning(f'Could not find table {t}')
             continue
 
         if table.table_type != 'VIEW':

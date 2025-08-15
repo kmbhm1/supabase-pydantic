@@ -13,7 +13,8 @@ from supabase_pydantic.db.constants import RelationType
 from supabase_pydantic.db.marshalers.column import column_name_reserved_exceptions, string_is_reserved
 from supabase_pydantic.db.models import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo, get_pydantic_type
 
-# FastAPI
+# Get Logger
+logger = logging.getLogger(__name__)
 
 
 class PydanticFastAPIClassWriter(AbstractClassWriter):
@@ -320,13 +321,13 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             base_field_name = x.foreign_table_name.lower()
 
             # Determine type hint and field name based on relationship type
-            logging.debug('=' * 80)
-            logging.debug(f'Processing foreign key {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
-            logging.debug(f'  Relationship type from analysis: {x.relation_type}')
-            logging.debug('  Foreign key details:')
-            logging.debug(f'    Column name: {x.column_name}')
-            logging.debug(f'    Foreign table: {x.foreign_table_name}')
-            logging.debug(f'    Foreign column: {x.foreign_column_name}')
+            logger.debug('=' * 80)
+            logger.debug(f'Processing foreign key {x.column_name} -> {x.foreign_table_name}.{x.foreign_column_name}')
+            logger.debug(f'  Relationship type from analysis: {x.relation_type}')
+            logger.debug('  Foreign key details:')
+            logger.debug(f'    Column name: {x.column_name}')
+            logger.debug(f'    Foreign table: {x.foreign_table_name}')
+            logger.debug(f'    Foreign column: {x.foreign_column_name}')
 
             # Handle relationships based on whether we're looking at the source or target table
             # Source table = table that has the foreign key (e.g., file has project_id)
@@ -339,9 +340,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             table_name = self.table.name.lower()
             we_have_foreign_key = x.column_name.endswith('_id')
 
-            logging.debug('  Current context:')
-            logging.debug(f'    Table being generated: {table_name}')
-            logging.debug(f'    We have foreign key: {we_have_foreign_key} (column ends with _id)')
+            logger.debug('  Current context:')
+            logger.debug(f'    Table being generated: {table_name}')
+            logger.debug(f'    We have foreign key: {we_have_foreign_key} (column ends with _id)')
 
             # Check if this is a self-referential relationship
             is_self_ref = x.foreign_table_name.lower() == table_name
@@ -359,7 +360,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
                 # ONE_TO_ONE is symmetric, so it's the same from both sides
                 type_hint = target_type
                 field_name = base_field_name
-                logging.debug(f'  Using ONE_TO_ONE: {field_name}: {type_hint}')
+                logger.debug(f'  Using ONE_TO_ONE: {field_name}: {type_hint}')
             elif x.relation_type == RelationType.MANY_TO_ONE:
                 if we_have_foreign_key:
                     # We have a foreign key pointing to another table
@@ -367,31 +368,31 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
                     # So we reference a single instance
                     type_hint = target_type
                     field_name = base_field_name
-                    logging.debug(f'  Using MANY_TO_ONE (we have the foreign key): {field_name}: {type_hint}')
+                    logger.debug(f'  Using MANY_TO_ONE (we have the foreign key): {field_name}: {type_hint}')
                 else:
                     # Another table has a foreign key pointing to us
                     # e.g., Project being referenced by File.project_id
                     # So we'll have many records pointing to us
                     type_hint = f'list[{target_type}]'
                     field_name = pluralize(base_field_name)
-                    logging.debug(f'  Using ONE_TO_MANY (they have the foreign key): {field_name}: {type_hint}')
+                    logger.debug(f'  Using ONE_TO_MANY (they have the foreign key): {field_name}: {type_hint}')
             elif x.relation_type == RelationType.ONE_TO_MANY:
                 if we_have_foreign_key:
                     # We have a foreign key pointing to another table
                     # So we reference a single instance
                     type_hint = target_type
                     field_name = base_field_name
-                    logging.debug(f'  Using MANY_TO_ONE (we have the foreign key): {field_name}: {type_hint}')
+                    logger.debug(f'  Using MANY_TO_ONE (we have the foreign key): {field_name}: {type_hint}')
                 else:
                     # Another table has a foreign key pointing to us
                     # So we'll have many records pointing to us
                     type_hint = f'list[{target_type}]'
                     field_name = pluralize(base_field_name)
-                    logging.debug(f'  Using ONE_TO_MANY (they have the foreign key): {field_name}: {type_hint}')
+                    logger.debug(f'  Using ONE_TO_MANY (they have the foreign key): {field_name}: {type_hint}')
             else:  # MANY_TO_MANY
                 type_hint = f'list[{target_type}]'
                 field_name = pluralize(base_field_name)
-                logging.debug(f'  Using list type: {field_name}: {type_hint}')
+                logger.debug(f'  Using list type: {field_name}: {type_hint}')
 
             return f'{field_name}: {type_hint} | None = Field(default=None)'
 

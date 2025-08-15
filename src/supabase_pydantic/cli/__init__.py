@@ -6,6 +6,7 @@ import click
 
 from supabase_pydantic.cli.commands.clean import clean
 from supabase_pydantic.cli.commands.gen import gen
+from supabase_pydantic.utils.logging import setup_logging
 
 
 @click.group(invoke_without_command=True)
@@ -20,6 +21,10 @@ def cli(ctx: Any) -> None:
 
     Stay tuned!
     """
+    # Initialize logging globally (defaults to INFO). Individual commands may
+    # reconfigure (e.g., --debug) if needed.
+    setup_logging(False)
+
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
     ctx.ensure_object(dict)

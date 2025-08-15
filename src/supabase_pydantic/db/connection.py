@@ -17,6 +17,9 @@ from supabase_pydantic.db.exceptions import ConnectionError
 from supabase_pydantic.db.marshalers.schema import construct_table_info
 from supabase_pydantic.db.models import TableInfo
 
+# Get Logger
+logger = logging.getLogger(__name__)
+
 
 def query_database(conn: Any, query: str, params: tuple = ()) -> Any:
     """Query the database."""
@@ -55,7 +58,7 @@ def create_connection_from_db_url(db_url: str) -> Any:
     assert database is not None, f'Invalid database URL dbname: {db_url}'
     assert host is not None, f'Invalid database URL host: {db_url}'
 
-    logging.info(f'Connecting to database: {database} on host: {host} with user: {username} and port: {port}')
+    logger.info(f'Connecting to database: {database} on host: {host} with user: {username} and port: {port}')
 
     return create_connection(database, username, password, host, port)
 
@@ -63,10 +66,10 @@ def create_connection_from_db_url(db_url: str) -> Any:
 def check_connection(conn: Any) -> bool:
     """Check if the connection is open."""
     if conn.closed:
-        logging.info('PostGres connection is closed.')
+        logger.info('PostGres connection is closed.')
         return False
     else:
-        logging.info('PostGres connection is open.')
+        logger.info('PostGres connection is open.')
         return True
 
 
@@ -99,7 +102,7 @@ class DBConnection:
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         self.conn.close()
-        logging.info('PostGres connection is closed.')
+        logger.info('PostGres connection is closed.')
         return False
 
 
@@ -130,7 +133,7 @@ def construct_tables(
                     continue
 
                 # Fetch table column details & foreign key details for each schema using parameterized queries
-                logging.info(f'Processing schema: {n}')
+                logger.info(f'Processing schema: {n}')
                 column_details = query_database(conn, GET_ALL_PUBLIC_TABLES_AND_COLUMNS, (n,))
                 fk_details = query_database(conn, GET_TABLE_COLUMN_DETAILS, (n,))
                 constraints = query_database(conn, GET_CONSTRAINTS, (n,))

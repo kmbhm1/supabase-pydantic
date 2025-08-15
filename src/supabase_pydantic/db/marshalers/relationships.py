@@ -4,6 +4,9 @@ from supabase_pydantic.db.constants import RelationType
 from supabase_pydantic.db.marshalers.column import standardize_column_name
 from supabase_pydantic.db.models import ForeignKeyInfo, RelationshipInfo, TableInfo
 
+# Get Logger
+logger = logging.getLogger(__name__)
+
 
 def add_relationships_to_table_details(tables: dict, fk_details: list) -> None:
     """Add relationships to the table details."""
@@ -127,27 +130,27 @@ def determine_relationship_type(
     )
 
     # Log the analysis
-    logging.debug(
+    logger.debug(
         f'Analyzing relationship: {source_table.name}.{fk.column_name} -> {target_table.name}.{fk.foreign_column_name}'
     )
-    logging.debug(f'Source uniqueness: {is_source_unique}, Target uniqueness: {is_target_unique}')
+    logger.debug(f'Source uniqueness: {is_source_unique}, Target uniqueness: {is_target_unique}')
 
     # Determine relationship type
     if is_source_unique and is_target_unique:
         # If both sides are unique, it's a one-to-one relationship
-        logging.debug('ONE_TO_ONE: Both sides are unique')
+        logger.debug('ONE_TO_ONE: Both sides are unique')
         return RelationType.ONE_TO_ONE, RelationType.ONE_TO_ONE
     elif is_target_unique:
         # If only target is unique, it's many-to-one from source to target
-        logging.debug('MANY_TO_ONE: Target is unique, source is not')
+        logger.debug('MANY_TO_ONE: Target is unique, source is not')
         return RelationType.MANY_TO_ONE, RelationType.ONE_TO_MANY
     elif is_source_unique:
         # If only source is unique, it's one-to-many from source to target
-        logging.debug('ONE_TO_MANY: Source is unique, target is not')
+        logger.debug('ONE_TO_MANY: Source is unique, target is not')
         return RelationType.ONE_TO_MANY, RelationType.MANY_TO_ONE
     else:
         # If neither side is unique, it's many-to-many
-        logging.debug('MANY_TO_MANY: Neither side is unique')
+        logger.debug('MANY_TO_MANY: Neither side is unique')
         return RelationType.MANY_TO_MANY, RelationType.MANY_TO_MANY
 
 
@@ -199,12 +202,12 @@ def analyze_table_relationships(tables: dict) -> None:
 
 def is_bridge_table(table: TableInfo) -> bool:
     """Check if the table is a bridge table."""
-    logging.debug(f'Analyzing if {table.name} is a bridge table')
-    logging.debug(f'Foreign keys: {[fk.column_name for fk in table.foreign_keys]}')
+    logger.debug(f'Analyzing if {table.name} is a bridge table')
+    logger.debug(f'Foreign keys: {[fk.column_name for fk in table.foreign_keys]}')
 
     # Check for at least two foreign keys
     if len(table.foreign_keys) < 2:
-        logging.debug('Not a bridge table: Less than 2 foreign keys')
+        logger.debug('Not a bridge table: Less than 2 foreign keys')
         return False
 
     # Identify columns that are both primary keys and part of foreign keys
@@ -213,23 +216,23 @@ def is_bridge_table(table: TableInfo) -> bool:
         for col in table.columns
         if col.primary and any(fk.column_name == col.name for fk in table.foreign_keys)
     ]
-    logging.debug(f'Primary foreign keys: {primary_foreign_keys}')
+    logger.debug(f'Primary foreign keys: {primary_foreign_keys}')
 
     # Check if there are at least two such columns
     if len(primary_foreign_keys) < 2:
-        logging.debug('Not a bridge table: Less than 2 primary foreign keys')
+        logger.debug('Not a bridge table: Less than 2 primary foreign keys')
         return False
 
     # Get all primary key columns
     primary_keys = [col.name for col in table.columns if col.primary]
-    logging.debug(f'All primary keys: {primary_keys}')
+    logger.debug(f'All primary keys: {primary_keys}')
 
     # Consider the table a bridge table if the primary key is composite and includes at least two foreign key columns
     if len(primary_foreign_keys) == len(primary_keys):
-        logging.debug('Is bridge table: All primary keys are foreign keys')
+        logger.debug('Is bridge table: All primary keys are foreign keys')
         return True
 
-    logging.debug('Not a bridge table: Some primary keys are not foreign keys')
+    logger.debug('Not a bridge table: Some primary keys are not foreign keys')
     return False
 
 
@@ -240,7 +243,7 @@ def analyze_bridge_tables(tables: dict) -> None:
         if table.is_bridge:
             # Update all foreign key relationships to MANY_TO_MANY
             for fk in table.foreign_keys:
-                logging.debug(
+                logger.debug(
                     f'Setting {table.name}.{fk.column_name} -> {fk.foreign_table_name}.{fk.foreign_column_name} to MANY_TO_MANY'  # noqa: E501
                 )
                 fk.relation_type = RelationType.MANY_TO_MANY
@@ -270,13 +273,13 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
             missing_source = table_key not in tables
             missing_target = foreign_table_key not in tables
             if missing_target and not missing_source:
-                logging.debug(
+                logger.debug(
                     f'Foreign key {constraint_name} references table {foreign_table_schema}.{foreign_table_name} '
                     f'which is not in the current analysis. If you need complete relationship information, '
                     f'consider including the {foreign_table_schema} schema in your analysis.'
                 )
             else:
-                logging.debug(
+                logger.debug(
                     f'Skipping foreign key {constraint_name} - missing source table {table_schema}.{table_name}'
                 )
             continue
@@ -284,7 +287,7 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
         # Determine relationship type
         relation_type = None
         if table_key in tables and foreign_table_key in tables:
-            logging.debug(
+            logger.debug(
                 f'Analyzing relationship for {table_key[1]}.{column_name} '
                 f'-> {foreign_table_key[1]}.{foreign_column_name}'
             )
@@ -295,20 +298,20 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
             found_composite_key = False
 
             # Check if foreign key is the only primary key in source table
-            logging.debug(f'Checking constraints in source table {table_key[1]}:')
+            logger.debug(f'Checking constraints in source table {table_key[1]}:')
             for constraint in tables[table_key].constraints:
-                logging.debug(f'  - Constraint: {constraint.raw_constraint_type}, columns: {constraint.columns}')
+                logger.debug(f'  - Constraint: {constraint.raw_constraint_type}, columns: {constraint.columns}')
                 if constraint.raw_constraint_type == 'p':  # primary key
                     # Check if the foreign key column is part of the primary key
                     if column_name in constraint.columns:
                         # If it's part of a composite key, it should be many-to-one
                         if len(constraint.columns) > 1:
-                            logging.debug(f'    Found composite primary key including {column_name}')
+                            logger.debug(f'    Found composite primary key including {column_name}')
                             # Found a composite key, so this must be many-to-one
                             found_composite_key = True
                             break
                         else:
-                            logging.debug(f'    Found single primary key constraint on {column_name}')
+                            logger.debug(f'    Found single primary key constraint on {column_name}')
                             is_one_to_one = True
 
             # If we found a composite key, it's definitely many-to-one
@@ -316,20 +319,20 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
                 is_one_to_one = False
             # Otherwise check the target table
             elif not is_one_to_one:
-                logging.debug(f'Checking constraints in target table {foreign_table_key[1]}:')
+                logger.debug(f'Checking constraints in target table {foreign_table_key[1]}:')
                 for constraint in tables[foreign_table_key].constraints:
-                    logging.debug(f'  - Constraint: {constraint.raw_constraint_type}, columns: {constraint.columns}')
+                    logger.debug(f'  - Constraint: {constraint.raw_constraint_type}, columns: {constraint.columns}')
                     if constraint.raw_constraint_type == 'p':  # primary key
                         # Check if the foreign key column is part of the primary key
                         if foreign_column_name in constraint.columns:
                             # If it's part of a composite key, it should be many-to-one
                             if len(constraint.columns) > 1:
-                                logging.debug(f'    Found composite primary key including {foreign_column_name}')
+                                logger.debug(f'    Found composite primary key including {foreign_column_name}')
                                 # Found a composite key, so this must be many-to-one
                                 found_composite_key = True
                                 break
                             else:
-                                logging.debug(f'    Found single primary key constraint on {foreign_column_name}')
+                                logger.debug(f'    Found single primary key constraint on {foreign_column_name}')
                                 is_one_to_one = True
 
             # If we found a composite key in either table, it's many-to-one
@@ -338,7 +341,7 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
 
             if is_one_to_one:
                 relation_type = RelationType.ONE_TO_ONE
-                logging.debug('Detected ONE_TO_ONE relationship')
+                logger.debug('Detected ONE_TO_ONE relationship')
             else:
                 # If not one-to-one, check if it's many-to-many
                 fk_columns = [
@@ -346,12 +349,12 @@ def add_foreign_key_info_to_table_details(tables: dict, fk_details: list) -> Non
                 ]
                 if len(fk_columns) > 1:
                     relation_type = RelationType.MANY_TO_MANY
-                    logging.debug('Detected MANY_TO_MANY relationship (multiple foreign keys to same table)')
+                    logger.debug('Detected MANY_TO_MANY relationship (multiple foreign keys to same table)')
                 else:
                     # If not one-to-one or many-to-many, then it's a many-to-one relationship
                     # from the perspective of the table with the foreign key
                     relation_type = RelationType.MANY_TO_ONE
-                    logging.debug('Detected MANY_TO_ONE relationship (default case)')
+                    logger.debug('Detected MANY_TO_ONE relationship (default case)')
 
         if table_key in tables:
             fk_info = ForeignKeyInfo(

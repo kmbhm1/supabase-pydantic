@@ -1,4 +1,8 @@
+import logging
 import subprocess
+
+# Get Logger
+logger = logging.getLogger(__name__)
 
 
 class RuffNotFoundError(Exception):
@@ -24,8 +28,8 @@ def format_with_ruff(file_path: str) -> None:
         # Finally run ruff check --fix for any remaining issues
         _ = subprocess.run(['ruff', 'check', '--fix', file_path], check=True, text=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        print(f'WARNING: An error occurred while trying to format {file_path} with ruff:')
-        print(e.stderr)
-        print('The file was generated, but not formatted.')
+        logger.warning(f'WARNING: An error occurred while trying to format {file_path} with ruff:')
+        logger.warning(e.stderr)
+        logger.warning('The file was generated, but not formatted.')
     except FileNotFoundError:
         raise RuffNotFoundError(file_path=file_path)

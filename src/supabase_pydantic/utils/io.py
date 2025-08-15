@@ -1,5 +1,9 @@
+import logging
 import os
 import shutil
+
+# Get Logger
+logger = logging.getLogger(__name__)
 
 
 def clean_directory(directory: str) -> None:
@@ -13,8 +17,8 @@ def clean_directory(directory: str) -> None:
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)
             except Exception as e:
-                print(f'An error occurred while deleting {file_path}.')
-                print(str(e))
+                logger.error(f'An error occurred while deleting {file_path}.')
+                logger.error(str(e))
 
     shutil.rmtree(directory)
 
@@ -25,19 +29,19 @@ def clean_directories(directories: dict[str, str | None]) -> None:
         if k == 'default' or d is None:
             continue
 
-        print(f'Checking for directory: {d}')
+        logger.info(f'Checking for directory: {d}')
         if not os.path.isdir(d):
-            print(f'Directory "{d}" does not exist. Skipping ...')
+            logger.warning(f'Directory "{d}" does not exist. Skipping ...')
             continue
 
-        print(f'Directory found. Removing {d} and files...')
+        logger.info(f'Directory found. Removing {d} and files...')
         clean_directory(d)
-        print(f'Directory {d} removed.')
+        logger.info(f'Directory {d} removed.')
 
-    print(f'Removing default directory {directories["default"]} ...')
+    logger.info(f'Removing default directory {directories["default"]} ...')
     assert directories['default'] is not None
     clean_directory(directories['default'])
-    print('Default directory removed.')
+    logger.info('Default directory removed.')
 
 
 def get_working_directories(
@@ -45,7 +49,7 @@ def get_working_directories(
 ) -> dict[str, str | None]:
     """Get the directories for the generated files."""
     if not os.path.exists(default_directory) or not os.path.isdir(default_directory):
-        print(f'Directory {default_directory} does not exist.')
+        logger.warning(f'Directory {default_directory} does not exist.')
 
     directories = {
         'default': default_directory,
@@ -65,5 +69,5 @@ def create_directories_if_not_exist(directories: dict[str, str | None]) -> None:
         if d is None:
             continue
         if not os.path.exists(d) or not os.path.isdir(d):
-            print(f'Creating directory: {d}')
+            logger.info(f'Creating directory: {d}')
             os.makedirs(d)

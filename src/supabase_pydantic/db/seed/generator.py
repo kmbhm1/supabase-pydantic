@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable, Generator
 from itertools import islice, product
 from math import inf, prod
@@ -7,6 +8,10 @@ from typing import Any
 from supabase_pydantic.db.graph import sort_tables_for_insert
 from supabase_pydantic.db.models import ColumnInfo, TableInfo
 from supabase_pydantic.db.seed.fake import format_for_postgres, generate_fake_data, guess_datetime_order
+
+# Get Logger
+logger = logging.getLogger(__name__)
+
 
 # Maximum number of rows to generate
 MAX_ROWS = 200
@@ -135,7 +140,7 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
         try:
             return memory[table_name][column_name]
         except KeyError:
-            print(f'Could not remember data for {table_name}.{column_name}')
+            logger.error(f'Could not remember data for {table_name}.{column_name}')
 
     def _rows_for_datetime_parsing(
         data: list[list[Any]], header: list[Any], columns: list[ColumnInfo]
@@ -165,7 +170,7 @@ def generate_seed_data(tables: list[TableInfo]) -> dict[str, list[list[Any]]]:
     for table_name in sorted_tables:
         table = next((t for t in tables if t.name == table_name), None)
         if table is None:
-            print(f'Could not find table {table_name}')
+            logger.error(f'Could not find table {table_name}')
             continue
 
         unique_rows = unique_data_rows(table, _remember)

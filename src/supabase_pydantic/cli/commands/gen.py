@@ -18,13 +18,16 @@ from supabase_pydantic.db.constants import POSTGRES_SQL_CONN_REGEX, DatabaseConn
 from supabase_pydantic.db.seed import generate_seed_data, write_seed_file
 from supabase_pydantic.utils.formatting import RuffNotFoundError, format_with_ruff
 from supabase_pydantic.utils.io import get_working_directories
+from supabase_pydantic.utils.logging import setup_logging
+
+# Get Logger
+logger = logging.getLogger(__name__)
 
 # Option groups
 generator_config = OptionGroup('Generator Options', help='Options for generating code.')
 
 # Option groups for connection sources
 connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration', help='The sources of the input data')
-
 
 # TODO: add these as options for connection sources
 # @connect_sources.option(
@@ -159,22 +162,21 @@ def gen(
     debug: bool = False,
 ) -> None:
     """Generate models from a PostgreSQL database."""
-    # Configure logging
-    log_level = logging.DEBUG if debug else logging.INFO
-    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
-    logging.debug(f'Debug mode is {"on" if debug else "off"}')
+    # Configure logging once per command invocation
+    setup_logging(debug)
+    logger.debug(f'Debug mode is {"on" if debug else "off"}')
 
     # Load environment variables from .env file & check if they are set correctly
     if not local and db_url is None:
-        print('Please provide a connection source. Exiting...')
+        logger.error('Please provide a connection source. Exiting...')
         return
 
     conn_type: DatabaseConnectionType = DatabaseConnectionType.LOCAL
     env_vars: dict[str, str | None] = dict()
     if db_url is not None:
-        print('Checking local database connection.' + db_url)
+        logger.info('Checking local database connection.' + db_url)
         if re.match(POSTGRES_SQL_CONN_REGEX, db_url) is None:
-            print(f'Invalid database URL: "{db_url}". Exiting.')
+            logger.error(f'Invalid database URL: "{db_url}". Exiting.')
             return
         conn_type = DatabaseConnectionType.DB_URL
         env_vars['DB_URL'] = db_url
@@ -190,10 +192,10 @@ def gen(
             }
         )
         if any([v is None for v in env_vars.values()]) and local:
-            print(
+            logger.error(
                 f'Critical environment variables not set: {", ".join([k for k, v in env_vars.items() if v is None])}.'
             )
-            print('Using default local values...')
+            logger.errorr('Using default local values...')
             env_vars = local_default_env_configuration()
         # Check if environment variables are set correctly
         assert check_readiness(env_vars)
@@ -213,7 +215,7 @@ def gen(
 
     schemas_with_no_tables = [k for k, v in table_dict.items() if len(v) == 0]
     if len(schemas_with_no_tables) > 0:
-        print(f'The following schemas have no tables and will be skipped: {", ".join(schemas_with_no_tables)}')
+        logger.warning(f'The following schemas have no tables and will be skipped: {", ".join(schemas_with_no_tables)}')
     table_dict = {k: v for k, v in table_dict.items() if len(v) > 0}
     if all_schemas:  # Reset schemas if all_schemas is True
         schemas = tuple(table_dict.keys())
@@ -234,7 +236,7 @@ def gen(
     for s, j in jobs.items():  # s = schema, j = jobs
         tables = table_dict[s]
         for job, c in j.items():  # c = config
-            logging.info(f'Generating {job} models...')
+            logger.info(f'Generating {job} models...')
             p, vf = factory.get_file_writer(
                 tables,
                 c.fpath(),
@@ -246,22 +248,22 @@ def gen(
                 disable_model_prefix_protection=disable_model_prefix_protection,
             ).save(overwrite)
             paths += [p, vf] if vf is not None else [p]
-            logging.info(f"{job} models generated successfully for schema '{s}': {p}")
+            logger.info(f"{job} models generated successfully for schema '{s}': {p}")
 
     # Format the generated files
     # Format the generated files
     for p in paths:
         try:
             format_with_ruff(p)
-            logging.info(f'File formatted successfully: {p}')
+            logger.info(f'File formatted successfully: {p}')
         except RuffNotFoundError as e:
-            logging.warning(str(e))  # The exception message is already descriptive
+            logger.warning(str(e))  # The exception message is already descriptive
         except Exception as e:  # Catch any other unexpected errors during formatting
-            logging.error(f'An unexpected error occurred while formatting {p}: {str(e)}')
+            logger.error(f'An unexpected error occurred while formatting {p}: {str(e)}')
 
     # Generate seed data
     if create_seed_data:
-        logging.info('Generating seed data...')
+        logger.info('Generating seed data...')
         for s, j in jobs.items():  # s = schema, j = jobs
             # Generate seed data
             tables = table_dict[s]
@@ -269,15 +271,15 @@ def gen(
 
             # Check if seed data was generated
             if len(seed_data) == 0:
-                logging.warning(f'Failed to generate seed data for schema: {s}')
+                logger.warning(f'Failed to generate seed data for schema: {s}')
                 if all([t.table_type == 'VIEW' for t in tables]):
-                    logging.info('All entities are views in this schema. Skipping seed data generation...')
+                    logger.info('All entities are views in this schema. Skipping seed data generation...')
                 else:
-                    logging.error('Unknown error occurred; check the schema. Skipping seed data generation...')
+                    logger.error('Unknown error occurred; check the schema. Skipping seed data generation...')
                 continue
 
             # Write the seed data
             d = dirs.get('default')
             fname = os.path.join(d if d is not None else 'entities', f'seed_{s}.sql')
             fpaths = write_seed_file(seed_data, fname, overwrite)
-            print(f'Seed data generated successfully: {", ".join(fpaths)}')
+            logger.info(f'Seed data generated successfully: {", ".join(fpaths)}')

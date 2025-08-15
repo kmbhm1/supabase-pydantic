@@ -9,7 +9,7 @@ from supabase_pydantic.db.models import ColumnInfo, ConstraintInfo, ForeignKeyIn
 
 def test_ConstraintInfo_methods():
     """Test ConstraintInfo methods."""
-    from supabase_pydantic.util.dataclasses import ConstraintInfo
+    # Test is already importing ConstraintInfo at the top
 
     constraint_info = ConstraintInfo(
         constraint_name='test',

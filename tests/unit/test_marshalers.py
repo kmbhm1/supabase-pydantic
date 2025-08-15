@@ -39,6 +39,7 @@ from supabase_pydantic.db.marshalers.relationships import (
     add_relationships_to_table_details,
     analyze_bridge_tables,
     is_bridge_table,
+    determine_relationship_type,
 )
 from supabase_pydantic.db.marshalers.schema import (
     get_enum_types,
@@ -500,15 +501,15 @@ def test_reciprocal_foreign_keys(setup_analyze_tables):
 
 
 # Test for construct_table_info
-@patch('supabase_pydantic.util.marshalers.get_table_details_from_columns')
-@patch('supabase_pydantic.util.marshalers.add_foreign_key_info_to_table_details')
-@patch('supabase_pydantic.util.marshalers.add_constraints_to_table_details')
-@patch('supabase_pydantic.util.marshalers.add_relationships_to_table_details')
-@patch('supabase_pydantic.util.marshalers.add_user_defined_types_to_tables')
-@patch('supabase_pydantic.util.marshalers.update_columns_with_constraints')
-@patch('supabase_pydantic.util.marshalers.analyze_bridge_tables')
-@patch('supabase_pydantic.util.marshalers.analyze_table_relationships')
-# @patch('supabase_pydantic.util.marshalers.add_fk')
+@patch('supabase_pydantic.db.marshalers.schema.get_table_details_from_columns')
+@patch('supabase_pydantic.db.marshalers.schema.add_foreign_key_info_to_table_details')
+@patch('supabase_pydantic.db.marshalers.schema.add_constraints_to_table_details')
+@patch('supabase_pydantic.db.marshalers.schema.add_relationships_to_table_details')
+@patch('supabase_pydantic.db.marshalers.schema.add_user_defined_types_to_tables')
+@patch('supabase_pydantic.db.marshalers.schema.update_columns_with_constraints')
+@patch('supabase_pydantic.db.marshalers.schema.analyze_bridge_tables')
+@patch('supabase_pydantic.db.marshalers.schema.analyze_table_relationships')
+# @patch('supabase_pydantic.db.marshalers.schema.add_fk')
 def test_construct_table_info(
     mock_analyze_relationships,
     mock_analyze_bridges,
@@ -635,7 +636,7 @@ def mock_tables():
 # Mocks for the external functions
 @pytest.fixture
 def get_enum_types_mock(mocker):
-    mock = mocker.patch('supabase_pydantic.util.marshalers.get_enum_types')
+    mock = mocker.patch('supabase_pydantic.db.marshalers.schema.get_enum_types')
     mock.return_value = [
         # Example enum values setup
         MagicMock(type_name='my_enum', enum_values=['A', 'B', 'C'])
@@ -645,7 +646,7 @@ def get_enum_types_mock(mocker):
 
 @pytest.fixture
 def get_user_type_mappings_mock(mocker):
-    mock = mocker.patch('supabase_pydantic.util.marshalers.get_user_type_mappings')
+    mock = mocker.patch('supabase_pydantic.db.marshalers.schema.get_user_type_mappings')
     mock.return_value = [
         # Example user type mappings setup
         MagicMock(table_name='test_table', column_name='type', type_name='my_enum')
@@ -1315,7 +1316,6 @@ def relationship_type_tables():
 
 def test_determine_relationship_type(relationship_type_tables):
     """Test the determine_relationship_type function for various scenarios."""
-    from supabase_pydantic.util.marshalers import determine_relationship_type
 
     source_table, target_table = relationship_type_tables
     fk = ForeignKeyInfo(

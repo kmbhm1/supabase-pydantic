@@ -47,7 +47,7 @@ def test_integer_datatype(fake_faker, mock_random):
 
 def test_nullable_field(fake_faker, monkeypatch):
     """Test that nullable fields can return 'NULL'."""
-    monkeypatch.setattr('supabase_pydantic.util.fake.random', lambda: 0.01)  # Below the threshold to simulate null
+    monkeypatch.setattr('supabase_pydantic.db.seed.fake.random', lambda: 0.01)  # Below the threshold to simulate null
     result = generate_fake_data('text', True, None, 'foo', None, fake_faker)
     assert result == 'NULL'
 

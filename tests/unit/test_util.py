@@ -348,7 +348,7 @@ def test_write_seed_file_no_overwrite_file_exists():
 
     with patch('builtins.open', m):
         with patch('os.path.exists', return_value=True):
-            with patch('supabase_pydantic.core.writers.util.generate_unique_filename', return_value=unique_file_path):
+            with patch('supabase_pydantic.core.writers.utils.generate_unique_filename', return_value=unique_file_path):
                 result = write_seed_file(seed_data, file_path, overwrite=False)
 
     assert result == [expected_file_path, unique_file_path]

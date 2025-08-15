@@ -32,4 +32,4 @@ def test_get_file_writer_valid_cases(table_info, file_path, file_type, framework
 def test_get_file_writer_invalid_cases(table_info, file_path):
     with pytest.raises(ValueError) as excinfo:
         FileWriterFactory.get_file_writer(table_info, file_path, OrmType.PYDANTIC, FrameWorkType)
-    assert 'Unsupported file type or framework type' in str(excinfo.value)
+    assert 'Unsupported file type and framework:' in str(excinfo.value)

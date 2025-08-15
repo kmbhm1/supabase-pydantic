@@ -285,7 +285,7 @@ def test_sort_tables_for_insert_complex():
 @patch('random.random', return_value=0.5)  # Control the number of rows
 @patch('random.choice', side_effect=lambda x: x[0])  # Control choice function
 @patch(
-    'supabase_pydantic.util.fake.generate_fake_data',
+    'supabase_pydantic.db.seed.fake.generate_fake_data',
     side_effect=lambda datatype, nullable, max_length, name: f'fake_{name}',
 )
 def test_generate_seed_data(mock_generate_fake_data, mock_choice, mock_random):

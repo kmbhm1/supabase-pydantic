@@ -55,7 +55,7 @@ def test_load_config_file_not_found():
 
 def test_clean_command(runner, mock_env_vars):
     """Test the clean command functionality."""
-    with patch('supabase_pydantic.cli.clean_directories') as mock_clean:
+    with patch('supabase_pydantic.cli.commands.clean.clean_directories') as mock_clean:
         result = runner.invoke(cli, ['clean'])
         assert 'Cleaning up the project...' in result.output
         assert result.exit_code == 0
@@ -64,12 +64,12 @@ def test_clean_command(runner, mock_env_vars):
 
 def test_clean_command_handles_FileExistsError_and_FileNotFoundError(runner, mock_env_vars):
     """Test the clean command handles FileExistsError."""
-    with patch('supabase_pydantic.cli.clean_directories', side_effect=FileExistsError):
+    with patch('supabase_pydantic.cli.commands.clean.clean_directories', side_effect=FileExistsError):
         result = runner.invoke(cli, ['clean'])
         assert "Directory doesn't exist" in result.output
         assert result.exit_code == 0
 
-    with patch('supabase_pydantic.cli.clean_directories', side_effect=FileNotFoundError):
+    with patch('supabase_pydantic.cli.commands.clean.clean_directories', side_effect=FileNotFoundError):
         result = runner.invoke(cli, ['clean'])
         assert "Directory doesn't exist" in result.output
         assert result.exit_code == 0
@@ -77,9 +77,9 @@ def test_clean_command_handles_FileExistsError_and_FileNotFoundError(runner, moc
 
 def test_clean_command_handles_other_errors(runner, mock_env_vars):
     """Test the clean command handles other errors."""
-    with patch('supabase_pydantic.cli.clean_directories', side_effect=Exception):
+    with patch('supabase_pydantic.cli.commands.clean.clean_directories', side_effect=Exception):
         result = runner.invoke(cli, ['clean'])
-        assert 'An error occurred while cleaning the project' in result.output
+        assert 'An error occurred while cleaning the project:' in result.output
         assert result.exit_code == 0
 
 
@@ -93,10 +93,10 @@ def test_gen_command_with_invalid_db_url(runner):
 def test_gen_command_with_valid_db_url(runner):
     """Test gen command with valid database URL."""
     with (
-        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
-        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
-        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
-        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.commands.gen.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.commands.gen.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory,
     ):
         mock_construct.return_value = {'public': [MagicMock(name='table1')]}
         mock_dirs.return_value = {'default': '/tmp'}
@@ -114,10 +114,10 @@ def test_gen_command_with_valid_db_url(runner):
 def test_gen_command_with_empty_schemas(runner):
     """Test gen command when schemas have no tables."""
     with (
-        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
-        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
-        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
-        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.commands.gen.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.commands.gen.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory,
     ):
         mock_construct.return_value = {'public': [], 'schema2': []}
         mock_dirs.return_value = {'default': '/tmp'}
@@ -133,11 +133,11 @@ def test_gen_command_with_empty_schemas(runner):
 def test_gen_command_with_tables(runner):
     """Test gen command with tables in schema."""
     with (
-        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
-        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
-        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
-        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
-        patch('supabase_pydantic.cli.format_with_ruff') as mock_ruff,
+        patch('supabase_pydantic.cli.commands.gen.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.commands.gen.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.commands.gen.format_with_ruff') as mock_ruff,
     ):
         table_info = MagicMock()
         table_info.name = 'table1'
@@ -161,12 +161,12 @@ def test_gen_command_with_tables(runner):
 def test_gen_command_with_seed_data(runner):
     """Test gen command with seed data generation."""
     with (
-        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
-        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
-        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
-        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
-        patch('supabase_pydantic.cli.generate_seed_data') as mock_seed,
-        patch('supabase_pydantic.cli.write_seed_file') as mock_write_seed,
+        patch('supabase_pydantic.cli.commands.gen.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.commands.gen.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.commands.gen.generate_seed_data') as mock_seed,
+        patch('supabase_pydantic.cli.commands.gen.write_seed_file') as mock_write_seed,
     ):
         table_info = MagicMock()
         table_info.name = 'table1'
@@ -193,11 +193,16 @@ def test_gen_command_with_seed_data(runner):
 def test_gen_command_with_seed_data_no_tables(runner):
     """Test gen command with seed data generation but no tables."""
     with (
-        patch('supabase_pydantic.cli.construct_tables') as mock_construct,
-        patch('supabase_pydantic.cli.get_working_directories') as mock_dirs,
-        patch('supabase_pydantic.cli.get_standard_jobs') as mock_jobs,
-        patch('supabase_pydantic.cli.FileWriterFactory') as mock_factory,
-        patch('supabase_pydantic.cli.generate_seed_data') as mock_seed,
+        patch('re.match', return_value=True),
+        patch('supabase_pydantic.cli.commands.gen.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.commands.gen.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.commands.gen.generate_seed_data') as mock_seed,
+        patch('supabase_pydantic.cli.commands.gen.format_with_ruff'),
+        patch('supabase_pydantic.utils.io.clean_directories'),
+        patch('os.environ', {'DB_NAME': 'test_db', 'DB_USER': 'user', 'DB_PASS': 'pass', 'DB_HOST': 'localhost', 'DB_PORT': '5432'}),
+        patch('supabase_pydantic.cli.commands.gen.check_readiness', return_value=True),
     ):
         mock_construct.return_value = {'public': []}
         mock_dirs.return_value = {'default': '/tmp'}

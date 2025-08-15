@@ -109,7 +109,7 @@ def mock_database(monkeypatch):
         [('table1', 'column1', 'enum1', 'enum2')],  # Simulated response for enum type mapping to columns
     ]
     mock_create_conn = MagicMock(return_value=mock_conn)
-    monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)
+    monkeypatch.setattr('supabase_pydantic.db.connection.create_connection', mock_create_conn)
     mock_check_conn = MagicMock(return_value=True)
     monkeypatch.setattr('supabase_pydantic.db.connection.check_connection', mock_check_conn)
     return mock_create_conn, mock_conn, mock_cursor
@@ -119,7 +119,7 @@ def mock_database(monkeypatch):
 def mock_construct_table_info(monkeypatch):
     # Mock construct_table_info and configure a return value
     mock_function = MagicMock(return_value={'info': 'sample data'})
-    monkeypatch.setattr('supabase_pydantic.util.db.construct_table_info', mock_function)
+    monkeypatch.setattr('supabase_pydantic.db.connection.construct_table_info', mock_function)
     return mock_function
 
 
@@ -212,7 +212,7 @@ def test_construct_tables_exception(mock_database, mock_query_database, mock_con
 def mock_create_connection(monkeypatch):
     mock_conn = MagicMock()
     mock_create_conn = MagicMock(return_value=mock_conn)
-    monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)
+    monkeypatch.setattr('supabase_pydantic.db.connection.create_connection', mock_create_conn)
     return mock_create_conn
 
 

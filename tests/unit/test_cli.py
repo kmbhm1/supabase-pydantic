@@ -3,7 +3,8 @@ from unittest.mock import patch, MagicMock
 import pytest
 from click.testing import CliRunner
 
-from supabase_pydantic.cli import check_readiness, cli, load_config
+from supabase_pydantic.cli import cli
+from supabase_pydantic.cli.common import check_readiness, load_config
 
 
 @pytest.fixture

@@ -14,7 +14,7 @@ from supabase_pydantic.db.constants import (
     DatabaseConnectionType,
 )
 from supabase_pydantic.db.exceptions import ConnectionError
-from supabase_pydantic.db.marshaler import construct_table_info
+from supabase_pydantic.db.marshalers.schema import construct_table_info
 from supabase_pydantic.db.models import TableInfo
 
 

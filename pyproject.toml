@@ -25,7 +25,17 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-keywords = ["supabase", "pydantic", "fastapi", "sqlalchemy", "REST", "generator", "schema", "model"]
+keywords = [
+    "supabase",
+    "pydantic",
+    "fastapi",
+    "sqlalchemy",
+    "REST",
+    "generator",
+    "schema",
+    "model",
+]
+packages = [{ include = "supabase_pydantic", from = "src" }]
 
 [tool.poetry.scripts]
 sb-pydantic = 'supabase_pydantic.cli:cli'
@@ -46,7 +56,7 @@ requests = ">=2.32.4"
 urllib3 = "^2.5.0"
 
 [tool.poetry.group.dev.dependencies]
-sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
+sqlalchemy = { extras = ["mypy"], version = "^2.0.31" }
 python-semantic-release = "^9.8.5"
 pre-commit = "^3.7.1"
 commitizen = "^3.28.0"
@@ -61,7 +71,7 @@ networkx = "^3.3"
 matplotlib = "^3.9.1.post1"
 mkdocs = "^1.6.0"
 mkdocs-material = "^9.5.30"
-mkdocstrings = {extras = ["python"], version = "^0.25.1"}
+mkdocstrings = { extras = ["python"], version = "^0.25.1" }
 mkdocs-redirects = "^1.2.1"
 mkdocs-click = "^0.8.1"
 pymdown-extensions = "^10.8.1"
@@ -179,8 +189,8 @@ exclude = [
     "build",
     "dist",
     "tests/*",
-    'entities/*', # generated files
-    'poc'
+    'entities/*',  # generated files
+    'poc',
 ]
 python_version = "3.10"
 mypy_path = "."
@@ -243,7 +253,19 @@ env = "GIT_COMMIT_AUTHOR"
 default = "KB <kmbhm1@gmail.com>"
 
 [tool.semantic_release.commit_parser_options]
-allowed_tags = ["build", "chore", "ci", "docs", "feat", "feature", "fix", "perf", "style", "refactor", "test"]
+allowed_tags = [
+    "build",
+    "chore",
+    "ci",
+    "docs",
+    "feat",
+    "feature",
+    "fix",
+    "perf",
+    "style",
+    "refactor",
+    "test",
+]
 minor_tags = ["feat", "feature"]
 patch_tags = ["fix", "perf", "docs", "refactor", "chore"]
 default_bump_level = 0
@@ -296,16 +318,11 @@ commands =
 """
 
 [tool.pytest.ini_options]
-pythonpath = [
-    "src",
-]
+pythonpath = ["src"]
 log_level = "INFO"
 [tool.coverage]
 [tool.coverage.run]
-omit = [
-    '__init__.py',
-    '.venv/*',
-]
+omit = ['__init__.py', '.venv/*']
 
 [tool.coverage.report]
 skip_empty = true

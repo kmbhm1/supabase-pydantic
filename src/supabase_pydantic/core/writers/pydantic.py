@@ -5,10 +5,11 @@ from typing import Any
 
 from inflection import pluralize
 
-from supabase_pydantic.core.constants import CUSTOM_MODEL_NAME, RelationType, WriterClassType
+from supabase_pydantic.core.constants import CUSTOM_MODEL_NAME, WriterClassType
 from supabase_pydantic.core.writers.abstract import AbstractClassWriter, AbstractFileWriter
 from supabase_pydantic.core.writers.utils import get_base_class_post_script as post
 from supabase_pydantic.core.writers.utils import get_section_comment
+from supabase_pydantic.db.constants import RelationType
 from supabase_pydantic.db.marshalers.column import column_name_reserved_exceptions, string_is_reserved
 from supabase_pydantic.db.models import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo, get_pydantic_type
 

@@ -4,8 +4,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 from supabase_pydantic.core.constants import BASE_CLASS_POSTFIX, WriterClassType
-from supabase_pydantic.core.dataclasses import TableInfo
 from supabase_pydantic.core.writers.utils import generate_unique_filename
+from supabase_pydantic.db.models import TableInfo
 from supabase_pydantic.utils.strings import to_pascal_case
 
 

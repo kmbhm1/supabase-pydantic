@@ -15,10 +15,9 @@ from supabase_pydantic.cli.common import (
 )
 from supabase_pydantic.core.config import WriterConfig, get_standard_jobs, local_default_env_configuration
 from supabase_pydantic.core.writers.factories import FileWriterFactory
-from supabase_pydantic.db.constants import DatabaseConnectionType
-from supabase_pydantic.db.marshalers.schema import construct_tables
+from supabase_pydantic.db.connection import construct_tables
+from supabase_pydantic.db.constants import POSTGRES_SQL_CONN_REGEX, DatabaseConnectionType
 from supabase_pydantic.db.seed import generate_seed_data, write_seed_file
-from supabase_pydantic.utils.constants import POSTGRES_SQL_CONN_REGEX
 from supabase_pydantic.utils.formatting import RuffNotFoundError, format_with_ruff
 from supabase_pydantic.utils.io import get_working_directories
 

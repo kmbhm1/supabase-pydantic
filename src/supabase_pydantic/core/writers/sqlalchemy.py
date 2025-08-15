@@ -25,7 +25,8 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
 
     def write_name(self) -> str:
         """Method to generate the header for the base class."""
-        return self._tname
+        name: str = self._tname
+        return name
 
     def write_metaclass(self, metaclasses: list[str] | None = None) -> str | None:
         """Method to generate the metaclasses for the class."""
@@ -75,7 +76,8 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
         cols = [self.write_column(c) for c in self.separated_columns.non_nullable + self.separated_columns.nullable]
         if len(cols) == 0:
             return None
-        return AbstractClassWriter.column_section('Columns', cols)
+        result: str = AbstractClassWriter.column_section('Columns', cols)
+        return result
 
     def write_table_args(self) -> str | None:
         """Method to generate table arguments for the class.
@@ -241,7 +243,7 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
             self.write_base_classes(),
             self.write_operational_classes(),
         ]
-        result = self.jstr.join(p for p in parts if p is not None)
+        result: str = self.jstr.join(p for p in parts if p is not None)
         return result
 
     def _dt_imports(
@@ -250,7 +252,8 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         """Update the imports with the necessary data types."""
 
         def _pyi(c: ColumnInfo) -> str | None:  # pyi = pydantic import  # noqa
-            return get_sqlalchemy_v2_type(c.post_gres_datatype, default_import)[2]
+            import_stmt: str | None = get_sqlalchemy_v2_type(c.post_gres_datatype, default_import)[2]
+            return import_stmt
 
         # column data types
         imports.update(filter(None, map(_pyi, (c for t in self.tables for c in t.columns))))
@@ -298,7 +301,8 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
             else:
                 classes = [_method(t)() for t in self.tables]
 
-        return self.join([sxn, *classes])
+        result: str = self.join([sxn, *classes])
+        return result
 
     def write_custom_classes(self, add_fk: bool = False) -> str:
         """Method to write the complete class definition."""

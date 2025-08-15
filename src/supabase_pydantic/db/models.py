@@ -59,7 +59,8 @@ class ConstraintInfo(AsDictParent):
 
     def constraint_type(self) -> str:
         """Get the constraint type."""
-        return CONSTRAINT_TYPE_MAP.get(self.raw_constraint_type.lower(), 'OTHER')
+        constraint_type: str = CONSTRAINT_TYPE_MAP.get(self.raw_constraint_type.lower(), 'OTHER')
+        return constraint_type
 
 
 @dataclass
@@ -106,9 +107,11 @@ class ColumnInfo(AsDictParent):
     def orm_datatype(self, orm_type: OrmType = OrmType.PYDANTIC) -> str:
         """Get the datatype for a column."""
         if orm_type == OrmType.SQLALCHEMY:
-            return get_sqlalchemy_type(self.post_gres_datatype)[0]
+            sql_datatype: str = get_sqlalchemy_type(self.post_gres_datatype)[0]
+            return sql_datatype
 
-        return get_pydantic_type(self.post_gres_datatype)[0]
+        pydantic_datatype: str = get_pydantic_type(self.post_gres_datatype)[0]
+        return pydantic_datatype
 
     def is_user_defined_type(self) -> bool:
         """Check if the column is a user-defined type."""

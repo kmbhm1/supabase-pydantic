@@ -8,8 +8,9 @@ from supabase_pydantic.utils.strings import chunk_text
 
 def get_base_class_post_script(table_type: str, class_type: WriterClassType) -> str:
     """Method to generate the header for the base class."""
-    post = 'View' + BASE_CLASS_POSTFIX if table_type == 'VIEW' else BASE_CLASS_POSTFIX
-    return post + 'Parent' if class_type == WriterClassType.PARENT else post
+    post: str = 'View' + BASE_CLASS_POSTFIX if table_type == 'VIEW' else BASE_CLASS_POSTFIX
+    result: str = post + 'Parent' if class_type == WriterClassType.PARENT else post
+    return result
 
 
 def generate_unique_filename(base_name: str, extension: str, directory: str = '.') -> str:

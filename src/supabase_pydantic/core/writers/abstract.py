@@ -20,14 +20,16 @@ class AbstractClassWriter(ABC):
 
     @staticmethod
     def _proper_name(name: str, use_base: bool = False) -> str:
-        return to_pascal_case(name) + (BASE_CLASS_POSTFIX if use_base else '')
+        result: str = to_pascal_case(name) + (BASE_CLASS_POSTFIX if use_base else '')
+        return result
 
     def write_class(
         self,
         add_fk: bool = False,
     ) -> str:
         """Method to write the complete class definition."""
-        return self.write_definition() + self.write_docs() + self.write_columns(add_fk)
+        class_def: str = self.write_definition() + self.write_docs() + self.write_columns(add_fk)
+        return class_def
 
     @abstractmethod
     def write_operational_class(self) -> str | None:

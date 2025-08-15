@@ -51,7 +51,8 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         # print(f'  class_type: {self.class_type}')
         # print(f'  base_name: {base_name}')
         # print(f'  result: {result}')
-        return result
+        name_result: str = result
+        return name_result
 
     def write_metaclass(self, metaclasses: list[str] | None = None) -> str | None:
         """Method to generate the metaclasses for the class.
@@ -66,16 +67,18 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             return ', '.join(metaclasses)
 
         # Otherwise, determine the appropriate model type based on class_type
+        result: str | None
         if self.class_type == WriterClassType.INSERT:
-            return f'{CUSTOM_MODEL_NAME}Insert'
+            result = f'{CUSTOM_MODEL_NAME}Insert'
         elif self.class_type == WriterClassType.UPDATE:
-            return f'{CUSTOM_MODEL_NAME}Update'
+            result = f'{CUSTOM_MODEL_NAME}Update'
         elif self.class_type in [WriterClassType.BASE, WriterClassType.PARENT]:
-            return CUSTOM_MODEL_NAME
+            result = CUSTOM_MODEL_NAME
         elif self.class_type == WriterClassType.BASE_WITH_PARENT:
-            return f'{self.name}{post(self.table.table_type, WriterClassType.PARENT)}'
+            result = f'{self.name}{post(self.table.table_type, WriterClassType.PARENT)}'
         else:
-            return CUSTOM_MODEL_NAME
+            result = CUSTOM_MODEL_NAME
+        return result
 
     def _parse_length_constraint(self, constraint_def: str | None) -> dict[str, int] | None:
         """Parse length constraints from a CHECK constraint definition.
@@ -291,7 +294,8 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         cols = [self.write_column(c) for c in self.separated_columns.remaining]
         if len(cols) == 0:
             return None
-        return AbstractClassWriter.column_section('Columns', cols)
+        result: str | None = AbstractClassWriter.column_section('Columns', cols)
+        return result
 
     def write_foreign_columns(self, use_base: bool = True) -> str | None:
         """Method to generate foreign column definitions for the class.
@@ -497,11 +501,12 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         self.generate_enums = generate_enums
         self.disable_model_prefix_protection = disable_model_prefix_protection
 
-    def _dt_imports(self, imports: set, default_import: tuple[Any, Any | None] = (Any, None)) -> None:
+    def _dt_imports(self, imports: set, default_import: tuple[str, str | None] = ('typing.Any', None)) -> None:
         """Update the imports with the necessary data types."""
 
         def _pyi(c: ColumnInfo) -> str | None:  # pyi = pydantic import  # noqa
-            return get_pydantic_type(c.post_gres_datatype, default_import)[1]
+            import_stmt: str | None = get_pydantic_type(c.post_gres_datatype, default_import)[1]
+            return import_stmt
 
         # column data types
         imports.update(filter(None, map(_pyi, (c for t in self.tables for c in t.columns))))
@@ -593,7 +598,8 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             else:
                 classes = [_method(t)() for t in self.tables]
 
-        return self.join([sxn, *classes])
+        result: str = self.join([sxn, *classes])
+        return result
 
     def write_enum_types(self) -> str | None:
         """Generate a section of Python Enum classes for all unique enums used in the schema."""
@@ -713,5 +719,6 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             self.write_operational_classes(),
         ]
 
-        # filter None and join parts using self.jstr (which is '\\n\\n\\n')
-        return self.jstr.join(p for p in parts if p is not None) + '\n'
+        # filter None and join parts using self.jstr (which is '\n\n\n')
+        result: str = self.jstr.join(p for p in parts if p is not None) + '\n'
+        return result

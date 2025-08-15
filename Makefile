@@ -11,7 +11,7 @@ help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*setup.*|^[a-zA-Z_-]+:.*?## .*clean.*' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Testing & Quality:"
-	@grep -E '^test|^coverage|^tox|^lint|^check-types|^smoke-test:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^test|^coverage|^tox|^lint|^typecheck|^smoke-test:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Building & Documentation:"
 	@grep -E '^build|^requirements|^check-next-version|^serve-docs:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
@@ -60,7 +60,7 @@ format: ## Run ruff formatter
 	@echo "Running ruff formatter"
 	@poetry run ruff format .
 
-check-types: ## Run mypy type checker
+typecheck: ## Run mypy type checker
 	@echo "Type checking with mypy"
 	@poetry run mypy .
 

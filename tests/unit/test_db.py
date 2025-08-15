@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import psycopg2
 import pytest
 
-from supabase_pydantic.util.constants import (
+from supabase_pydantic.db.constants import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
     GET_CONSTRAINTS,
@@ -12,7 +12,7 @@ from supabase_pydantic.util.constants import (
     SCHEMAS_QUERY,
     DatabaseConnectionType,
 )
-from supabase_pydantic.util.db import (
+from supabase_pydantic.db.connection import (
     DBConnection,
     check_connection,
     construct_tables,
@@ -20,7 +20,7 @@ from supabase_pydantic.util.db import (
     create_connection_from_db_url,
     query_database,
 )
-from supabase_pydantic.util.exceptions import ConnectionError
+from supabase_pydantic.db.exceptions import ConnectionError
 
 
 @pytest.fixture
@@ -111,7 +111,7 @@ def mock_database(monkeypatch):
     mock_create_conn = MagicMock(return_value=mock_conn)
     monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)
     mock_check_conn = MagicMock(return_value=True)
-    monkeypatch.setattr('supabase_pydantic.util.db.check_connection', mock_check_conn)
+    monkeypatch.setattr('supabase_pydantic.db.connection.check_connection', mock_check_conn)
     return mock_create_conn, mock_conn, mock_cursor
 
 
@@ -140,7 +140,7 @@ def mock_query_database(monkeypatch):
             return [('mapping1', 'mapping2')]
         return []
 
-    monkeypatch.setattr('supabase_pydantic.util.db.query_database', mock_query)
+    monkeypatch.setattr('supabase_pydantic.db.connection.query_database', mock_query)
 
 
 def test_construct_tables_local_success(mock_database, mock_query_database, mock_construct_table_info):
@@ -187,7 +187,7 @@ def test_construct_tables_db_url_failure(mock_database):
 def mock_construct_table_info_raises_exception(monkeypatch):
     # Mock construct_table_info and configure it to raise an exception
     mock_function = MagicMock(side_effect=Exception('Failed to construct table info'))
-    monkeypatch.setattr('supabase_pydantic.util.db.construct_table_info', mock_function)
+    monkeypatch.setattr('supabase_pydantic.db.marshalers.schema.construct_table_info', mock_function)
     return mock_function
 
 

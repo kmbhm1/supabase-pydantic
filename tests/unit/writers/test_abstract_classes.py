@@ -185,7 +185,7 @@ def test_save_method():
         patch('builtins.open', new_callable=MagicMock) as mock_open,
         patch('pathlib.Path.exists', return_value=True),
         patch(
-            'supabase_pydantic.util.writers.abstract_classes.generate_unique_filename',
+            'supabase_pydantic.core.writers.abstract.generate_unique_filename',
             return_value='test_file_unique.py',
         ) as mock_unique_filename,
     ):

@@ -4,8 +4,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from supabase_pydantic.util.constants import RelationType
-from supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
+from supabase_pydantic.db.constants import RelationType
+from supabase_pydantic.db.models import ColumnInfo, ConstraintInfo, ForeignKeyInfo, RelationshipInfo, TableInfo
 from supabase_pydantic.db.graph import (
     build_dependency_graph,
     reorganize_tables_by_relationships,
@@ -529,6 +529,6 @@ def test_unique_data_rows_with_foreign_keys():
             )
         ],
     )
-    with patch('supabase_pydantic.util.sorting.pick_random_foreign_key', return_value=1):
+    with patch('supabase_pydantic.db.seed.generator.pick_random_foreign_key', return_value=1):
         result = unique_data_rows(table, remember_fn=Mock())
     assert len(result) == 2  # Should generate 2 rows, one for each name

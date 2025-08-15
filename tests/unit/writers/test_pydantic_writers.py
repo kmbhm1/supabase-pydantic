@@ -5,7 +5,7 @@ from supabase_pydantic.core.models import EnumInfo
 from supabase_pydantic.db.marshalers.schema import get_table_details_from_columns
 from supabase_pydantic.db.models import ColumnInfo, ConstraintInfo, RelationshipInfo, TableInfo, ForeignKeyInfo
 from supabase_pydantic.core.constants import WriterClassType
-from supabase_pydantic.core.constants import RelationType
+from supabase_pydantic.db.constants import RelationType
 from supabase_pydantic.core.writers.pydantic import PydanticFastAPIClassWriter, PydanticFastAPIWriter
 from supabase_pydantic.utils.types import get_pydantic_type
 

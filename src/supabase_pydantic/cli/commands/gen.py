@@ -1,5 +1,3 @@
-"""Command for generating models from database schema."""
-
 import logging
 import os
 import re

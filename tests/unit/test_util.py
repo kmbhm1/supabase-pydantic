@@ -3,7 +3,8 @@ from unittest.mock import call, mock_open, patch
 
 import pytest
 
-from supabase_pydantic.core.constants import FrameWorkType, OrmType, WriterConfig
+from supabase_pydantic.core.constants import FrameWorkType, OrmType
+from supabase_pydantic.core.config import WriterConfig
 
 # String utilities
 from supabase_pydantic.utils.strings import (
@@ -27,11 +28,11 @@ from supabase_pydantic.utils.types import (
 )
 
 # Configuration utilities
-from supabase_pydantic.utils.config import (
+from supabase_pydantic.core.config import (
     get_standard_jobs,
     local_default_env_configuration,
 )
-from supabase_pydantic.util.writers.util import get_latest_filename, write_seed_file
+from supabase_pydantic.core.writers.utils import get_latest_filename, write_seed_file
 
 
 def test_to_pascal_case():
@@ -111,7 +112,7 @@ def test_clean_directories():
     directories = {'default': 'default_directory', 'temp': 'temp_directory', 'backup': None, 'log': 'log_directory'}
     with (
         patch('os.path.isdir', return_value=True),
-        patch('supabase_pydantic.util.util.clean_directory') as mock_clean_dir,
+        patch('supabase_pydantic.utils.io.clean_directory') as mock_clean_dir,
     ):  # Adjust the path to match your module structure
         clean_directories(directories)
 
@@ -126,7 +127,7 @@ def test_clean_directories_ignores_non_directories():
     with (
         patch('os.path.isdir', return_value=False),
         patch('builtins.print') as mock_print,
-        patch('supabase_pydantic.util.util.clean_directory') as mock_clean_dir,
+        patch('supabase_pydantic.utils.io.clean_directory') as mock_clean_dir,
     ):  # Adjust the path to match your module structure
         clean_directories(directories)
 
@@ -154,7 +155,7 @@ def test_get_working_directories_returns_correct_list():
         with (
             patch('os.path.exists', return_value=False),
             patch('os.path.isdir', return_value=True),
-            patch('supabase_pydantic.util.util.create_directories_if_not_exist') as mock_create_dirs,
+            patch('supabase_pydantic.utils.io.create_directories_if_not_exist') as mock_create_dirs,
         ):
             directories = get_working_directories(default_directory, frameworks, auto_create)
 
@@ -347,7 +348,7 @@ def test_write_seed_file_no_overwrite_file_exists():
 
     with patch('builtins.open', m):
         with patch('os.path.exists', return_value=True):
-            with patch('supabase_pydantic.util.writers.util.generate_unique_filename', return_value=unique_file_path):
+            with patch('supabase_pydantic.core.writers.util.generate_unique_filename', return_value=unique_file_path):
                 result = write_seed_file(seed_data, file_path, overwrite=False)
 
     assert result == [expected_file_path, unique_file_path]

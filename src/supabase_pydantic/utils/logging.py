@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import sys
+from types import FrameType
 
 try:
     from loguru import logger  # type: ignore
+
     _HAS_LOGURU = True
 except Exception:  # pragma: no cover - fallback path
     logger = None  # type: ignore
@@ -23,10 +25,10 @@ class InterceptHandler(logging.Handler):
             level = record.levelno
 
         # Compute correct depth by skipping frames from stdlib logging module
-        frame = logging.currentframe()
+        frame: FrameType | None = logging.currentframe()
         depth = 2
         # Walk back until we leave the logging module
-        while frame and frame.f_code.co_filename == getattr(logging, "__file__", None):
+        while frame and frame.f_code.co_filename == getattr(logging, '__file__', None):
             frame = frame.f_back
             depth += 1
 

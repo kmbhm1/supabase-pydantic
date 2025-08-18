@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -7,6 +9,26 @@ from supabase_pydantic.core.constants import BASE_CLASS_POSTFIX, WriterClassType
 from supabase_pydantic.core.writers.utils import generate_unique_filename
 from supabase_pydantic.db.models import TableInfo
 from supabase_pydantic.utils.strings import to_pascal_case
+
+
+def get_section_comment(title: str, description_lines: list[str] | None = None) -> str:
+    """Generate a section comment with a title and optional description lines.
+
+    Args:
+        title: Title of the section
+        description_lines: Optional list of description lines to add after title
+
+    Returns:
+        Formatted section comment string
+    """
+    if description_lines is None:
+        description_lines = []
+
+    lines = [f'# {title}', '#']
+    for line in description_lines:
+        lines.append(f'# {line}')
+
+    return '\n'.join(lines)
 
 
 class AbstractClassWriter(ABC):

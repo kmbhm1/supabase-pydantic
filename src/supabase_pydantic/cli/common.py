@@ -8,7 +8,7 @@ import toml
 from supabase_pydantic.utils.constants import AppConfig, ToolConfig
 
 # Standard choices
-model_choices = ['pydantic']
+model_choices = ['pydantic', 'sqlalchemy']
 framework_choices = ['fastapi']
 
 

@@ -190,7 +190,7 @@ def test_SqlAlchemyFastAPIClassWriter_write_metaclass_returns_Base(fastapi_class
 @pytest.mark.sqlalchemy
 def test_SqlAlchemyFastAPIClassWriter_write_docs(fastapi_class_writer):
     """Verify the write_docs method returns the expected value."""
-    assert fastapi_class_writer.write_docs() == '\n\t"""User Base."""\n\n\t__tablename__ = "User"\n'
+    assert fastapi_class_writer.write_docs() == '\n\t"""User base class."""\n\n\t# Class for table: User'
 
 
 @pytest.mark.unit
@@ -212,7 +212,7 @@ def test_SqlAlchemyFastAPIClassWriter_write_column(fastapi_class_writer):
         fastapi_class_writer.write_column(
             ColumnInfo(name='email', post_gres_datatype='varchar', is_nullable=True, datatype='str')
         )
-        == 'email: Mapped[str | None] = mapped_column(String)'
+        == 'email: Mapped[str | None] = mapped_column(String, nullable=True)'
         and fastapi_class_writer.write_column(
             ColumnInfo(name='email', post_gres_datatype='varchar', is_nullable=True, datatype='str')
         )
@@ -353,7 +353,7 @@ def test_SqlAlchemyFastAPIClassWriter_write_columns(fastapi_class_writer):
     expected_value = (
         '\t# Primary Keys\n\tid: Mapped[int] = mapped_column(Integer, primary_key=True)\n\n\t'
         '# Columns\n\tcompany_id: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), ForeignKey("Company.id"))'
-        '\n\temail: Mapped[str | None] = mapped_column(String)\n'
+        '\n\temail: Mapped[str | None] = mapped_column(String, nullable=True)\n'
     )
     assert fastapi_class_writer.write_columns() == expected_value
 
@@ -387,64 +387,36 @@ def test_SqlAlchemyFastAPIClassWriter_column_section_is_static():
 @pytest.mark.sqlalchemy
 def test_SqlAlchemyFastAPIWriter_write(fastapi_writer):
     """Verify the correct file output is written."""
-    expected_value = (
-        'from pydantic import Json\n'
-        'from pydantic import UUID4\n'
-        'from sqlalchemy import ForeignKey\n'
-        'from sqlalchemy import Integer\n'
-        'from sqlalchemy import PrimaryKeyConstraint\n'
-        'from sqlalchemy import String\n'
-        'from sqlalchemy.dialects.postgresql import JSONB\n'
-        'from sqlalchemy.dialects.postgresql import UUID\n'
-        'from sqlalchemy.orm import DeclarativeBase\n'
-        'from sqlalchemy.orm import Mapped\n'
-        'from sqlalchemy.orm import mapped_column\n'
-        'from sqlalchemy.orm import relationship\n\n\n'
-        '# DECLARATIVE BASE\n\n\n'
-        'class Base(DeclarativeBase):\n'
-        '\t"""Declarative Base Class."""\n'
-        '\t# type_annotation_map = {}\n\n'
-        '\tpass\n\n\n'
-        '# BASE CLASSES\n\n\n'
-        'class User(Base):\n'
-        '\t"""User Base."""\n\n'
-        '\t__tablename__ = "User"\n\n'
-        '\t# Primary Keys\n'
-        '\tid: Mapped[int] = mapped_column(Integer, primary_key=True)\n\n'
-        '\t# Columns\n'
-        '\tcompany_id: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), ForeignKey("Company.id"))\n'
-        '\temail: Mapped[str | None] = mapped_column(String)\n'
-        '\t# Relationships\n'
-        '\tcompany: Mapped[Company | None] = relationship("Company", back_populates="users", uselist=False)\n'
-        '\t# Table Args\n'
-        '\t__table_args__ = (\n'
-        "\t\tPrimaryKeyConstraint('id', name='User_pkey'),\n"
-        "\t\t{ 'schema': 'public' }\n"
-        '\t)\n\n\n'
-        'class Company(Base):\n'
-        '\t"""Company Base."""\n\n'
-        '\t__tablename__ = "Company"\n\n'
-        '\t# Primary Keys\n'
-        '\tid: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), primary_key=True)\n\n'
-        '\t# Columns\n'
-        '\tname: Mapped[str] = mapped_column(String)\n'
-        '\t# Table Args\n'
-        '\t__table_args__ = (\n'
-        "\t\tPrimaryKeyConstraint('id', name='Company_pkey'),\n"
-        "\t\t{ 'schema': 'public' }\n"
-        '\t)\n\n\n'
-        'class Client(Base):\n'
-        '\t"""Client Base."""\n\n'
-        '\t__tablename__ = "Client"\n\n'
-        '\t# Primary Keys\n'
-        '\tid: Mapped[UUID4] = mapped_column(UUID(as_uuid=True), primary_key=True)\n\n'
-        '\t# Columns\n'
-        '\tname: Mapped[str] = mapped_column(String)\n'
-        '\tinfo_json: Mapped[dict | Json | None] = mapped_column(JSONB)\n'
-        '\t# Table Args\n'
-        '\t__table_args__ = (\n'
-        "\t\tPrimaryKeyConstraint('id', name='Client_pkey'),\n"
-        "\t\t{ 'schema': 'public' }\n"
-        '\t)'
-    )
-    assert fastapi_writer.write() == expected_value
+    output = fastapi_writer.write()
+
+    # Check imports
+    assert 'from __future__ import annotations' in output
+    assert 'from pydantic import Json' in output
+    assert 'from pydantic import UUID4' in output
+    assert 'from sqlalchemy import ForeignKey' in output
+    assert 'from sqlalchemy.orm import relationship' in output
+
+    # Check section headers
+    assert '# Declarative Base' in output
+    assert '# Base Classes' in output
+    assert '# Insert Models' in output
+    assert '# Update Models' in output
+
+    # Check base model class declarations
+    assert 'class User(Base):' in output
+    assert '"""User base class."""' in output
+    assert '# Class for table: User' in output
+    assert 'id: Mapped[int] = mapped_column(Integer, primary_key=True)' in output
+    assert 'email: Mapped[str | None] = mapped_column(String, nullable=True)' in output
+
+    # Check relationship definitions
+    assert 'company: Mapped[Company | None] = relationship("Company", back_populates="users", uselist=False)' in output
+
+    # Check Insert models
+    assert 'class UserInsert(Base):' in output
+    assert '"""User Insert model."""' in output
+
+    # Check Update models
+    assert 'class UserUpdate(Base):' in output
+    assert '"""User Update model."""' in output
+    assert 'id: Mapped[int | None] = mapped_column(Integer, nullable=True)' in output

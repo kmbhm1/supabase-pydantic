@@ -9,6 +9,8 @@
 
 A project for generating Pydantic (& other) models from Supabase (& other) databases. Currently, this is ideal for integrating [FastAPI](https://fastapi.tiangolo.com/) with [supabase-py](https://supabase.com/docs/reference/python/introduction) as a primary use-case, but more updates are coming! This project is a inspired by the TS [type generating](https://supabase.com/docs/guides/api/rest/generating-types) capabilities of supabase cli. Its aim is to provide a similar experience for Python developers.
 
+> **📣 NEW (Feb 2025)**: Generated SQLAlchemy models now include Insert and Update variants for better type safety and validation. [Learn more](https://kmbhm1.github.io/supabase-pydantic/examples/insert-update-models/)
+
 ## Installation
 
 We recommend installing the package using pip:
@@ -41,11 +43,12 @@ Generate Pydantic models for FastAPI using a local supabase connection:
 ```bash
 $ sb-pydantic gen --type pydantic --framework fastapi --local
 
-PostGres connection is open.
-PostGres connection is closed.
-Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:72 - PostGres connection is open.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:construct_tables:136 - Processing schema: public
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:__exit__:105 - PostGres connection is closed.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:239 - Generating Pydantic models...
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:251 - Pydantic models generated successfully for schema 'public': /path/to/your/project/entities/fastapi/schema_public_latest.py
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:258 - File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
 ```
 
 Or generate with a url:
@@ -53,12 +56,14 @@ Or generate with a url:
 ```bash
 $ sb-pydantic gen --type pydantic --framework fastapi --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
-Checking local database connection.postgresql://postgres:postgres@127.0.0.1:54322/postgres
-Connecting to database: postgres on host: 127.0.0.1 with user: postgres and port: 54322
-PostGres connection is open.
-Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:72 - Checking local database connection: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:75 - Connecting to database: postgres on host: 127.0.0.1 with user: postgres and port: 54322
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:72 - PostGres connection is open.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:construct_tables:136 - Processing schema: public
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:__exit__:105 - PostGres connection is closed.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:239 - Generating Pydantic models...
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:251 - Pydantic models generated successfully for schema 'public': /path/to/your/project/entities/fastapi/schema_public_latest.py
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:258 - File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
 ```
 
 You can generate Pydantic models for certain schemas in your database using the `--schema` or `--all-schemas` options:
@@ -69,10 +74,50 @@ $ sb-pydantic gen --type pydantic --framework fastapi --local --schema extension
 
 This command will generate a BaseModel file for each schema in your database.
 
-For some users, integrating a Makefile command may be more convenient:
+### Generate SQLAlchemy ORM Models
+
+To generate SQLAlchemy models with Insert and Update variants:
 
 ```bash
-gen-types:
+$ sb-pydantic gen --type sqlalchemy --local
+
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:72 - PostGres connection is open.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:construct_tables:136 - Processing schema: public
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:__exit__:105 - PostGres connection is closed.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:239 - Generating SQLAlchemy models...
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:251 - SQLAlchemy models generated successfully for schema 'public': /path/to/your/project/entities/sqlalchemy/schema_public_latest.py
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:258 - File formatted successfully: /path/to/your/project/entities/sqlalchemy/schema_public_latest.py
+```
+
+Or with a specific database URL:
+
+```bash
+$ sb-pydantic gen --type sqlalchemy --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:72 - Checking local database connection: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:75 - Connecting to database: postgres on host: 127.0.0.1 with user: postgres and port: 54322
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:check_connection:72 - PostGres connection is open.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:construct_tables:136 - Processing schema: public
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.db.connection:__exit__:105 - PostGres connection is closed.
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:239 - Generating SQLAlchemy models...
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:251 - SQLAlchemy models generated successfully for schema 'public': /path/to/your/project/entities/sqlalchemy/schema_public_latest.py
+2025-08-18 15:47:42 | Level 20 | supabase_pydantic.cli.commands.gen:gen:258 - File formatted successfully: /path/to/your/project/entities/sqlalchemy/schema_public_latest.py
+```
+
+For some users, integrating Makefile commands may be more convenient:
+
+```bash
+# Makefile examples for both Pydantic and SQLAlchemy generation
+
+gen-pydantic:
     @echo "Generating FastAPI Pydantic models..."
-    @sb-pydantic gen --type pydantic --framework fastapi --dir <your path> --local
+    @sb-pydantic gen --type pydantic --framework fastapi --dir ./entities/fastapi --local
+
+gen-sqlalchemy:
+    @echo "Generating SQLAlchemy ORM models..."
+    @sb-pydantic gen --type sqlalchemy --dir ./entities/sqlalchemy --local
+
+# Generate all model types at once
+gen-all: gen-pydantic gen-sqlalchemy
+    @echo "All models generated successfully."
 ```

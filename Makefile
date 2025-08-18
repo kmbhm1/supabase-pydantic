@@ -130,6 +130,14 @@ smoke-test-debug: ## Run a quick test with debugging generating FastAPI models
 	@echo "Running smoke test"
 	@sb-pydantic gen --type pydantic --framework fastapi --local --debug
 
+smoke-test-sqlalchemy: ## Run a quick test generating SQLAlchemy models
+	@echo "Running smoke test for SQLAlchemy"
+	@sb-pydantic gen --type sqlalchemy --framework fastapi --local
+
+smoke-test-sqlalchemy-debug: ## Run a quick test with debugging generating SQLAlchemy models
+	@echo "Running smoke test for SQLAlchemy with debugging"
+	@sb-pydantic gen --type sqlalchemy --framework fastapi --local --debug
+
 
 #######################################################
 # Documentation 									  #

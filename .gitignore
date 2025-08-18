@@ -166,3 +166,6 @@ notes/
 # VS Code
 .vscode/
 .python-version
+
+# macOS
+.DS_Store

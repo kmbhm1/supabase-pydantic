@@ -49,7 +49,7 @@ jobs:
       continue-on-error: true
       run: |
         poetry run pytest --cov=supabase_pydantic --cov-report=term-missing --cov-report=xml \
-          --junit-xml=test-results.xml
+          --junitxml=junit.xml -o junit_family=legacy
 
         COVERAGE=$(cat coverage.xml | grep -o 'line-rate="[0-9]\.[0-9]\+"' | head -1 | cut -d'"' -f2)
         COVERAGE=$(echo "$COVERAGE * 100" | bc)
@@ -60,19 +60,19 @@ jobs:
         fi
 
     - name: Upload coverage to Codecov
-      if: always() && matrix.python-version == '3.10'
-      uses: codecov/codecov-action@v4
+      if: matrix.python-version == '3.10'
+      uses: codecov/codecov-action@v5
       with:
-        verbose: true
-        file: ./coverage.xml
+        files: ./coverage.xml
         flags: unittests
         fail_ci_if_error: false
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload test results to Codecov
-      if: always() && matrix.python-version == '3.10'
-      uses: codecov/test-results-action@v0
+      if: ${{ !cancelled() }} && matrix.python-version == '3.10'
+      uses: codecov/test-results-action@v1
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./test-results.xml
+        files: ./junit.xml
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

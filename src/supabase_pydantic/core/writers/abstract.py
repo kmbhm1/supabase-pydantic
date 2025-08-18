@@ -11,7 +11,7 @@ from supabase_pydantic.db.models import TableInfo
 from supabase_pydantic.utils.strings import to_pascal_case
 
 
-def get_section_comment(title: str, description_lines: list[str] = None) -> str:
+def get_section_comment(title: str, description_lines: list[str] | None = None) -> str:
     """Generate a section comment with a title and optional description lines.
 
     Args:
@@ -24,11 +24,11 @@ def get_section_comment(title: str, description_lines: list[str] = None) -> str:
     if description_lines is None:
         description_lines = []
 
-    lines = [f"# {title}", "#"]
+    lines = [f'# {title}', '#']
     for line in description_lines:
-        lines.append(f"# {line}")
+        lines.append(f'# {line}')
 
-    return "\n".join(lines)
+    return '\n'.join(lines)
 
 
 class AbstractClassWriter(ABC):

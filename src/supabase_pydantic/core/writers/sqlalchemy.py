@@ -41,7 +41,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
     def write_name(self) -> str:
         """Method to generate the header for the base class."""
         base_name = self._tname
-        result = base_name
+        result: str = base_name
 
         # Add appropriate suffix for different model types
         if self.class_type == WriterClassType.INSERT:
@@ -469,7 +469,7 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
 
     def _generate_enum_classes(self) -> list[str]:
         """Generate Python enum classes for database enum types."""
-        enum_classes = []
+        enum_classes: list[str] = []
         enum_infos = self._collect_enum_infos()
 
         if not enum_infos:

@@ -19,10 +19,7 @@ class InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover - trivial  # noqa: D102
         if not _HAS_LOGURU or logger is None:
             return
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
+        level = record.levelno if isinstance(record.levelno, int) else logger.level(record.levelname).name
 
         # Compute correct depth by skipping frames from stdlib logging module
         frame: FrameType | None = logging.currentframe()

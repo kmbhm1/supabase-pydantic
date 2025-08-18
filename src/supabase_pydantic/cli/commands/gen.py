@@ -195,7 +195,7 @@ def gen(
             logger.error(
                 f'Critical environment variables not set: {", ".join([k for k, v in env_vars.items() if v is None])}.'
             )
-            logger.errorr('Using default local values...')
+            logger.error('Using default local values...')
             env_vars = local_default_env_configuration()
         # Check if environment variables are set correctly
         assert check_readiness(env_vars)

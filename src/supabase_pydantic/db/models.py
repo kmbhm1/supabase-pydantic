@@ -62,6 +62,10 @@ class ConstraintInfo(AsDictParent):
         constraint_type: str = CONSTRAINT_TYPE_MAP.get(self.raw_constraint_type.lower(), 'OTHER')
         return constraint_type
 
+    def __str__(self) -> str:
+        """Return a string representation of the constraint."""
+        return f'ConstraintInfo({self.constraint_name}, {self.constraint_type()})'
+
 
 @dataclass
 class ColumnInfo(AsDictParent):
@@ -83,6 +87,10 @@ class ColumnInfo(AsDictParent):
     is_identity: bool = False  # For auto-generated identity columns
     enum_info: EnumInfo | None = None  # New field for enum metadata
     array_element_type: str | None = None  # Stores element type for array columns
+
+    def __str__(self) -> str:
+        """Return a string representation of the column."""
+        return f'ColumnInfo({self.name}, {self.post_gres_datatype})'
 
     @property
     def has_default(self) -> bool:
@@ -167,6 +175,10 @@ class TableInfo(AsDictParent):
     constraints: list[ConstraintInfo] = field(default_factory=list)
     relationships: list[RelationshipInfo] = field(default_factory=list)
     generated_data: list[dict] = field(default_factory=list)
+
+    def __str__(self) -> str:
+        """Return a string representation of the table."""
+        return f'TableInfo({self.schema}.{self.name})'
 
     def add_column(self, column: ColumnInfo) -> None:
         """Add a column to the table."""

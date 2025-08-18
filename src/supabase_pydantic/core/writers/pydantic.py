@@ -493,9 +493,11 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         # Use functools.partial to wrap the writer so that it always
         # receives the correct extra arguments, but only if the concrete
         # class supports them.
-        writer_with_options = partial(
-            writer, generate_enums=generate_enums, disable_model_prefix_protection=disable_model_prefix_protection
-        )  # type: ignore
+        writer_with_options = partial(  # type: ignore
+            writer,
+            generate_enums=generate_enums,
+            disable_model_prefix_protection=disable_model_prefix_protection,  # type: ignore
+        )
 
         super().__init__(tables, file_path, writer_with_options, add_null_parent_classes)
         self.generate_crud_models = generate_crud_models

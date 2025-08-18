@@ -7,6 +7,10 @@ from typing import Any
 
 @dataclass
 class AsDictParent:
+    def as_dict(self) -> dict[str, Any]:
+        """Convert the dataclass instance to a dictionary."""
+        return asdict(self)
+
     def __str__(self) -> str:
         return json.dumps(asdict(self), indent=4)
 

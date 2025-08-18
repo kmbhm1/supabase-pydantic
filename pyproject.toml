@@ -315,6 +315,7 @@ deps =
     mypy>=1.11.0
     pydantic
     types-toml
+    types-pyyaml
     sqlalchemy
 skip_install = true
 commands =

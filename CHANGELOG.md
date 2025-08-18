@@ -1,5 +1,95 @@
 # CHANGELOG
 
+## v0.22.2 (2025-08-18)
+
+### Bug Fixes
+
+- Remove mkdocs-click ([#93](https://github.com/kmbhm1/supabase-pydantic/pull/93),
+  [`ffea1e2`](https://github.com/kmbhm1/supabase-pydantic/commit/ffea1e24786fac66c852a30d5cfe8637fc42fdf4))
+
+Resolves issue with mkdocs deployment by removing the mkdocs-click dependency.
+
+## v0.22.1 (2025-08-17)
+
+### Bug Fixes
+
+- Fix failing CI deployment ([#92](https://github.com/kmbhm1/supabase-pydantic/pull/92),
+  [`511ddf3`](https://github.com/kmbhm1/supabase-pydantic/commit/511ddf3a985952eca22e3ab28351c6bc08892d8c))
+
+Resolves GitHub Actions workflow issues that were preventing successful deployments.
+
+## v0.22.0 (2025-08-15)
+
+### Features
+
+- Restructure project organization and enhance logging ([#91](https://github.com/kmbhm1/supabase-pydantic/pull/91),
+  [`f04d154`](https://github.com/kmbhm1/supabase-pydantic/commit/f04d15412c9277c56fcb819812db2a0680cc388b))
+
+Major project restructuring following Python best practices:
+- Moved core code under `src/` directory
+- Reorganized modules into logical packages (`core`, `db`, `utils`)
+- Enhanced logging with better configuration options
+- Improved error handling and reporting
+
+## v0.21.0 (2025-08-10)
+
+### Features
+
+- Add option to disable Pydantic's model_ prefix protection ([#90](https://github.com/kmbhm1/supabase-pydantic/pull/90),
+  [`a1aadd2`](https://github.com/kmbhm1/supabase-pydantic/commit/a1aadd2cffc890e85a84a571552b2d42681664d5))
+
+Adds new configuration option to disable Pydantic's automatic `model_` prefix for reserved keywords,
+allowing more direct mapping to database column names when needed.
+
+## v0.20.0 (2025-08-05)
+
+### Features
+
+- Improve array type handling in Pydantic models ([#88](https://github.com/kmbhm1/supabase-pydantic/pull/88),
+  [`7e0c0b9`](https://github.com/kmbhm1/supabase-pydantic/commit/7e0c0b9af7c07d57f0e61e2b8c961ca1754384a0))
+
+Enhances PostgreSQL array type detection and mapping to Python types:
+- Better handling of multi-dimensional arrays
+- Improved type annotations for arrays of complex types
+- Support for arrays of enums and custom types
+
+## v0.19.8 (2025-07-25)
+
+### Bug Fixes
+
+- Add common business terms to reserved column name exceptions ([#87](https://github.com/kmbhm1/supabase-pydantic/pull/87),
+  [`da4be98`](https://github.com/kmbhm1/supabase-pydantic/commit/da4be98ff5964332fbce44e771edf0c497513b62))
+
+Expands list of business terms exempted from keyword protection to prevent unnecessary
+`model_` prefixes on common database column names.
+
+## v0.19.7 (2025-07-20)
+
+### Bug Fixes
+
+- Upgrade urllib3 from 2.3.0 to 2.5.0 ([#83](https://github.com/kmbhm1/supabase-pydantic/pull/83),
+  [`79c9c0c`](https://github.com/kmbhm1/supabase-pydantic/commit/79c9c0c4f6ba1266e3c64ef3e262f79e09b64123))
+
+Security update to address vulnerabilities in urllib3.
+
+## v0.19.6 (2025-07-15)
+
+### Bug Fixes
+
+- Update requests to >=2.32.4 to address security vulnerability ([#82](https://github.com/kmbhm1/supabase-pydantic/pull/82),
+  [`5c77f85`](https://github.com/kmbhm1/supabase-pydantic/commit/5c77f85d1b7a2ce58b2ad0ec8e9f36036b6412e6))
+
+Security update to address vulnerabilities in the requests library.
+
+## v0.19.5 (2025-07-01)
+
+### Bug Fixes
+
+- Fix KeyError on printing ([#80](https://github.com/kmbhm1/supabase-pydantic/pull/80),
+  [`3cfe73a`](https://github.com/kmbhm1/supabase-pydantic/commit/3cfe73a463e3416c36e9701d7c934caf3f662e02))
+
+Resolves an issue where a KeyError could occur during debug printing operations.
+
 
 ## v0.19.4 (2025-05-22)
 

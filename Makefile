@@ -11,7 +11,7 @@ help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*setup.*|^[a-zA-Z_-]+:.*?## .*clean.*' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Testing & Quality:"
-	@grep -E '^test|^coverage|^tox|^lint|^check-types|^smoke-test:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^test|^coverage|^tox|^lint|^typecheck|^smoke-test:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Building & Documentation:"
 	@grep -E '^build|^requirements|^check-next-version|^serve-docs:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
@@ -60,7 +60,7 @@ format: ## Run ruff formatter
 	@echo "Running ruff formatter"
 	@poetry run ruff format .
 
-check-types: ## Run mypy type checker
+typecheck: ## Run mypy type checker
 	@echo "Type checking with mypy"
 	@poetry run mypy .
 
@@ -78,14 +78,21 @@ pre-commit: ## Run all pre-commit hooks
 # Testing 										      #
 #######################################################
 
-
 test: ## Run all tests with coverage report
 	@echo "Running tests"
-	@poetry run pytest -vv -s --cov=supabase_pydantic --cov-report=term-missing
+	@poetry run pytest -vv -s --cov=src/supabase_pydantic --cov-report=term-missing --cov-fail-under=90
+
+test-unit: ## Run only unit tests
+	@echo "Running unit tests"
+	@poetry run pytest -vv -s -m "unit" tests/unit/
+
+test-integration: ## Run only integration tests with database connection
+	@echo "Running integration tests with database connection"
+	@RUN_DB_TESTS=1 poetry run pytest -vv -s -m "integration" tests/integration/
 
 coverage: ## Generate detailed HTML coverage report
 	@echo "Running tests with coverage"
-	@poetry run pytest --cov=supabase_pydantic --cov-report=term-missing --cov-report=html --cov-config=pyproject.toml
+	@poetry run pytest --cov=src/supabase_pydantic --cov-report=term-missing --cov-report=html --cov-config=pyproject.toml
 
 tox: clean ## Run tests across multiple Python versions using tox
 	@echo "Running tox for multiple Python versions"

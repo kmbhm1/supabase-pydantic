@@ -30,15 +30,38 @@ jobs:
       uses: snok/install-poetry@v1
       with:
         version: 1.7.1
+        virtualenvs-create: true
+        virtualenvs-in-project: true
 
     - name: Install dependencies
-      run: |
-        poetry install --without dev || poetry install
+      run: poetry install
 
     - name: Install tox directly
-      run: |
-        pip install "tox>=4.11.3"
+      run: pip install "tox>=4.11.3"
 
     - name: Run tests
+      run: tox -e py$(echo ${{ matrix.python-version }} | tr -d '.')
+
+    # Only run coverage report on Python 3.10
+    - name: Coverage check
+      if: matrix.python-version == '3.10'
+      id: coverage
       run: |
-        tox -e py$(echo ${{ matrix.python-version }} | tr -d '.')
+        COVERAGE=$(poetry run pytest --cov=supabase_pydantic --cov-report=term-missing | grep TOTAL | awk '{print $4}' | tr -d '%')
+        echo "Coverage percentage is $COVERAGE%"
+        if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+          echo "Coverage is below 90% threshold"
+          exit 1
+        fi
+
+    - name: Generate coverage report
+      if: matrix.python-version == '3.10'
+      run: poetry run pytest --cov=supabase_pydantic --cov-report=xml
+
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.10'
+      uses: codecov/codecov-action@v4
+      with:
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

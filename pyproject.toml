@@ -25,7 +25,17 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-keywords = ["supabase", "pydantic", "fastapi", "sqlalchemy", "REST", "generator", "schema", "model"]
+keywords = [
+    "supabase",
+    "pydantic",
+    "fastapi",
+    "sqlalchemy",
+    "REST",
+    "generator",
+    "schema",
+    "model",
+]
+packages = [{ include = "supabase_pydantic", from = "src" }]
 
 [tool.poetry.scripts]
 sb-pydantic = 'supabase_pydantic.cli:cli'
@@ -44,9 +54,10 @@ click-option-group = "^0.5.6"
 inflection = "^0.5.1"
 requests = ">=2.32.4"
 urllib3 = "^2.5.0"
+loguru = "^0.7.2"
 
 [tool.poetry.group.dev.dependencies]
-sqlalchemy = {extras = ["mypy"], version = "^2.0.31"}
+sqlalchemy = { extras = ["mypy"], version = "^2.0.31" }
 python-semantic-release = "^9.8.5"
 pre-commit = "^3.7.1"
 commitizen = "^3.28.0"
@@ -61,12 +72,14 @@ networkx = "^3.3"
 matplotlib = "^3.9.1.post1"
 mkdocs = "^1.6.0"
 mkdocs-material = "^9.5.30"
-mkdocstrings = {extras = ["python"], version = "^0.25.1"}
+mkdocstrings = { extras = ["python"], version = "^0.25.1" }
 mkdocs-redirects = "^1.2.1"
 mkdocs-click = "^0.8.1"
 pymdown-extensions = "^10.8.1"
 ruff = ">=0.4.1"
 jinja2 = "^3.1.6"
+types-pyyaml = "^6.0.12.20250809"
+pyyaml = "^6.0.1"
 
 [tool.supabase_pydantic]
 overwrite_existing_files = true
@@ -179,8 +192,8 @@ exclude = [
     "build",
     "dist",
     "tests/*",
-    'entities/*', # generated files
-    'poc'
+    'entities/*',  # generated files
+    'poc',
 ]
 python_version = "3.10"
 mypy_path = "."
@@ -243,7 +256,19 @@ env = "GIT_COMMIT_AUTHOR"
 default = "KB <kmbhm1@gmail.com>"
 
 [tool.semantic_release.commit_parser_options]
-allowed_tags = ["build", "chore", "ci", "docs", "feat", "feature", "fix", "perf", "style", "refactor", "test"]
+allowed_tags = [
+    "build",
+    "chore",
+    "ci",
+    "docs",
+    "feat",
+    "feature",
+    "fix",
+    "perf",
+    "style",
+    "refactor",
+    "test",
+]
 minor_tags = ["feat", "feature"]
 patch_tags = ["fix", "perf", "docs", "refactor", "chore"]
 default_bump_level = 0
@@ -271,6 +296,7 @@ deps =
     pytest-cov
     pytest-mypy
     pytest-mock
+    pyyaml
 commands =
     pytest {posargs:tests} --cov=supabase_pydantic --cov-report=term-missing
 
@@ -289,6 +315,7 @@ deps =
     mypy>=1.11.0
     pydantic
     types-toml
+    types-pyyaml
     sqlalchemy
 skip_install = true
 commands =
@@ -296,16 +323,39 @@ commands =
 """
 
 [tool.pytest.ini_options]
-pythonpath = [
-    ".",
-]
+pythonpath = ["src"]
 log_level = "INFO"
+markers = [
+    "unit: mark a test as a unit test",
+    "integration: mark a test as an integration test",
+    "db: mark a test that interacts with the database",
+    "strings: mark a test for string utilities",
+    "io: mark a test for I/O utilities",
+    "types: mark a test for type utilities",
+    "config: mark a test for configuration utilities",
+    "writers: mark a test for writers",
+    "graph: mark a test for graph operations",
+    "seed: mark a test for seed generation",
+    "constants: mark a test for constants",
+    "formatting: mark a test for formatting utilities",
+    "connection: mark a test for database connections",
+    "construction: mark a test for database schema construction",
+    "cli: mark a test for CLI functionality",
+    "marshalers: mark a test for data marshaling",
+    "models: mark a test for data models",
+    "utils: mark a test for utility functions",
+    "serialization: mark a test for data serialization",
+    "schema: mark a test for database schema",
+    "pydantic: mark a test for pydantic functionality",
+    "sqlalchemy: mark a test for sqlalchemy functionality"
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 [tool.coverage]
 [tool.coverage.run]
-omit = [
-    '__init__.py',
-    '.venv/*',
-]
+omit = ['__init__.py', '.venv/*']
 
 [tool.coverage.report]
 skip_empty = true

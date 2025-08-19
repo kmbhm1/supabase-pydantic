@@ -2692,6 +2692,18 @@ files = [
 ]
 
 [[package]]
+name = "types-pymysql"
+version = "1.1.0.20250711"
+description = "Typing stubs for PyMySQL"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "types_pymysql-1.1.0.20250711-py3-none-any.whl", hash = "sha256:29c8dbaeb38c005ea0b81fd2e1fbe58f1774d58105f41812fbf1dfc4701ae392"},
+    {file = "types_pymysql-1.1.0.20250711.tar.gz", hash = "sha256:38690d5e6d290eb56b9a451c79643c86663e1993344b818c69128977867a5ab9"},
+]
+
+[[package]]
 name = "types-pyyaml"
 version = "6.0.12.20250809"
 description = "Typing stubs for PyYAML"
@@ -2840,4 +2852,4 @@ dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "055d1ae12ee4ae869d8c156207771c1d5709d5628cf3797a05a207c201645299"
+content-hash = "dad793f602db558bd673fe1a5f314323b26c6cbdc6b5230616be441d8f44f9e1"

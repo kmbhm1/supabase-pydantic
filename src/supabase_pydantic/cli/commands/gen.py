@@ -13,8 +13,10 @@ from supabase_pydantic.cli.common import (
 )
 from supabase_pydantic.core.config import WriterConfig, get_standard_jobs, local_default_env_configuration
 from supabase_pydantic.core.writers.factories import FileWriterFactory
-from supabase_pydantic.db.connection import construct_tables
+from supabase_pydantic.db.builder import construct_tables
 from supabase_pydantic.db.constants import POSTGRES_SQL_CONN_REGEX, DatabaseConnectionType
+from supabase_pydantic.db.database_type import DatabaseType
+from supabase_pydantic.db.models import PostgresConnectionParams
 from supabase_pydantic.db.seed import generate_seed_data, write_seed_file
 from supabase_pydantic.utils.formatting import RuffNotFoundError, format_with_ruff
 from supabase_pydantic.utils.io import get_working_directories
@@ -166,39 +168,70 @@ def gen(
     setup_logging(debug)
     logger.debug(f'Debug mode is {"on" if debug else "off"}')
 
-    # Load environment variables from .env file & check if they are set correctly
-    if not local and db_url is None:
-        logger.error('Please provide a connection source. Exiting...')
-        return
-
+    # Validate connection options and prepare environment variables
     conn_type: DatabaseConnectionType = DatabaseConnectionType.LOCAL
     env_vars: dict[str, str | None] = dict()
-    if db_url is not None:
-        logger.info('Checking local database connection.' + db_url)
-        if re.match(POSTGRES_SQL_CONN_REGEX, db_url) is None:
-            logger.error(f'Invalid database URL: "{db_url}". Exiting.')
-            return
-        conn_type = DatabaseConnectionType.DB_URL
-        env_vars['DB_URL'] = db_url
-    else:
-        load_dotenv(find_dotenv())
-        env_vars.update(
-            **{
-                'DB_NAME': os.environ.get('DB_NAME', None),
-                'DB_USER': os.environ.get('DB_USER', None),
-                'DB_PASS': os.environ.get('DB_PASS', None),
-                'DB_HOST': os.environ.get('DB_HOST', None),
-                'DB_PORT': os.environ.get('DB_PORT', None),
-            }
-        )
-        if any([v is None for v in env_vars.values()]) and local:
-            logger.error(
-                f'Critical environment variables not set: {", ".join([k for k, v in env_vars.items() if v is None])}.'
+
+    # Check if valid connection options were provided
+    if not local and db_url is None:
+        logger.error('Please provide a valid connection source (--local or --db-url). Exiting...')
+        return
+
+    try:
+        if db_url is not None:
+            # DB URL connection option
+            logger.info('Setting up database connection using URL')
+            # Validate URL format with regex
+            if re.match(POSTGRES_SQL_CONN_REGEX, db_url) is None:
+                logger.error(f'Invalid PostgreSQL database URL format: "{db_url}". Exiting.')
+                logger.info('URL should be in format: postgresql://username:password@hostname:port/database')
+                return
+
+            conn_type = DatabaseConnectionType.DB_URL
+            env_vars['DB_URL'] = db_url
+            logger.debug('Database URL validation successful')
+
+        else:
+            # Local connection option with environment variables
+            logger.info('Setting up local database connection using environment variables')
+            # Load environment variables from .env file if it exists
+            dotenv_path = find_dotenv(usecwd=True)
+            if dotenv_path:
+                logger.debug(f'Loading environment variables from {dotenv_path}')
+                load_dotenv(dotenv_path)
+            else:
+                logger.debug('No .env file found, using system environment variables')
+
+            # Get database connection parameters from environment
+            env_vars.update(
+                **{
+                    'DB_NAME': os.environ.get('DB_NAME', None),
+                    'DB_USER': os.environ.get('DB_USER', None),
+                    'DB_PASS': os.environ.get('DB_PASS', None),
+                    'DB_HOST': os.environ.get('DB_HOST', None),
+                    'DB_PORT': os.environ.get('DB_PORT', None),
+                }
             )
-            logger.error('Using default local values...')
-            env_vars = local_default_env_configuration()
-        # Check if environment variables are set correctly
-        assert check_readiness(env_vars)
+
+            # Check for missing environment variables and use defaults if local mode
+            missing_vars = [k for k, v in env_vars.items() if v is None]
+            if missing_vars:
+                logger.warning(f'Missing environment variables: {", ".join(missing_vars)}')
+                if local:
+                    logger.info('Using default local connection values')
+                    env_vars = local_default_env_configuration()
+                    logger.debug('Default connection: localhost:5432, database: postgres, user: postgres')
+                else:
+                    logger.error('Environment variables required but not found. Exiting.')
+                    return
+
+            # Validate the environment variables
+            if not check_readiness(env_vars):
+                logger.error('Database connection configuration is incomplete. Exiting.')
+                return
+    except Exception as e:
+        logger.error(f'Error setting up database connection: {str(e)}')
+        return
 
     # Get the directories for the generated files
     dirs = get_working_directories(default_directory, frameworks, auto_create=True)
@@ -206,11 +239,37 @@ def gen(
     # Get the database schema and table details
     # Determine schemas to process
     schemas = ('*',) if all_schemas else tuple(schema)  # Use '*' as an indicator to fetch all schemas
+
+    # Map environment variable names to connector parameter names
+    conn_params_dict = {
+        'dbname': env_vars.get('DB_NAME'),
+        'user': env_vars.get('DB_USER'),
+        'password': env_vars.get('DB_PASS'),
+        'host': env_vars.get('DB_HOST'),
+        'port': env_vars.get('DB_PORT'),
+        'db_url': env_vars.get('DB_URL'),
+    }
+
+    # Log masked connection parameters (hide sensitive info)
+    masked_params = conn_params_dict.copy()
+    if masked_params.get('password'):
+        masked_params['password'] = '******'
+    if masked_params.get('db_url'):
+        masked_params['db_url'] = '******'
+    logger.info(f'Connection parameters: {masked_params}')
+
+    # Remove None values to avoid passing empty parameters
+    conn_params_dict = {k: v for k, v in conn_params_dict.items() if v is not None}
+
+    # Create Pydantic model for connection parameters
+    connection_params = PostgresConnectionParams(**conn_params_dict)
+
     table_dict = construct_tables(
         conn_type=conn_type,
+        db_type=DatabaseType.POSTGRES,  # Default to PostgreSQL for now; TODO: change later
         schemas=schemas,
         disable_model_prefix_protection=disable_model_prefix_protection,
-        **env_vars,
+        connection_params=connection_params,
     )
 
     schemas_with_no_tables = [k for k, v in table_dict.items() if len(v) == 0]
@@ -250,7 +309,6 @@ def gen(
             paths += [p, vf] if vf is not None else [p]
             logger.info(f"{job} models generated successfully for schema '{s}': {p}")
 
-    # Format the generated files
     # Format the generated files
     for p in paths:
         try:

@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field, field_validator
 
 from supabase_pydantic.core.constants import OrmType
 from supabase_pydantic.core.models import EnumInfo
@@ -267,3 +269,90 @@ class TableInfo(AsDictParent):
     def has_unique_constraint(self) -> bool:
         """Check if the table has unique constraints."""
         return any(c.constraint_type() == 'UNIQUE' for c in self.constraints)
+
+
+# Connection Models
+
+
+class DatabaseConnectionParams(BaseModel):
+    """Base model for database connection parameters."""
+
+    conn_type: str = Field(..., description="Connection type identifier (e.g., 'postgresql', 'mysql')")
+
+
+class DirectConnectionParams(DatabaseConnectionParams):
+    """Connection parameters for direct database connection."""
+
+    dbname: str = Field(..., description='Database name')
+    user: str = Field(..., description='Username for database connection')
+    password: str = Field(..., description='Password for database connection')
+    host: str = Field(..., description='Database host')
+    port: str = Field(..., description='Database port')
+
+
+class URLConnectionParams(DatabaseConnectionParams):
+    """Connection parameters for URL-based database connection."""
+
+    db_url: str = Field(
+        ..., description='Database connection URL in format: dialect://username:password@host:port/database'
+    )
+
+
+class PostgresConnectionParams(BaseModel):
+    """Connection parameters for PostgreSQL database."""
+
+    # Either db_url or direct connection params must be provided
+    dbname: str | None = Field(None, description='Database name')
+    user: str | None = Field(None, description='Username for database connection')
+    password: str | None = Field(None, description='Password for database connection')
+    host: str | None = Field(None, description='Database host')
+    port: str | None = Field(None, description='Database port')
+    db_url: str | None = Field(
+        None, description='Database connection URL in format: postgresql://username:password@host:port/database'
+    )
+
+    @field_validator('db_url')
+    def validate_db_url(cls, v: str | None) -> str | None:
+        """Validate db_url format."""
+        if v is not None:
+            # Basic validation that it starts with postgresql://
+            if not v.startswith('postgresql://'):
+                raise ValueError("PostgreSQL connection URL must start with 'postgresql://'")
+        return v
+
+    @field_validator('port')
+    def validate_port(cls, v: str | int | None) -> str | None:
+        """Validate port is numeric."""
+        if v is not None:
+            # Convert to int if it's a string
+            if isinstance(v, str):
+                try:
+                    return str(int(v))
+                except ValueError:
+                    raise ValueError('Port must be a valid number')
+            # Convert int to str to ensure consistent return type
+            elif isinstance(v, int):
+                return str(v)
+        return v
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary, excluding None values."""
+        # Handle both Pydantic v1 and v2 APIs
+        if hasattr(self, 'model_dump'):
+            # Pydantic v2
+            return {k: v for k, v in self.model_dump().items() if v is not None}
+        else:
+            # Pydantic v1
+            return {k: v for k, v in self.dict().items() if v is not None}
+
+    class Config:
+        """Pydantic model configuration."""
+
+        extra = 'forbid'  # Forbid extra attributes
+
+    def is_valid(self) -> bool:
+        """Check if parameters are valid for connection."""
+        if self.db_url is not None:
+            return True
+        required_direct_params = [self.dbname, self.user, self.password, self.host, self.port]
+        return all(param is not None for param in required_direct_params)

@@ -46,7 +46,6 @@ check-next-version: ## Check next version with semantic-release
 	@echo "Checking next version with semantic-release"
 	@poetry run semantic-release -vv --noop version --print
 
-
 #######################################################
 # Linting & Formatting 							      #
 #######################################################

@@ -5,7 +5,7 @@ from typing import Any
 
 from supabase_pydantic.db.abstract.base_connector import BaseDBConnector
 from supabase_pydantic.db.abstract.base_schema_reader import BaseSchemaReader
-from supabase_pydantic.db.constants import (
+from supabase_pydantic.db.drivers.postgres.queries import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
     GET_CONSTRAINTS,

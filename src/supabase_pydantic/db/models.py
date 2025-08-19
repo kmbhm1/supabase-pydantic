@@ -5,7 +5,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from supabase_pydantic.core.constants import OrmType
 from supabase_pydantic.core.models import EnumInfo
-from supabase_pydantic.db.constants import CONSTRAINT_TYPE_MAP, RelationType
+from supabase_pydantic.db.constants import RelationType
+from supabase_pydantic.db.drivers.postgres.constants import CONSTRAINT_TYPE_MAP
 from supabase_pydantic.utils.serialization import AsDictParent
 from supabase_pydantic.utils.types import get_pydantic_type, get_sqlalchemy_type
 

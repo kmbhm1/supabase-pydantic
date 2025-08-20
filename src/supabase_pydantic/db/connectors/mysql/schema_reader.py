@@ -1,259 +1,261 @@
-"""MySQL schema reader implementation."""
+"""MySQL schema reader for retrieving database schema information."""
 
+import logging
+import re
 from typing import Any
 
+from mysql.connector.connection import MySQLConnection
+
 from supabase_pydantic.db.abstract.base_schema_reader import BaseSchemaReader
+from supabase_pydantic.db.connectors.mysql.connector import MySQLConnector
+from supabase_pydantic.db.drivers.mysql.queries import (
+    COLUMNS_QUERY,
+    CONSTRAINTS_QUERY,
+    ENUMS_QUERY,
+    FOREIGN_KEYS_QUERY,
+    GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
+    SCHEMAS_QUERY,
+    TABLES_QUERY,
+    USER_DEFINED_TYPES_QUERY,
+)
+
+# Get Logger
+logger = logging.getLogger(__name__)
 
 
 class MySQLSchemaReader(BaseSchemaReader):
-    """MySQL schema reader implementation."""
+    """MySQL schema reader for retrieving database schema information."""
 
-    def get_schemas(self, connection: Any) -> list[tuple[str]]:
-        """Get all database schemas.
-
-        Args:
-            connection: MySQL database connection
-
-        Returns:
-            List of schema names as tuples
-        """
-        query = "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys')"  # noqa: E501
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query)
-            # Convert dict results to tuples to match PostgreSQL interface
-            return [(row['SCHEMA_NAME'],) for row in cursor.fetchall()]
-        finally:
-            cursor.close()
-
-    def get_tables(self, connection: Any, schema: str) -> list[dict[Any, Any]]:
-        """Get all tables in a schema.
+    def __init__(self, connector: MySQLConnector):
+        """Initialize the MySQL schema reader.
 
         Args:
-            connection: MySQL database connection
-            schema: Schema name
-
-        Returns:
-            List of table information
+            connector: MySQL database connector
         """
-        query = """
-        SELECT
-            TABLE_NAME,
-            TABLE_SCHEMA AS schema_name,
-            TABLE_TYPE,
-            TABLE_COMMENT
-        FROM
-            information_schema.TABLES
-        WHERE
-            TABLE_SCHEMA = %s
-        """
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query, (schema,))
-            result = cursor.fetchall()
-            return result if isinstance(result, list) else []
-        finally:
-            cursor.close()
+        self.connector = connector
 
-    def get_columns(self, connection: Any, schema: str) -> list[dict[Any, Any]]:
-        """Get all columns for all tables in a schema.
+    def execute_query(
+        self, connection: MySQLConnection, query: str, params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        """Execute a query on the MySQL database and return the results.
 
         Args:
-            connection: MySQL database connection
-            schema: Schema name
+            connection: MySQL connection
+            query: SQL query to execute
+            params: Query parameters
 
         Returns:
-            List of column information
+            Query results as a list of dictionaries
         """
-        query = """
-        SELECT
-            c.TABLE_SCHEMA AS schema,
-            c.TABLE_NAME AS table_name,
-            c.COLUMN_NAME AS column_name,
-            c.COLUMN_DEFAULT AS default_value,
-            c.IS_NULLABLE AS is_nullable,
-            c.DATA_TYPE AS data_type,
-            c.CHARACTER_MAXIMUM_LENGTH AS max_length,
-            t.TABLE_TYPE AS table_type,
-            c.EXTRA AS extra_info,
-            c.COLUMN_TYPE AS column_type,
-            NULL AS array_element_type  -- MySQL doesn't have native arrays like PostgreSQL
-        FROM
-            information_schema.COLUMNS c
-        JOIN
-            information_schema.TABLES t
-        ON
-            c.TABLE_SCHEMA = t.TABLE_SCHEMA AND c.TABLE_NAME = t.TABLE_NAME
-        WHERE
-            c.TABLE_SCHEMA = %s
-        ORDER BY
-            c.TABLE_NAME, c.ORDINAL_POSITION
-        """
-        cursor = connection.cursor()
+        cursor = connection.cursor(dictionary=True)
         try:
-            cursor.execute(query, (schema,))
-            result = cursor.fetchall()
-            return result if isinstance(result, list) else []
-        finally:
-            cursor.close()
+            # MySQL Connector uses different parameter substitution than what's in our queries
+            # Convert dictionary parameters to tuple format for proper MySQL parameter binding
+            if params:
+                # Replace named parameters with positional parameters
+                # MySQL uses %s for parameter placeholders regardless of type
+                param_values = tuple(params.values())
+                param_names = list(params.keys())
 
-    def get_constraints(self, connection: Any, schema: str) -> list[dict[Any, Any]]:
-        """Get all constraints for all tables in a schema.
+                # Log the actual query being executed with values for debugging
+                query_log = query
+                for i, param_name in enumerate(param_names):
+                    param_value = param_values[i]
+                    safe_value = repr(param_value) if param_value is not None else 'NULL'
+                    query_log = query_log.replace('%s', f"'{safe_value}'", 1)
 
-        Args:
-            connection: MySQL database connection
-            schema: Schema name
+                logger.debug('Executing MySQL query with parameters:')
+                logger.debug(f'Parameter dict: {params}')
+                logger.debug(f'Parameter values: {param_values}')
+                logger.debug(f'Final query (simulated): {query_log}')
 
-        Returns:
-            List of constraint information
-        """
-        query = """
-        SELECT
-            tc.CONSTRAINT_NAME AS constraint_name,
-            tc.TABLE_NAME AS table_name,
-            tc.CONSTRAINT_TYPE AS constraint_type,
-            kcu.COLUMN_NAME AS column_name,
-            GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION) AS column_list
-        FROM
-            information_schema.TABLE_CONSTRAINTS tc
-        JOIN
-            information_schema.KEY_COLUMN_USAGE kcu
-        ON
-            tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-            AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA
-            AND tc.TABLE_NAME = kcu.TABLE_NAME
-        WHERE
-            tc.TABLE_SCHEMA = %s
-        GROUP BY
-            tc.CONSTRAINT_NAME, tc.TABLE_NAME, tc.CONSTRAINT_TYPE, kcu.COLUMN_NAME
-        """
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query, (schema,))
-            result = cursor.fetchall()
-            return result if isinstance(result, list) else []
-        finally:
-            cursor.close()
+                cursor.execute(query, param_values)
+            else:
+                logger.debug(f'Executing MySQL query without parameters: {query}')
+                cursor.execute(query)
 
-    def get_foreign_keys(self, connection: Any, schema: str) -> list[dict[Any, Any]]:
-        """Get all foreign keys for all tables in a schema.
-
-        Args:
-            connection: MySQL database connection
-            schema: Schema name
-
-        Returns:
-            List of foreign key information
-        """
-        query = """
-        SELECT
-            kcu1.CONSTRAINT_NAME AS constraint_name,
-            kcu1.TABLE_NAME AS table_name,
-            kcu1.COLUMN_NAME AS column_name,
-            kcu1.REFERENCED_TABLE_NAME AS foreign_table_name,
-            kcu1.REFERENCED_COLUMN_NAME AS foreign_column_name,
-            rc.UPDATE_RULE AS update_rule,
-            rc.DELETE_RULE AS delete_rule
-        FROM
-            information_schema.KEY_COLUMN_USAGE kcu1
-        JOIN
-            information_schema.REFERENTIAL_CONSTRAINTS rc
-        ON
-            kcu1.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
-            AND kcu1.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
-        WHERE
-            kcu1.TABLE_SCHEMA = %s
-            AND kcu1.REFERENCED_TABLE_SCHEMA IS NOT NULL
-        """
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query, (schema,))
-            result = cursor.fetchall()
-            return result if isinstance(result, list) else []
-        finally:
-            cursor.close()
-
-    def get_user_defined_types(self, connection: Any, schema: str) -> list[dict[Any, Any]]:
-        """Get all user-defined types in a schema.
-
-        MySQL doesn't have PostgreSQL-style user-defined types or ENUMs as separate objects,
-        but we return ENUM column definitions.
-
-        Args:
-            connection: MySQL database connection
-            schema: Schema name
-
-        Returns:
-            List of enum type information
-        """
-        query = """
-        SELECT
-            c.COLUMN_NAME AS type_name,
-            c.TABLE_SCHEMA AS namespace,
-            'SYSTEM' AS owner,
-            'E' AS category,
-            'YES' AS is_defined,
-            'e' AS type_code,
-            SUBSTRING(c.COLUMN_TYPE, 6, LENGTH(c.COLUMN_TYPE) - 6) AS enum_values
-        FROM
-            information_schema.COLUMNS c
-        WHERE
-            c.TABLE_SCHEMA = %s
-            AND c.COLUMN_TYPE LIKE 'enum(%'
-        """
-        cursor = connection.cursor()
-        try:
-            cursor.execute(query, (schema,))
             results = cursor.fetchall()
-            if not isinstance(results, list):
-                return []
-
-            # Process enum values string into proper format
-            for result in results:
-                if 'enum_values' in result and result['enum_values']:
-                    # MySQL enum values are stored like: 'value1','value2','value3'
-                    # Convert to array format like PostgreSQL
-                    values_str = result['enum_values']
-                    # Remove outer quotes if present
-                    if values_str.startswith("'") and values_str.endswith("'"):
-                        values_str = values_str[1:-1]
-                    # Split by commas and remove quotes from each value
-                    values = [v.strip("'") for v in values_str.split("','")]
-                    result['enum_values'] = values
             return results
+        except Exception as e:
+            logger.error(f'MySQL query execution failed: {e}')
+            logger.error(f'Failed query: {query}')
+            if params:
+                logger.error(f'Failed query parameters: {params}')
+            raise
         finally:
             cursor.close()
 
-    def get_type_mappings(self, connection: Any, schema: str) -> list[dict[Any, Any]]:
-        """Get column to user-defined type mappings.
+    def parse_mysql_enum_values(self, enum_values_string: str) -> list[str]:
+        """Parse MySQL enum values string into a list.
 
-        MySQL doesn't have PostgreSQL-style type mappings, but we map ENUM columns.
+        MySQL enum values come as a comma-separated string with quotes like:
+        'value1','value2','value3'
 
         Args:
-            connection: MySQL database connection
+            enum_values_string: String of enum values from MySQL
+
+        Returns:
+            List of enum values
+        """
+        if not enum_values_string:
+            return []
+
+        # Split by commas, but account for possible commas in enum values
+        # This regex matches values inside single quotes, properly handling escaping
+        matches = re.findall(r"'((?:[^'\\]|\\.)*)'", enum_values_string)
+
+        # Unescape any escaped quotes in the values
+        values = [value.replace("\\'", "'") for value in matches]
+
+        return values
+
+    def get_schemas(self, connection: MySQLConnection) -> list[str]:
+        """Get all schemas in the database.
+
+        Args:
+            connection: MySQL connection
+
+        Returns:
+            List of schema names
+        """
+        try:
+            logger.debug('Executing MySQL schema query: %s', SCHEMAS_QUERY)
+            result = self.execute_query(connection, SCHEMAS_QUERY)
+            schemas = [row['SCHEMA_NAME'] for row in result]
+            logger.info(f'Found schemas: {schemas}')
+            return schemas
+        except Exception as e:
+            logger.error(f'Error retrieving schemas: {e}')
+            return []
+
+    def get_tables(self, connection: MySQLConnection, schema: str) -> list[dict[str, Any]]:
+        """Get all tables in the schema.
+
+        Args:
+            connection: MySQL connection
             schema: Schema name
 
         Returns:
-            List of type mapping information
+            List of table information dictionaries
         """
-        query = """
-        SELECT
-            c.COLUMN_NAME,
-            c.TABLE_NAME,
-            c.TABLE_SCHEMA AS namespace,
-            c.COLUMN_NAME AS type_name,
-            'E' AS type_category,
-            c.COLUMN_COMMENT AS type_description
-        FROM
-            information_schema.COLUMNS c
-        WHERE
-            c.TABLE_SCHEMA = %s
-            AND c.COLUMN_TYPE LIKE 'enum(%'
-        """
-        cursor = connection.cursor()
         try:
-            cursor.execute(query, (schema,))
-            result = cursor.fetchall()
-            return result if isinstance(result, list) else []
-        finally:
-            cursor.close()
+            params = {'schema': schema}
+            logger.debug(f"Executing MySQL tables query for schema '{schema}': {TABLES_QUERY}")
+            result = self.execute_query(connection, TABLES_QUERY, params)
+            table_names = [row.get('table_name', 'unknown') for row in result]
+            logger.info(f'Found {len(result)} tables in schema {schema}: {table_names}')
+            return result
+        except Exception as e:
+            logger.error(f'Error retrieving tables for schema {schema}: {e}')
+            return []
+
+    def get_columns(self, connection: MySQLConnection, schema: str, table_name: str = None) -> list[dict[str, Any]]:
+        """Get all columns for all tables in the schema or for a specific table.
+
+        Args:
+            connection: MySQL connection
+            schema: Schema name
+            table_name: Optional table name to filter columns
+
+        Returns:
+            List of column information dictionaries
+        """
+        try:
+            # Use the comprehensive query that gets all tables and columns at once
+            if table_name is None:
+                params = {'schema': schema}
+                result = self.execute_query(connection, GET_ALL_PUBLIC_TABLES_AND_COLUMNS, params)
+                logger.info(f'Found {len(result)} columns across all tables in schema {schema}')
+            else:
+                # For specific table, continue using the existing query
+                params = {'schema': schema, 'table_name': table_name}
+                result = self.execute_query(connection, COLUMNS_QUERY, params)
+                logger.info(f'Found {len(result)} columns for table {table_name} in schema {schema}')
+            return result
+        except Exception as e:
+            logger.error(f'Error retrieving columns for schema {schema}: {e}')
+            return []
+
+    def get_constraints(self, connection: MySQLConnection, schema: str) -> list[dict[str, Any]]:
+        """Get all constraints for all tables in the schema.
+
+        Args:
+            connection: MySQL connection
+            schema: Schema name
+
+        Returns:
+            List of constraint information dictionaries
+        """
+        try:
+            params = {'schema': schema}
+            result = self.execute_query(connection, CONSTRAINTS_QUERY, params)
+            logger.info(f'Found {len(result)} constraints in schema {schema}')
+            return result
+        except Exception as e:
+            logger.error(f'Error retrieving constraints for schema {schema}: {e}')
+            return []
+
+    def get_foreign_keys(self, connection: MySQLConnection, schema: str) -> list[dict[str, Any]]:
+        """Get all foreign keys for all tables in the schema.
+
+        Args:
+            connection: MySQL connection
+            schema: Schema name
+
+        Returns:
+            List of foreign key information dictionaries
+        """
+        try:
+            params = {'schema': schema}
+            result = self.execute_query(connection, FOREIGN_KEYS_QUERY, params)
+            logger.info(f'Found {len(result)} foreign keys in schema {schema}')
+            return result
+        except Exception as e:
+            logger.error(f'Error retrieving foreign keys for schema {schema}: {e}')
+            return []
+
+    def get_user_defined_types(self, connection: MySQLConnection, schema: str) -> list[dict[str, Any]]:
+        """Get all user-defined types in the schema.
+
+        Args:
+            connection: MySQL connection
+            schema: Schema name
+
+        Returns:
+            List of user-defined type information dictionaries
+        """
+        try:
+            # MySQL doesn't have user-defined types in the same way as PostgreSQL
+            # Here we're primarily looking for ENUM types
+            params = {'schema': schema}
+            result = self.execute_query(connection, ENUMS_QUERY, params)
+
+            # Process the enum values to convert from string to array format
+            for row in result:
+                if 'enum_values' in row and row['enum_values']:
+                    row['enum_values'] = self.parse_mysql_enum_values(row['enum_values'])
+
+            logger.info(f'Found {len(result)} enum types in schema {schema}')
+            return result
+        except Exception as e:
+            logger.error(f'Error retrieving user-defined types for schema {schema}: {e}')
+            return []
+
+    def get_type_mappings(self, connection: MySQLConnection, schema: str) -> list[dict[str, Any]]:
+        """Get all user-defined type mappings in the schema.
+
+        Args:
+            connection: MySQL connection
+            schema: Schema name
+
+        Returns:
+            List of user-defined type mapping dictionaries
+        """
+        try:
+            params = {'schema': schema}
+            result = self.execute_query(connection, USER_DEFINED_TYPES_QUERY, params)
+            logger.info(f'Found {len(result)} type mappings in schema {schema}')
+            return result
+        except Exception as e:
+            logger.error(f'Error retrieving type mappings for schema {schema}: {e}')
+            return []

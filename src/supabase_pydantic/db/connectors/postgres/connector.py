@@ -18,9 +18,7 @@ class PostgresConnector(BaseDBConnector[PostgresConnectionParams]):
     """PostgreSQL database connector implementation."""
 
     def __init__(
-        self,
-        connection_params: PostgresConnectionParams | dict[str, Any] | None = None,
-        **kwargs: Any
+        self, connection_params: PostgresConnectionParams | dict[str, Any] | None = None, **kwargs: Any
     ) -> None:
         """Initialize the PostgreSQL connector.
 

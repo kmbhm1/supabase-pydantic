@@ -61,6 +61,7 @@ class PostgresSchemaMarshaler(BaseSchemaMarshaler):
 
     def construct_table_info(
         self,
+        table_data: list[tuple],
         column_data: list[tuple],
         fk_data: list[tuple],
         constraint_data: list[tuple],

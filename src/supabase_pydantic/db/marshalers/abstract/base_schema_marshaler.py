@@ -53,6 +53,7 @@ class BaseSchemaMarshaler(ABC):
     @abstractmethod
     def construct_table_info(
         self,
+        table_data: list[tuple],
         column_data: list[tuple],
         fk_data: list[tuple],
         constraint_data: list[tuple],
@@ -64,6 +65,7 @@ class BaseSchemaMarshaler(ABC):
         """Construct TableInfo objects from database-specific data.
 
         Args:
+            table_data: Raw table data from database.
             column_data: Raw column data from database.
             fk_data: Raw foreign key data from database.
             constraint_data: Raw constraint data from database.

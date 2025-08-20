@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, validator
 
 from supabase_pydantic.core.constants import OrmType
 from supabase_pydantic.core.models import EnumInfo
@@ -312,7 +312,7 @@ class PostgresConnectionParams(BaseModel):
         None, description='Database connection URL in format: postgresql://username:password@host:port/database'
     )
 
-    @field_validator('db_url')
+    @validator('db_url')
     def validate_db_url(cls, v: str | None) -> str | None:
         """Validate db_url format."""
         if v is not None:
@@ -321,7 +321,7 @@ class PostgresConnectionParams(BaseModel):
                 raise ValueError("PostgreSQL connection URL must start with 'postgresql://'")
         return v
 
-    @field_validator('port')
+    @validator('port')
     def validate_port(cls, v: str | int | None) -> str | None:
         """Validate port is numeric."""
         if v is not None:
@@ -357,3 +357,49 @@ class PostgresConnectionParams(BaseModel):
             return True
         required_direct_params = [self.dbname, self.user, self.password, self.host, self.port]
         return all(param is not None for param in required_direct_params)
+
+
+class MySQLConnectionParams(BaseModel):
+    """MySQL connection parameters."""
+
+    db_url: str | None = None
+    dbname: str | None = None
+    user: str | None = None
+    password: str | None = None
+    host: str | None = None
+    port: str | None = Field(default='3306', description='MySQL default port is 3306')
+
+    @validator('port')
+    def validate_port(cls, v: str | int | None) -> str | None:
+        """Validate that port is a valid integer."""
+        if v is not None:
+            if isinstance(v, str):
+                try:
+                    return str(int(v))
+                except ValueError:
+                    raise ValueError('Port must be a valid number')
+            # Convert int to str to ensure consistent return type
+            elif isinstance(v, int):
+                return str(v)
+        return v
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary, excluding None values."""
+        # Handle both Pydantic v1 and v2 APIs
+        if hasattr(self, 'model_dump'):
+            # Pydantic v2
+            return {k: v for k, v in self.model_dump().items() if v is not None}
+        else:
+            # Pydantic v1
+            return {k: v for k, v in self.dict().items() if v is not None}
+
+    class Config:
+        """Pydantic model configuration."""
+
+        extra = 'forbid'  # Forbid extra attributes
+
+    def is_valid(self) -> bool:
+        """Check if parameters are valid for connection."""
+        if self.db_url is not None:
+            return True
+        return all([self.dbname, self.user, self.password, self.host, self.port])

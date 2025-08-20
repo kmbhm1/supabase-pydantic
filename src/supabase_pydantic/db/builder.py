@@ -81,7 +81,7 @@ class DatabaseBuilder:
                 logger.info(f'Processing schema: {schema_name}')
 
                 # Get raw data
-                # table_data = self.schema_reader.get_tables(connection, schema_name)
+                table_data = self.schema_reader.get_tables(connection, schema_name)
                 column_data = self.schema_reader.get_columns(connection, schema_name)
                 constraint_data = self.schema_reader.get_constraints(connection, schema_name)
                 fk_data = self.schema_reader.get_foreign_keys(connection, schema_name)
@@ -90,6 +90,7 @@ class DatabaseBuilder:
 
                 # Construct table info using schema marshaler
                 all_tables_info[schema_name] = self.marshaler.construct_table_info(
+                    table_data=table_data,
                     column_data=column_data,
                     fk_data=fk_data,
                     constraint_data=constraint_data,

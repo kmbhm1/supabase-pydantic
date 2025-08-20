@@ -1,22 +1,20 @@
 import logging
 import os
-import re
 
 import click
 from click_option_group import OptionGroup, RequiredMutuallyExclusiveOptionGroup
-from dotenv import find_dotenv, load_dotenv
 
 from supabase_pydantic.cli.common import (
-    check_readiness,
     framework_choices,
     model_choices,
 )
-from supabase_pydantic.core.config import WriterConfig, get_standard_jobs, local_default_env_configuration
+from supabase_pydantic.core.config import WriterConfig, get_standard_jobs
 from supabase_pydantic.core.writers.factories import FileWriterFactory
 from supabase_pydantic.db.builder import construct_tables
-from supabase_pydantic.db.constants import POSTGRES_SQL_CONN_REGEX, DatabaseConnectionType
+from supabase_pydantic.db.connection_manager import setup_database_connection
+from supabase_pydantic.db.constants import DatabaseConnectionType
 from supabase_pydantic.db.database_type import DatabaseType
-from supabase_pydantic.db.models import PostgresConnectionParams
+from supabase_pydantic.db.models import MySQLConnectionParams
 from supabase_pydantic.db.seed import generate_seed_data, write_seed_file
 from supabase_pydantic.utils.formatting import RuffNotFoundError, format_with_ruff
 from supabase_pydantic.utils.io import get_working_directories
@@ -94,6 +92,11 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     help='Use database URL for connection.',
 )
 @click.option(
+    '--db-type',
+    type=click.Choice(['postgres', 'mysql']),
+    help='Specify the database type explicitly (postgres or mysql).',
+)
+@click.option(
     '-d',
     '--dir',
     'default_directory',
@@ -157,78 +160,44 @@ def gen(
     local: bool = False,
     # linked: bool = False,
     db_url: str | None = None,
+    db_type: str | None = None,
     # project_id: str | None = None,
     no_crud_models: bool = False,
     no_enums: bool = False,
     disable_model_prefix_protection: bool = False,
     debug: bool = False,
 ) -> None:
-    """Generate models from a PostgreSQL database."""
+    """Generate models from a database."""
     # Configure logging once per command invocation
     setup_logging(debug)
     logger.debug(f'Debug mode is {"on" if debug else "off"}')
 
     # Validate connection options and prepare environment variables
-    conn_type: DatabaseConnectionType = DatabaseConnectionType.LOCAL
-    env_vars: dict[str, str | None] = dict()
-
-    # Check if valid connection options were provided
     if not local and db_url is None:
         logger.error('Please provide a valid connection source (--local or --db-url). Exiting...')
         return
 
     try:
-        if db_url is not None:
-            # DB URL connection option
-            logger.info('Setting up database connection using URL')
-            # Validate URL format with regex
-            if re.match(POSTGRES_SQL_CONN_REGEX, db_url) is None:
-                logger.error(f'Invalid PostgreSQL database URL format: "{db_url}". Exiting.')
-                logger.info('URL should be in format: postgresql://username:password@hostname:port/database')
-                return
-
-            conn_type = DatabaseConnectionType.DB_URL
-            env_vars['DB_URL'] = db_url
-            logger.debug('Database URL validation successful')
-
-        else:
-            # Local connection option with environment variables
-            logger.info('Setting up local database connection using environment variables')
-            # Load environment variables from .env file if it exists
-            dotenv_path = find_dotenv(usecwd=True)
-            if dotenv_path:
-                logger.debug(f'Loading environment variables from {dotenv_path}')
-                load_dotenv(dotenv_path)
+        # Convert db_type string to DatabaseType enum if provided
+        database_type = None
+        if db_type:
+            if db_type.lower() == 'postgres':
+                database_type = DatabaseType.POSTGRES
+            elif db_type.lower() == 'mysql':
+                database_type = DatabaseType.MYSQL
             else:
-                logger.debug('No .env file found, using system environment variables')
-
-            # Get database connection parameters from environment
-            env_vars.update(
-                **{
-                    'DB_NAME': os.environ.get('DB_NAME', None),
-                    'DB_USER': os.environ.get('DB_USER', None),
-                    'DB_PASS': os.environ.get('DB_PASS', None),
-                    'DB_HOST': os.environ.get('DB_HOST', None),
-                    'DB_PORT': os.environ.get('DB_PORT', None),
-                }
-            )
-
-            # Check for missing environment variables and use defaults if local mode
-            missing_vars = [k for k, v in env_vars.items() if v is None]
-            if missing_vars:
-                logger.warning(f'Missing environment variables: {", ".join(missing_vars)}')
-                if local:
-                    logger.info('Using default local connection values')
-                    env_vars = local_default_env_configuration()
-                    logger.debug('Default connection: localhost:5432, database: postgres, user: postgres')
-                else:
-                    logger.error('Environment variables required but not found. Exiting.')
-                    return
-
-            # Validate the environment variables
-            if not check_readiness(env_vars):
-                logger.error('Database connection configuration is incomplete. Exiting.')
+                logger.error(f'Unsupported database type: {db_type}')
                 return
+            logger.info(f'Using specified database type: {database_type.value}')
+
+        # Set up the database connection using our connection manager
+        conn_type = DatabaseConnectionType.DB_URL if db_url else DatabaseConnectionType.LOCAL
+        connection_params, detected_db_type = setup_database_connection(
+            conn_type=conn_type, local=local, db_url=db_url, specified_db_type=database_type
+        )
+
+        logger.info(f'Successfully established connection parameters for {detected_db_type.value}')
+
     except Exception as e:
         logger.error(f'Error setting up database connection: {str(e)}')
         return
@@ -236,40 +205,46 @@ def gen(
     # Get the directories for the generated files
     dirs = get_working_directories(default_directory, frameworks, auto_create=True)
 
-    # Get the database schema and table details
     # Determine schemas to process
     schemas = ('*',) if all_schemas else tuple(schema)  # Use '*' as an indicator to fetch all schemas
 
-    # Map environment variable names to connector parameter names
-    conn_params_dict = {
-        'dbname': env_vars.get('DB_NAME'),
-        'user': env_vars.get('DB_USER'),
-        'password': env_vars.get('DB_PASS'),
-        'host': env_vars.get('DB_HOST'),
-        'port': env_vars.get('DB_PORT'),
-        'db_url': env_vars.get('DB_URL'),
-    }
+    # For MySQL, the default schema is the database name, not 'public'
+    if detected_db_type == DatabaseType.MYSQL and schemas == ('public',):
+        # If using DB_URL, extract database name from connection parameters
+        if conn_type == DatabaseConnectionType.DB_URL and connection_params.db_url is not None:
+            # Debug log original connection params
+            logger.debug(f'MySQL connection parameters before URL parsing: dbname={connection_params.dbname}')
 
-    # Log masked connection parameters (hide sensitive info)
-    masked_params = conn_params_dict.copy()
-    if masked_params.get('password'):
-        masked_params['password'] = '******'
-    if masked_params.get('db_url'):
-        masked_params['db_url'] = '******'
-    logger.info(f'Connection parameters: {masked_params}')
+            # Parse URL for debug logging
+            from urllib.parse import urlparse
 
-    # Remove None values to avoid passing empty parameters
-    conn_params_dict = {k: v for k, v in conn_params_dict.items() if v is not None}
+            parsed_url_debug = urlparse(connection_params.db_url)
+            logger.debug(f'MySQL db_url path: {parsed_url_debug.path}')
 
-    # Create Pydantic model for connection parameters
-    connection_params = PostgresConnectionParams(**conn_params_dict)
+            # For MySQL, we need to use the database name as the schema
+            if isinstance(connection_params, MySQLConnectionParams):
+                # Parse the database name from the URL directly
+                db_name = parsed_url_debug.path.strip('/')
 
+                if db_name:
+                    schemas = (db_name,)
+                    logger.info(
+                        f"Using MySQL database name '{schemas[0]}' extracted from URL as schema instead of 'public'"
+                    )
+                else:
+                    schemas = ('*',)
+                    logger.info("Using all available MySQL schemas since database name couldn't be determined")
+        else:
+            schemas = ('*',)
+            logger.info("Using all available MySQL schemas since 'public' doesn't exist in MySQL")
+
+    # Generate table information from the database
     table_dict = construct_tables(
         conn_type=conn_type,
-        db_type=DatabaseType.POSTGRES,  # Default to PostgreSQL for now; TODO: change later
+        db_type=detected_db_type,
         schemas=schemas,
         disable_model_prefix_protection=disable_model_prefix_protection,
-        connection_params=connection_params,
+        connection_params=connection_params.to_dict(),
     )
 
     schemas_with_no_tables = [k for k, v in table_dict.items() if len(v) == 0]
@@ -282,6 +257,19 @@ def gen(
     # Configure the writer jobs
     std_jobs = get_standard_jobs(models, frameworks, dirs, schemas)
     jobs: dict[str, dict[str, WriterConfig]] = {}
+
+    # For MySQL, ensure that job configuration includes the actual schema name and not just 'public'
+    job_schemas = schemas  # noqa: F841
+    if detected_db_type == DatabaseType.MYSQL and 'public' in std_jobs and len(table_dict) > 0:
+        # Get the actual schema names from table_dict (excluding the synthetic 'public')
+        actual_schemas = [s for s in table_dict.keys() if s != 'public']
+        if actual_schemas:
+            logger.info(f'Adjusting job configuration to include MySQL schemas: {", ".join(actual_schemas)}')
+            # Create a modified std_jobs that includes actual MySQL schema names
+            for schema in actual_schemas:
+                if schema not in std_jobs and 'public' in std_jobs:
+                    std_jobs[schema] = std_jobs['public']
+
     for k, v in std_jobs.items():
         jobs[k] = {}
         for job, c in v.items():
@@ -292,8 +280,40 @@ def gen(
     # Generate the models; Run jobs
     paths = []
     factory = FileWriterFactory()
+
+    # Process each schema
     for s, j in jobs.items():  # s = schema, j = jobs
-        tables = table_dict[s]
+        # For MySQL, the database name in connection parameters might be different from the schemas found
+        # by the database connector. Add a fallback logic.
+        schema_key = s
+        if s not in table_dict and detected_db_type == DatabaseType.MYSQL:
+            # Log available schemas for debugging
+            available_schemas = list(table_dict.keys())
+            logger.info(f"Schema '{s}' not found in table_dict. Available schemas: {available_schemas}")
+
+            # If there's exactly one schema in the database, use that regardless of name
+            if len(table_dict) == 1:
+                actual_schema = next(iter(table_dict.keys()))
+                logger.info(f"Using the only available schema '{actual_schema}' instead of '{s}'")
+                schema_key = actual_schema
+            # If schema is 'public', try to find a matching schema with the actual database name
+            elif 'public' in table_dict and s != 'public':
+                logger.info(f"Schema '{s}' not found but 'public' is available. Using 'public' instead.")
+                schema_key = 'public'
+            else:
+                logger.error(f"Could not find schema '{s}' in available schemas: {available_schemas}")
+                continue
+
+        # Get tables for the current schema (using the potentially corrected schema key)
+        if schema_key not in table_dict:
+            logger.error(f"Schema '{schema_key}' not found in table_dict, skipping")
+            continue
+
+        tables = table_dict[schema_key]
+        # Sort tables by name
+        tables.sort(key=lambda x: x.name)
+
+        # Process each job for the current schema
         for job, c in j.items():  # c = config
             logger.info(f'Generating {job} models...')
             p, vf = factory.get_file_writer(

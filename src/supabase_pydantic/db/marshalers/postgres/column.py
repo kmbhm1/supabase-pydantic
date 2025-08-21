@@ -16,7 +16,7 @@ class PostgresColumnMarshaler(BaseColumnMarshaler):
     def standardize_column_name(self, column_name: str, disable_model_prefix_protection: bool = False) -> str:
         """Standardize column names across database types."""
         result = std_column_name(column_name, disable_model_prefix_protection)  # type: ignore
-        return result if result is not None else ''
+        return result if result is not None else ''  # type: ignore
 
     def get_alias(self, column_name: str) -> str:
         """Get alias for a column name."""

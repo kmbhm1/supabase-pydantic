@@ -162,7 +162,7 @@ class MySQLConnector(BaseDBConnector):
             conn.close()
             logger.debug('MySQL connection closed')
 
-    def execute_query(self, conn: MySQLConnection, query: str, params: tuple = ()) -> list[tuple]:
+    def execute_query(self, conn: MySQLConnection, query: str, params: tuple = ()) -> list[tuple[Any, ...]]:
         """Execute a query and return results.
 
         Args:
@@ -178,7 +178,7 @@ class MySQLConnector(BaseDBConnector):
             cursor.execute(query, params)
             results = cursor.fetchall()
             cursor.close()
-            return results
+            return list(results)  # Ensure we return the correct type
         except Exception as e:
             logger.error(f'Error executing query: {str(e)}')
             raise

@@ -24,18 +24,18 @@ class MySQLColumnMarshaler(BaseColumnMarshaler):
     def standardize_column_name(self, column_name: str, disable_model_prefix_protection: bool = False) -> str:
         """Standardize column names across database types."""
         result = std_column_name(column_name, disable_model_prefix_protection)
-        return result if result is not None else ''
+        return str(result) if result is not None else ''
 
     def get_alias(self, column_name: str) -> str:
         """Get alias for a column name."""
         result = get_col_alias(column_name)
-        return result if result is not None else ''
+        return str(result) if result is not None else ''
 
     def process_column_type(self, db_type: str, type_info: str, extra_info: dict | None = None) -> str:
         """Process database-specific column type into standard Python type."""
         # Use the common process_udt_field function with MySQL database type
         result = process_udt_field(type_info, db_type, db_type=DatabaseType.MYSQL)
-        return result if result is not None else ''
+        return str(result) if result is not None else ''
 
     def process_array_type(self, element_type: str) -> str:
         """Process array types for the database.

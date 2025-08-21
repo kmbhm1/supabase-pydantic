@@ -55,7 +55,7 @@ class PostgresSchemaMarshaler(BaseSchemaMarshaler):
         # Call the common implementation
         # Get table details using common function
         result: dict[tuple[str, str], TableInfo] = get_table_details_from_columns(
-            processed_column_data, disable_model_prefix_protection
+            processed_column_data, disable_model_prefix_protection, column_marshaler=self.column_marshaler
         )
         return result
 
@@ -77,7 +77,9 @@ class PostgresSchemaMarshaler(BaseSchemaMarshaler):
         processed_constraint_data = self.process_constraints(constraint_data)
 
         # Construct table information
-        tables = get_table_details_from_columns(processed_column_data, disable_model_prefix_protection)
+        tables = get_table_details_from_columns(
+            processed_column_data, disable_model_prefix_protection, column_marshaler=self.column_marshaler
+        )
         add_foreign_key_info_to_table_details(tables, processed_fk_data)
         add_constraints_to_table_details(tables, schema, processed_constraint_data)
         add_relationships_to_table_details(tables, processed_fk_data)

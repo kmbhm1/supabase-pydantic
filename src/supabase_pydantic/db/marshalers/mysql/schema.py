@@ -1,8 +1,10 @@
 """MySQL schema marshaler implementation."""
 
 import logging
+from typing import Any
 
 from supabase_pydantic.core.models import EnumInfo
+from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.marshalers.abstract.base_column_marshaler import BaseColumnMarshaler
 from supabase_pydantic.db.marshalers.abstract.base_constraint_marshaler import BaseConstraintMarshaler
 from supabase_pydantic.db.marshalers.abstract.base_relationship_marshaler import BaseRelationshipMarshaler
@@ -195,8 +197,9 @@ class MySQLSchemaMarshaler(BaseSchemaMarshaler):
             relationship_marshaler: Component for handling relationship details.
         """
         super().__init__(column_marshaler, constraint_marshaler, relationship_marshaler)
+        self.db_type = DatabaseType.MYSQL
 
-    def process_columns(self, column_data: list[tuple]) -> list[tuple]:
+    def process_columns(self, column_data: list[dict[str, Any]]) -> list[tuple]:
         """Process column data from database-specific format.
 
         In MySQL, we need to adjust the column data to match the expected format.
@@ -237,7 +240,7 @@ class MySQLSchemaMarshaler(BaseSchemaMarshaler):
         """Process constraint data from database-specific format."""
         return constraint_data
 
-    def get_table_details_from_columns(self, column_data: list[tuple]) -> dict[tuple[str, str], TableInfo]:
+    def get_table_details_from_columns(self, column_data: list[dict[str, Any]]) -> dict[tuple[str, str], TableInfo]:
         """Get table details from column data.
 
         Args:
@@ -254,7 +257,7 @@ class MySQLSchemaMarshaler(BaseSchemaMarshaler):
 
         # Call the common implementation
         result: dict[tuple[str, str], TableInfo] = get_table_details_from_columns(
-            processed_column_data, disable_model_prefix_protection
+            processed_column_data, disable_model_prefix_protection, column_marshaler=self.column_marshaler
         )
         return result
 
@@ -270,8 +273,8 @@ class MySQLSchemaMarshaler(BaseSchemaMarshaler):
 
     def construct_table_info(
         self,
-        table_data: list[tuple],
-        column_data: list[tuple],
+        table_data: list[dict[str, Any]],
+        column_data: list[dict[str, Any]],
         fk_data: list[tuple],
         constraint_data: list[tuple],
         type_data: list[tuple],
@@ -293,7 +296,9 @@ class MySQLSchemaMarshaler(BaseSchemaMarshaler):
         processed_constraint_data = self.process_constraints(constraint_data)
 
         # Construct table information
-        tables = get_table_details_from_columns(processed_column_data, disable_model_prefix_protection)
+        tables = get_table_details_from_columns(
+            processed_column_data, disable_model_prefix_protection, column_marshaler=self.column_marshaler
+        )
         logger.debug(f'Tables extracted from columns: {list(tables.keys())}')
         add_foreign_key_info_to_table_details(tables, fk_data)
         add_constraints_to_table_details(tables, schema, processed_constraint_data)

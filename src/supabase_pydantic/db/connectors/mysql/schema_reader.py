@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import Any
+from typing import Any, cast
 
 from mysql.connector.connection import MySQLConnection
 
@@ -75,7 +75,7 @@ class MySQLSchemaReader(BaseSchemaReader):
                 cursor.execute(query)
 
             results = cursor.fetchall()
-            return results
+            return cast(list[dict[str, Any]], results)
         except Exception as e:
             logger.error(f'MySQL query execution failed: {e}')
             logger.error(f'Failed query: {query}')
@@ -149,7 +149,9 @@ class MySQLSchemaReader(BaseSchemaReader):
             logger.error(f'Error retrieving tables for schema {schema}: {e}')
             return []
 
-    def get_columns(self, connection: MySQLConnection, schema: str, table_name: str = None) -> list[dict[str, Any]]:
+    def get_columns(
+        self, connection: MySQLConnection, schema: str, table_name: str | None = None
+    ) -> list[dict[str, Any]]:
         """Get all columns for all tables in the schema or for a specific table.
 
         Args:

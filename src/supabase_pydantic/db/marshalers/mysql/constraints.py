@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import Any
+from typing import Any, cast
 
 from supabase_pydantic.db.drivers.mysql.constants import MYSQL_CONSTRAINT_TYPE_MAP
 from supabase_pydantic.db.marshalers.abstract.base_constraint_marshaler import BaseConstraintMarshaler
@@ -33,7 +33,7 @@ class MySQLConstraintMarshaler(BaseConstraintMarshaler):
         # Try to use the common parser first
         result = parse_constraint_definition_for_fk(constraint_def)
         if result:
-            return result
+            return cast(tuple[str, str, str], result)
 
         # MySQL-specific parsing for FOREIGN KEY constraints
         # Example: "FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)"
@@ -94,7 +94,9 @@ class MySQLConstraintMarshaler(BaseConstraintMarshaler):
         # Use the common implementation
         add_constraints(tables, schema, constraint_data)
 
-    def marshal(self, data: list[dict[str, Any]], schema: str, **kwargs: Any) -> dict[str, list[ConstraintInfo]]:
+    def marshal(
+        self, data: list[dict[str, Any]], schema: str, **kwargs: Any
+    ) -> dict[tuple[str, str], list[ConstraintInfo]]:
         """Marshal constraint data into ConstraintInfo objects.
 
         Args:
@@ -110,7 +112,7 @@ class MySQLConstraintMarshaler(BaseConstraintMarshaler):
             return {}
 
         # Group constraints by table
-        table_constraints: dict[str, list[ConstraintInfo]] = {}
+        table_constraints: dict[tuple[str, str], list[ConstraintInfo]] = {}
         processed_constraints: set[str] = set()  # Track processed constraints to avoid duplicates
 
         for constraint in data:
@@ -150,8 +152,9 @@ class MySQLConstraintMarshaler(BaseConstraintMarshaler):
             )
 
             # Add to table constraints
-            if table_name not in table_constraints:
-                table_constraints[table_name] = []
-            table_constraints[table_name].append(constraint_info)
+            table_key = (schema, table_name)
+            if table_key not in table_constraints:
+                table_constraints[table_key] = []
+            table_constraints[table_key].append(constraint_info)
 
         return table_constraints

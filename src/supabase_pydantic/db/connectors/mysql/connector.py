@@ -85,7 +85,7 @@ class MySQLConnector(BaseDBConnector):
                 connection = mysql.connector.connect(**conn_params)
 
             logger.info('MySQL connection established successfully')
-            return connection
+            return connection  # type: ignore
 
         except Exception as e:
             logger.error(f'MySQL connection failed: {str(e)}')

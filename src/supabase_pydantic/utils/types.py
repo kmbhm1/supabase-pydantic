@@ -1,6 +1,7 @@
 from typing import Any
 
-from supabase_pydantic.core.constants import PYDANTIC_TYPE_MAP, SQLALCHEMY_TYPE_MAP, SQLALCHEMY_V2_TYPE_MAP
+from supabase_pydantic.db.database_type import DatabaseType
+from supabase_pydantic.db.type_factory import TypeMapFactory
 
 # enum helpers
 
@@ -18,41 +19,52 @@ def get_enum_member_from_string(cls: Any, value: str) -> Any:
 
 
 def adapt_type_map(
-    postgres_type: str,
+    db_type: str,
     default_type: tuple[str, str | None],
     type_map: dict[str, tuple[str, str | None]],
 ) -> tuple[str, str | None]:
-    """Adapt a PostgreSQL data type to a Pydantic and SQLAlchemy type."""
+    """Adapt a database data type to a Pydantic and SQLAlchemy type."""
     array_suffix = '[]'
-    if postgres_type.endswith(array_suffix):
-        base_type = postgres_type[: -len(array_suffix)]
+    if db_type.endswith(array_suffix):
+        base_type = db_type[: -len(array_suffix)]
         sqlalchemy_type, import_statement = type_map.get(base_type, default_type)
         adapted_type = f'ARRAY({sqlalchemy_type})'
         import_statement = (
             f'{import_statement}, ARRAY' if import_statement else 'from sqlalchemy.dialects.postgresql import ARRAY'
         )
     else:
-        adapted_type, import_statement = type_map.get(postgres_type, default_type)
+        adapted_type, import_statement = type_map.get(db_type, default_type)
 
     return (adapted_type, import_statement)
 
 
 def get_sqlalchemy_type(
-    postgres_type: str, default: tuple[str, str | None] = ('String', 'from sqlalchemy import String')
+    db_type: str,
+    database_type: DatabaseType = DatabaseType.POSTGRES,
+    default: tuple[str, str | None] = ('String', 'from sqlalchemy import String'),
 ) -> tuple[str, str | None]:
-    """Get the SQLAlchemy type from the PostgreSQL type."""
-    return adapt_type_map(postgres_type, default, SQLALCHEMY_TYPE_MAP)
+    """Get the SQLAlchemy type from the database type."""
+    type_map = TypeMapFactory.get_sqlalchemy_type_map(database_type)
+    return adapt_type_map(db_type, default, type_map)
 
 
 def get_sqlalchemy_v2_type(
-    postgres_type: str, default: tuple[str, str | None] = ('String,str', 'from sqlalchemy import String')
+    db_type: str,
+    database_type: DatabaseType = DatabaseType.POSTGRES,
+    default: tuple[str, str | None] = ('String,str', 'from sqlalchemy import String'),
 ) -> tuple[str, str, str | None]:
-    """Get the SQLAlchemy v2 type from the PostgreSQL type."""
-    both_types, imports = adapt_type_map(postgres_type, default, SQLALCHEMY_V2_TYPE_MAP)
+    """Get the SQLAlchemy v2 type from the database type."""
+    type_map = TypeMapFactory.get_sqlalchemy_v2_type_map(database_type)
+    both_types, imports = adapt_type_map(db_type, default, type_map)
     sql, py = both_types.split(',')
     return (sql, py, imports)
 
 
-def get_pydantic_type(postgres_type: str, default: tuple[str, str | None] = ('Any', None)) -> tuple[str, str | None]:
-    """Get the Pydantic type from the PostgreSQL type."""
-    return adapt_type_map(postgres_type, default, PYDANTIC_TYPE_MAP)
+def get_pydantic_type(
+    db_type: str,
+    database_type: DatabaseType = DatabaseType.POSTGRES,
+    default: tuple[str, str | None] = ('Any', 'from typing import Any'),
+) -> tuple[str, str | None]:
+    """Get the Pydantic type from the database type."""
+    type_map = TypeMapFactory.get_pydantic_type_map(database_type)
+    return adapt_type_map(db_type, default, type_map)

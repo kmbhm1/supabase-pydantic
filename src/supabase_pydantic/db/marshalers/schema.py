@@ -1,4 +1,5 @@
 from supabase_pydantic.core.models import EnumInfo
+from supabase_pydantic.db.marshalers.abstract.base_column_marshaler import BaseColumnMarshaler
 from supabase_pydantic.db.marshalers.column import get_alias, process_udt_field, standardize_column_name
 from supabase_pydantic.db.marshalers.constraints import (
     add_constraints_to_table_details,
@@ -15,13 +16,16 @@ from supabase_pydantic.db.models import ColumnInfo, TableInfo, UserEnumType, Use
 
 
 def get_table_details_from_columns(
-    column_details: list, disable_model_prefix_protection: bool = False
+    column_details: list,
+    disable_model_prefix_protection: bool = False,
+    column_marshaler: BaseColumnMarshaler | None = None,
 ) -> dict[tuple[str, str], TableInfo]:
     """Get the table details from the column details.
 
     Args:
         column_details: List of column details from database query
         disable_model_prefix_protection: If True, don't protect model_ prefixed columns
+        column_marshaler: Optional column marshaler to use for processing column types
 
     Returns:
         Dictionary mapping schema and table names to TableInfo objects
@@ -44,11 +48,18 @@ def get_table_details_from_columns(
         table_key: tuple[str, str] = (schema, table_name)
         if table_key not in tables:
             tables[table_key] = TableInfo(name=table_name, schema=schema, table_type=table_type)
+        # Use the marshaler's method if provided, otherwise fallback to direct function call
+        python_type = (
+            column_marshaler.process_column_type(data_type, udt_name)
+            if column_marshaler
+            else process_udt_field(udt_name, data_type)
+        )
+
         column_info = ColumnInfo(
             name=standardize_column_name(column_name, disable_model_prefix_protection) or column_name,
             alias=get_alias(column_name, disable_model_prefix_protection),
             post_gres_datatype=data_type,
-            datatype=process_udt_field(udt_name, data_type),
+            datatype=python_type,
             default=default,
             is_nullable=is_nullable == 'YES',
             max_length=max_length,

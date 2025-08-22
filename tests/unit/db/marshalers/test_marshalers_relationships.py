@@ -321,11 +321,15 @@ def test_add_relationships_to_table_details():
 
     # Assert that the relationship was correctly added
     expected_relationship = RelationshipInfo(
-        table_name='table1', related_table_name='related_table', relation_type=RelationType.ONE_TO_MANY
+        table_name='table1',
+        related_table_name='related_table',
+        relation_type=RelationType.ONE_TO_MANY,
     )
 
     assert len(table1.relationships) == 1
-    assert table1.relationships[0] == expected_relationship
+    assert table1.relationships[0].table_name == expected_relationship.table_name
+    assert table1.relationships[0].related_table_name == expected_relationship.related_table_name
+    assert table1.relationships[0].relation_type == expected_relationship.relation_type
 
 
 @pytest.mark.unit

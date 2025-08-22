@@ -1,5 +1,6 @@
 import logging
 import os
+from urllib.parse import urlparse
 
 import click
 from click_option_group import OptionGroup, RequiredMutuallyExclusiveOptionGroup
@@ -215,9 +216,6 @@ def gen(
             # Debug log original connection params
             logger.debug(f'MySQL connection parameters before URL parsing: dbname={connection_params.dbname}')
 
-            # Parse URL for debug logging
-            from urllib.parse import urlparse
-
             parsed_url_debug = urlparse(connection_params.db_url)
             logger.debug(f'MySQL db_url path: {parsed_url_debug.path}')
 
@@ -235,8 +233,13 @@ def gen(
                     schemas = ('*',)
                     logger.info("Using all available MySQL schemas since database name couldn't be determined")
         else:
-            schemas = ('*',)
-            logger.info("Using all available MySQL schemas since 'public' doesn't exist in MySQL")
+            # Use extracted dbname if available, otherwise use wildcard
+            if isinstance(connection_params, MySQLConnectionParams) and connection_params.dbname:
+                schemas = (connection_params.dbname,)
+                logger.info(f"Using MySQL database name '{schemas[0]}' as schema instead of 'public'")
+            else:
+                schemas = ('*',)
+                logger.info("Using all available MySQL schemas since 'public' doesn't exist in MySQL")
 
     # Generate table information from the database
     table_dict = construct_tables(
@@ -260,14 +263,14 @@ def gen(
 
     # For MySQL, ensure that job configuration includes the actual schema name and not just 'public'
     job_schemas = schemas  # noqa: F841
-    if detected_db_type == DatabaseType.MYSQL and 'public' in std_jobs and len(table_dict) > 0:
+    if detected_db_type == DatabaseType.MYSQL:
         # Get the actual schema names from table_dict (excluding the synthetic 'public')
-        actual_schemas = [s for s in table_dict.keys() if s != 'public']
-        if actual_schemas:
+        actual_schemas = [s for s in table_dict.keys()]
+        if actual_schemas and 'public' in std_jobs:
             logger.info(f'Adjusting job configuration to include MySQL schemas: {", ".join(actual_schemas)}')
             # Create a modified std_jobs that includes actual MySQL schema names
             for schema in actual_schemas:
-                if schema not in std_jobs and 'public' in std_jobs:
+                if schema not in std_jobs:
                     std_jobs[schema] = std_jobs['public']
 
     for k, v in std_jobs.items():
@@ -296,10 +299,19 @@ def gen(
                 actual_schema = next(iter(table_dict.keys()))
                 logger.info(f"Using the only available schema '{actual_schema}' instead of '{s}'")
                 schema_key = actual_schema
-            # If schema is 'public', try to find a matching schema with the actual database name
-            elif 'public' in table_dict and s != 'public':
-                logger.info(f"Schema '{s}' not found but 'public' is available. Using 'public' instead.")
+            # If the database has a 'public' schema (which is uncommon in MySQL but possible)
+            elif 'public' in table_dict and s == 'public':
+                logger.info("Using 'public' schema directly.")
                 schema_key = 'public'
+            # If job is for 'public' but we have a schema with same name as database
+            elif (
+                s == 'public'
+                and isinstance(connection_params, MySQLConnectionParams)
+                and connection_params.dbname in table_dict
+            ):
+                schema_key = connection_params.dbname
+                logger.info(f"Using database name '{schema_key}' instead of 'public'")
+            # In other cases, try to find a matching schema
             else:
                 logger.error(f"Could not find schema '{s}' in available schemas: {available_schemas}")
                 continue

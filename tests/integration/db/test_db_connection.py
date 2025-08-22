@@ -70,10 +70,7 @@ def mysql_url():
 def test_create_connection_integration(postgres_params):
     """Test creating a database connection with actual credentials."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.POSTGRES,
-            connection_params=postgres_params
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params=postgres_params)
         with connector as conn:
             assert conn is not None
             assert connector.check_connection(conn) is True
@@ -91,10 +88,7 @@ def test_create_connection_integration(postgres_params):
 def test_create_mysql_connection_integration(mysql_params):
     """Test creating a MySQL database connection with actual credentials."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.MYSQL,
-            connection_params=mysql_params
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=mysql_params)
         with connector as conn:
             assert conn is not None
             assert connector.check_connection(conn) is True
@@ -112,10 +106,7 @@ def test_create_mysql_connection_integration(mysql_params):
 def test_create_connection_from_db_url_integration(postgres_url):
     """Test creating a database connection from a URL with actual credentials."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.POSTGRES,
-            connection_params={'db_url': postgres_url}
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params={'db_url': postgres_url})
         with connector as conn:
             assert conn is not None
             assert connector.check_connection(conn) is True
@@ -133,10 +124,7 @@ def test_create_connection_from_db_url_integration(postgres_url):
 def test_create_mysql_connection_from_db_url_integration(mysql_url):
     """Test creating a MySQL database connection from a URL with actual credentials."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.MYSQL,
-            connection_params={'db_url': mysql_url}
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params={'db_url': mysql_url})
         with connector as conn:
             assert conn is not None
             assert connector.check_connection(conn) is True
@@ -154,10 +142,7 @@ def test_create_mysql_connection_from_db_url_integration(mysql_url):
 def test_query_database_integration(postgres_params):
     """Test querying the database with a simple query."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.POSTGRES,
-            connection_params=postgres_params
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params=postgres_params)
         with connector as conn:
             results = connector.execute_query(conn, 'SELECT 1 AS test')
             assert results == [(1,)]
@@ -175,10 +160,7 @@ def test_query_database_integration(postgres_params):
 def test_mysql_query_database_integration(mysql_params):
     """Test querying the MySQL database with a simple query."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.MYSQL,
-            connection_params=mysql_params
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=mysql_params)
         with connector as conn:
             results = connector.execute_query(conn, 'SELECT 1 AS test')
             assert results == [(1,)]
@@ -196,10 +178,7 @@ def test_mysql_query_database_integration(mysql_params):
 def test_connector_class_integration(postgres_params):
     """Test the database connector with actual credentials."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.POSTGRES,
-            connection_params=postgres_params
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params=postgres_params)
         assert connector is not None
         assert connector.check_connection() is True
     except ConnectionError as e:
@@ -216,10 +195,7 @@ def test_connector_class_integration(postgres_params):
 def test_mysql_connector_class_integration(mysql_params):
     """Test the MySQL database connector with actual credentials."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.MYSQL,
-            connection_params=mysql_params
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=mysql_params)
         assert connector is not None
         assert connector.check_connection() is True
     except ConnectionError as e:

@@ -6,7 +6,11 @@ from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.marshalers.abstract.base_column_marshaler import BaseColumnMarshaler
 from supabase_pydantic.db.marshalers.column import (
     get_alias as get_col_alias,
+)
+from supabase_pydantic.db.marshalers.column import (
     process_udt_field,
+)
+from supabase_pydantic.db.marshalers.column import (
     standardize_column_name as std_column_name,
 )
 

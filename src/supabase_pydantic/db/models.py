@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from supabase_pydantic.core.constants import OrmType
 from supabase_pydantic.core.models import EnumInfo
@@ -346,17 +346,14 @@ class PostgresConnectionParams(BaseModel):
             # Pydantic v1
             return {k: v for k, v in self.dict().items() if v is not None}
 
-    class Config:
-        """Pydantic model configuration."""
-
-        extra = 'forbid'  # Forbid extra attributes
-
     def is_valid(self) -> bool:
         """Check if parameters are valid for connection."""
         if self.db_url is not None:
             return True
         required_direct_params = [self.dbname, self.user, self.password, self.host, self.port]
         return all(param is not None for param in required_direct_params)
+
+    model_config = ConfigDict(extra='forbid')
 
 
 class MySQLConnectionParams(BaseModel):
@@ -393,13 +390,10 @@ class MySQLConnectionParams(BaseModel):
             # Pydantic v1
             return {k: v for k, v in self.dict().items() if v is not None}
 
-    class Config:
-        """Pydantic model configuration."""
-
-        extra = 'forbid'  # Forbid extra attributes
-
     def is_valid(self) -> bool:
         """Check if parameters are valid for connection."""
         if self.db_url is not None:
             return True
         return all([self.dbname, self.user, self.password, self.host, self.port])
+
+    model_config = ConfigDict(extra='forbid')

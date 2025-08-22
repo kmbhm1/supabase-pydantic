@@ -95,14 +95,8 @@ def test_read_schema_integration(schema_reader):
 def test_read_schema_from_url_integration(postgres_url):
     """Test reading schema information using a database URL."""
     try:
-        connector = DatabaseFactory.create_connector(
-            DatabaseType.POSTGRES,
-            connection_params={'db_url': postgres_url}
-        )
-        reader = DatabaseFactory.create_schema_reader(
-            DatabaseType.POSTGRES,
-            connector=connector
-        )
+        connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params={'db_url': postgres_url})
+        reader = DatabaseFactory.create_schema_reader(DatabaseType.POSTGRES, connector=connector)
 
         schemas = reader.get_schemas()
         assert isinstance(schemas, list)

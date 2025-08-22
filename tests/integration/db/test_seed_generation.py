@@ -45,10 +45,7 @@ def schema_reader(postgres_params):
     try:
         reader = DatabaseFactory.create_schema_reader(
             DatabaseType.POSTGRES,
-            connector=DatabaseFactory.create_connector(
-                DatabaseType.POSTGRES,
-                connection_params=postgres_params
-            )
+            connector=DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params=postgres_params),
         )
         return reader
     except Exception as e:

@@ -26,6 +26,18 @@ class PostgresConnector(BaseDBConnector[PostgresConnectionParams]):
             **kwargs: Additional parameters passed from the factory
         """
         super().__init__(connection_params, **kwargs)
+        # Store the original PostgresConnectionParams object if provided,
+        # or create one from the dictionary that was passed to the parent class
+        if isinstance(connection_params, PostgresConnectionParams):
+            self.connection_params = connection_params
+        elif isinstance(connection_params, dict):
+            try:
+                self.connection_params = PostgresConnectionParams(**connection_params)
+            except Exception as e:
+                logger.warning(f'Could not create PostgresConnectionParams from dict: {e}')
+                self.connection_params = None
+        else:
+            self.connection_params = None
         logger.info('PostgresConnector initialized - connector.py is being used!')
 
     def validate_connection_params(self, params: PostgresConnectionParams | dict[str, Any]) -> PostgresConnectionParams:

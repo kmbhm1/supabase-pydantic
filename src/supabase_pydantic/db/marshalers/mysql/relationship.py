@@ -65,36 +65,33 @@ class MySQLRelationshipMarshaler(BaseRelationshipMarshaler):
         Args:
             table_relationships: Dictionary of table names to lists of RelationshipInfo objects
         """
-        # First, collect information about foreign keys pointing to each table/column
-        table_column_references = defaultdict(list)
+        # First, collect information about foreign keys pointing to each table
+        table_references = defaultdict(list)
 
         # For each table's relationships
         for table_name, relationships in table_relationships.items():
             for rel in relationships:
-                # Record this relationship as pointing to the foreign table/column
-                target_key = (rel.foreign_table, rel.foreign_column)
-                table_column_references[target_key].append((table_name, rel))
+                # Record this relationship as pointing to the related table
+                target_key = rel.related_table_name
+                table_references[target_key].append((table_name, rel))
 
         # Now analyze the relationships to determine their types
         for table_name, relationships in table_relationships.items():
             for rel in relationships:
-                # The key for this table's column that others might refer to
-                this_key = (table_name, rel.column)
-
-                # Check if other tables refer to this column
-                references_to_this = table_column_references.get(this_key, [])
+                # Check if other tables refer to this table
+                references_to_this = table_references.get(table_name, [])
 
                 if len(references_to_this) > 0:
                     # This is part of a bidirectional relationship
 
                     # Many-to-many: if this table refers to another table and that table also refers back
-                    if any(ref_table == rel.foreign_table for ref_table, _ in references_to_this):
-                        rel.type = RelationType.MANY_TO_MANY
+                    if any(ref_table == rel.related_table_name for ref_table, _ in references_to_this):
+                        rel.relation_type = RelationType.MANY_TO_MANY
                     else:
                         # One-to-one or one-to-many, depending on constraints
                         # For simplicity in MySQL, assuming one-to-many as default
-                        rel.type = RelationType.ONE_TO_MANY
+                        rel.relation_type = RelationType.ONE_TO_MANY
                 else:
                     # This is a unidirectional relationship
                     # For MySQL, we default to many-to-one for unidirectional relationships
-                    rel.type = RelationType.MANY_TO_ONE
+                    rel.relation_type = RelationType.MANY_TO_ONE

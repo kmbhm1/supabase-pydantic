@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 import psycopg2
 
 from supabase_pydantic.db.abstract.base_connector import BaseDBConnector
-from supabase_pydantic.db.exceptions import ConnectionError
 from supabase_pydantic.db.models import PostgresConnectionParams
 
 # Get Logger

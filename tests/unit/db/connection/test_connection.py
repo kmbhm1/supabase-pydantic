@@ -7,9 +7,10 @@ import psycopg2
 import pytest
 
 from supabase_pydantic.db.database_type import DatabaseType
-from supabase_pydantic.db.exceptions import ConnectionError
 from supabase_pydantic.db.factory import DatabaseFactory
 from supabase_pydantic.db.models import PostgresConnectionParams, MySQLConnectionParams
+from supabase_pydantic.db.connectors.postgres.connector import PostgresConnector
+from supabase_pydantic.db.connectors.mysql.connector import MySQLConnector
 
 
 @pytest.fixture
@@ -61,7 +62,7 @@ def test_create_postgres_connector(mock_psycopg2):
     """Test creating a PostgreSQL connector with connection parameters."""
     mock_connect, mock_conn, _ = mock_psycopg2
     # Mock the connector class itself
-    with patch('supabase_pydantic.db.connectors.postgres_connector.PostgresConnector') as mock_connector_class:
+    with patch('supabase_pydantic.db.connectors.postgres.connector.PostgresConnector') as mock_connector_class:
         mock_connector_instance = MagicMock()
         mock_connector_class.return_value = mock_connector_instance
         # Mock the DatabaseFactory to return our mocked connector
@@ -69,11 +70,7 @@ def test_create_postgres_connector(mock_psycopg2):
             mock_registry.get.return_value = mock_connector_class
             # Create params and test connector creation
             params = PostgresConnectionParams(
-                dbname='dbname',
-                user='user',
-                password='password',
-                host='host',
-                port='5432'
+                dbname='dbname', user='user', password='password', host='host', port='5432'
             )
             connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params=params)
             # Verify the connector was created with our params
@@ -88,18 +85,15 @@ def test_postgres_connector_operational_error():
     """Test that PostgreSQL OperationalError is caught and re-raised as ConnectionError."""
     error_message = 'unable to connect to the database'
     # Mock the connector class
-    with patch('supabase_pydantic.db.connectors.postgres_connector.psycopg2.connect',
-               side_effect=psycopg2.OperationalError(error_message)):
+    with patch(
+        'supabase_pydantic.db.connectors.postgres.connector.psycopg2.connect',
+        side_effect=psycopg2.OperationalError(error_message),
+    ):
         with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
             # Return the real PostgresConnector class
-            from supabase_pydantic.db.connectors.postgres_connector import PostgresConnector
             mock_registry.get.return_value = PostgresConnector
             params = PostgresConnectionParams(
-                dbname='mydb',
-                user='user',
-                password='pass',
-                host='localhost',
-                port='5432'
+                dbname='mydb', user='user', password='pass', host='localhost', port='5432'
             )
             with pytest.raises(ConnectionError) as exc_info:
                 connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params=params)
@@ -115,7 +109,7 @@ def test_create_postgres_connector_from_db_url(mock_psycopg2):
     """Test creating a PostgreSQL connector from a database URL."""
     mock_connect, mock_conn, _ = mock_psycopg2
     # Mock the connector class
-    with patch('supabase_pydantic.db.connectors.postgres_connector.PostgresConnector') as mock_connector_class:
+    with patch('supabase_pydantic.db.connectors.postgres.connector.PostgresConnector') as mock_connector_class:
         mock_connector_instance = MagicMock()
         mock_connector_class.return_value = mock_connector_instance
         # Mock the DatabaseFactory
@@ -123,10 +117,7 @@ def test_create_postgres_connector_from_db_url(mock_psycopg2):
             mock_registry.get.return_value = mock_connector_class
             # Create connector with URL
             db_url = 'postgresql://user:password@localhost:5432/dbname'
-            connector = DatabaseFactory.create_connector(
-                DatabaseType.POSTGRES,
-                connection_params={'db_url': db_url}
-            )
+            connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params={'db_url': db_url})
             # Verify the connector was created
             mock_connector_class.assert_called_once()
             assert connector is mock_connector_instance
@@ -141,13 +132,12 @@ def test_postgres_connector_check_connection_open(mock_psycopg2):
     mock_conn.closed = False
     with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
         # Use real PostgresConnector for this test
-        from supabase_pydantic.db.connectors.postgres_connector import PostgresConnector
         mock_registry.get.return_value = PostgresConnector
         connector = DatabaseFactory.create_connector(
             DatabaseType.POSTGRES,
             connection_params=PostgresConnectionParams(
                 dbname='dbname', user='user', password='pass', host='host', port='5432'
-            )
+            ),
         )
         # Override the internal connection with our mock
         connector._conn = mock_conn
@@ -164,13 +154,12 @@ def test_postgres_connector_check_connection_closed(mock_psycopg2):
     mock_conn.closed = True
     with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
         # Use real PostgresConnector for this test
-        from supabase_pydantic.db.connectors.postgres_connector import PostgresConnector
         mock_registry.get.return_value = PostgresConnector
         connector = DatabaseFactory.create_connector(
             DatabaseType.POSTGRES,
             connection_params=PostgresConnectionParams(
                 dbname='dbname', user='user', password='pass', host='host', port='5432'
-            )
+            ),
         )
         # Override the internal connection with our mock
         connector._conn = mock_conn
@@ -186,13 +175,12 @@ def test_postgres_connector_execute_query_success(mock_psycopg2):
     mock_conn, mock_cursor = mock_psycopg2[1], mock_psycopg2[2]
     with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
         # Use real PostgresConnector for this test
-        from supabase_pydantic.db.connectors.postgres_connector import PostgresConnector
         mock_registry.get.return_value = PostgresConnector
         connector = DatabaseFactory.create_connector(
             DatabaseType.POSTGRES,
             connection_params=PostgresConnectionParams(
                 dbname='dbname', user='user', password='pass', host='host', port='5432'
-            )
+            ),
         )
         # Test the execute_query method
         result = connector.execute_query(mock_conn, 'SELECT * FROM table;')
@@ -210,13 +198,12 @@ def test_postgres_connector_execute_query_failure(mock_psycopg2):
     mock_cursor.execute.side_effect = Exception('Query failed')
     with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
         # Use real PostgresConnector for this test
-        from supabase_pydantic.db.connectors.postgres_connector import PostgresConnector
         mock_registry.get.return_value = PostgresConnector
         connector = DatabaseFactory.create_connector(
             DatabaseType.POSTGRES,
             connection_params=PostgresConnectionParams(
                 dbname='dbname', user='user', password='pass', host='host', port='5432'
-            )
+            ),
         )
         # Test the execute_query method with failing query
         with pytest.raises(Exception) as exc_info:
@@ -232,7 +219,7 @@ def test_create_mysql_connector(mock_mysql_connector):
     """Test creating a MySQL connector with connection parameters."""
     mock_connect, mock_conn, _ = mock_mysql_connector
     # Mock the connector class itself
-    with patch('supabase_pydantic.db.connectors.mysql_connector.MySQLConnector') as mock_connector_class:
+    with patch('supabase_pydantic.db.connectors.mysql.connector.MySQLConnector') as mock_connector_class:
         mock_connector_instance = MagicMock()
         mock_connector_class.return_value = mock_connector_instance
         # Mock the DatabaseFactory to return our mocked connector
@@ -240,11 +227,7 @@ def test_create_mysql_connector(mock_mysql_connector):
             mock_registry.get.return_value = mock_connector_class
             # Create params and test connector creation
             params = MySQLConnectionParams(
-                dbname='testdb',
-                user='root',
-                password='mysql',
-                host='localhost',
-                port='3306'
+                dbname='testdb', user='root', password='mysql', host='localhost', port='3306'
             )
             connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=params)
             # Verify the connector was created with our params
@@ -258,19 +241,16 @@ def test_create_mysql_connector(mock_mysql_connector):
 def test_mysql_connector_operational_error():
     """Test that MySQL OperationalError is caught and re-raised as ConnectionError."""
     error_message = 'unable to connect to the database'
-    # Mock the connector class
-    with patch('supabase_pydantic.db.connectors.mysql_connector.mysql.connector.connect',
-               side_effect=mysql.connector.Error(error_message)):
+    # Mock the connector class - fix patch to match exactly how the module is imported and used
+    with patch(
+        'mysql.connector.connect',  # This matches the import in connector.py
+        side_effect=mysql.connector.Error(error_message),
+    ):
         with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
             # Return the real MySQLConnector class
-            from supabase_pydantic.db.connectors.mysql_connector import MySQLConnector
             mock_registry.get.return_value = MySQLConnector
             params = MySQLConnectionParams(
-                dbname='testdb',
-                user='root',
-                password='mysql',
-                host='localhost',
-                port='3306'
+                dbname='testdb', user='root', password='mysql', host='localhost', port='3306'
             )
             with pytest.raises(ConnectionError) as exc_info:
                 connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=params)

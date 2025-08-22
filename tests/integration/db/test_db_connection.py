@@ -8,15 +8,10 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from supabase_pydantic.db.connection import (
-    DBConnection,
-    check_connection,
-    create_connection,
-    create_connection_from_db_url,
-    query_database,
-)
-from supabase_pydantic.db.constants import DatabaseConnectionType
+from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.exceptions import ConnectionError
+from supabase_pydantic.db.factory import DatabaseFactory
+from supabase_pydantic.db.models import PostgresConnectionParams, MySQLConnectionParams
 
 
 # Load environment variables from .env file
@@ -24,23 +19,44 @@ load_dotenv()
 
 
 @pytest.fixture
-def db_params():
+def postgres_params():
     """Get database connection parameters from environment variables."""
-    return {
-        'DB_NAME': os.environ.get('TEST_DB_NAME', 'postgres'),
-        'DB_USER': os.environ.get('TEST_DB_USER', 'postgres'),
-        'DB_PASS': os.environ.get('TEST_DB_PASS', 'postgres'),
-        'DB_HOST': os.environ.get('TEST_DB_HOST', 'localhost'),
-        'DB_PORT': os.environ.get('TEST_DB_PORT', '5432'),
-    }
+    return PostgresConnectionParams(
+        dbname=os.environ.get('TEST_DB_NAME', 'postgres'),
+        user=os.environ.get('TEST_DB_USER', 'postgres'),
+        password=os.environ.get('TEST_DB_PASS', 'postgres'),
+        host=os.environ.get('TEST_DB_HOST', 'localhost'),
+        port=os.environ.get('TEST_DB_PORT', '5432'),
+    )
 
 
 @pytest.fixture
-def db_url():
+def postgres_url():
     """Get database URL from environment variables."""
     return os.environ.get(
         'TEST_DB_URL',
         'postgresql://postgres:postgres@localhost:5432/postgres',
+    )
+
+
+@pytest.fixture
+def mysql_params():
+    """Get MySQL database connection parameters from environment variables."""
+    return MySQLConnectionParams(
+        dbname=os.environ.get('TEST_MYSQL_DB_NAME', 'test'),
+        user=os.environ.get('TEST_MYSQL_USER', 'root'),
+        password=os.environ.get('TEST_MYSQL_PASS', 'mysql'),
+        host=os.environ.get('TEST_MYSQL_HOST', 'localhost'),
+        port=os.environ.get('TEST_MYSQL_PORT', '3306'),
+    )
+
+
+@pytest.fixture
+def mysql_url():
+    """Get MySQL database URL from environment variables."""
+    return os.environ.get(
+        'TEST_MYSQL_URL',
+        'mysql://root:mysql@localhost:3306/test',
     )
 
 
@@ -51,21 +67,39 @@ def db_url():
     not os.environ.get('RUN_DB_TESTS'),
     reason='Database integration tests are disabled. Set RUN_DB_TESTS=1 to enable.',
 )
-def test_create_connection_integration(db_params):
+def test_create_connection_integration(postgres_params):
     """Test creating a database connection with actual credentials."""
     try:
-        conn = create_connection(
-            db_params['DB_NAME'],
-            db_params['DB_USER'],
-            db_params['DB_PASS'],
-            db_params['DB_HOST'],
-            db_params['DB_PORT'],
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.POSTGRES,
+            connection_params=postgres_params
         )
-        assert conn is not None
-        assert check_connection(conn) is True
-        conn.close()
+        with connector as conn:
+            assert conn is not None
+            assert connector.check_connection(conn) is True
     except ConnectionError as e:
         pytest.skip(f'Could not connect to database: {str(e)}')
+
+
+@pytest.mark.integration
+@pytest.mark.db
+@pytest.mark.connection
+@pytest.mark.skipif(
+    not os.environ.get('RUN_DB_TESTS') or not os.environ.get('RUN_MYSQL_TESTS'),
+    reason='MySQL database integration tests are disabled. Set both RUN_DB_TESTS=1 and RUN_MYSQL_TESTS=1 to enable.',
+)
+def test_create_mysql_connection_integration(mysql_params):
+    """Test creating a MySQL database connection with actual credentials."""
+    try:
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.MYSQL,
+            connection_params=mysql_params
+        )
+        with connector as conn:
+            assert conn is not None
+            assert connector.check_connection(conn) is True
+    except ConnectionError as e:
+        pytest.skip(f'Could not connect to MySQL database: {str(e)}')
 
 
 @pytest.mark.integration
@@ -75,15 +109,39 @@ def test_create_connection_integration(db_params):
     not os.environ.get('RUN_DB_TESTS'),
     reason='Database integration tests are disabled. Set RUN_DB_TESTS=1 to enable.',
 )
-def test_create_connection_from_db_url_integration(db_url):
+def test_create_connection_from_db_url_integration(postgres_url):
     """Test creating a database connection from a URL with actual credentials."""
     try:
-        conn = create_connection_from_db_url(db_url)
-        assert conn is not None
-        assert check_connection(conn) is True
-        conn.close()
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.POSTGRES,
+            connection_params={'db_url': postgres_url}
+        )
+        with connector as conn:
+            assert conn is not None
+            assert connector.check_connection(conn) is True
     except ConnectionError as e:
         pytest.skip(f'Could not connect to database: {str(e)}')
+
+
+@pytest.mark.integration
+@pytest.mark.db
+@pytest.mark.connection
+@pytest.mark.skipif(
+    not os.environ.get('RUN_DB_TESTS') or not os.environ.get('RUN_MYSQL_TESTS'),
+    reason='MySQL database integration tests are disabled. Set both RUN_DB_TESTS=1 and RUN_MYSQL_TESTS=1 to enable.',
+)
+def test_create_mysql_connection_from_db_url_integration(mysql_url):
+    """Test creating a MySQL database connection from a URL with actual credentials."""
+    try:
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.MYSQL,
+            connection_params={'db_url': mysql_url}
+        )
+        with connector as conn:
+            assert conn is not None
+            assert connector.check_connection(conn) is True
+    except ConnectionError as e:
+        pytest.skip(f'Could not connect to MySQL database: {str(e)}')
 
 
 @pytest.mark.integration
@@ -93,21 +151,39 @@ def test_create_connection_from_db_url_integration(db_url):
     not os.environ.get('RUN_DB_TESTS'),
     reason='Database integration tests are disabled. Set RUN_DB_TESTS=1 to enable.',
 )
-def test_query_database_integration(db_params):
+def test_query_database_integration(postgres_params):
     """Test querying the database with a simple query."""
     try:
-        conn = create_connection(
-            db_params['DB_NAME'],
-            db_params['DB_USER'],
-            db_params['DB_PASS'],
-            db_params['DB_HOST'],
-            db_params['DB_PORT'],
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.POSTGRES,
+            connection_params=postgres_params
         )
-        results = query_database(conn, 'SELECT 1 AS test')
-        assert results == [(1,)]
-        conn.close()
+        with connector as conn:
+            results = connector.execute_query(conn, 'SELECT 1 AS test')
+            assert results == [(1,)]
     except ConnectionError as e:
         pytest.skip(f'Could not connect to database: {str(e)}')
+
+
+@pytest.mark.integration
+@pytest.mark.db
+@pytest.mark.connection
+@pytest.mark.skipif(
+    not os.environ.get('RUN_DB_TESTS') or not os.environ.get('RUN_MYSQL_TESTS'),
+    reason='MySQL database integration tests are disabled. Set both RUN_DB_TESTS=1 and RUN_MYSQL_TESTS=1 to enable.',
+)
+def test_mysql_query_database_integration(mysql_params):
+    """Test querying the MySQL database with a simple query."""
+    try:
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.MYSQL,
+            connection_params=mysql_params
+        )
+        with connector as conn:
+            results = connector.execute_query(conn, 'SELECT 1 AS test')
+            assert results == [(1,)]
+    except ConnectionError as e:
+        pytest.skip(f'Could not connect to MySQL database: {str(e)}')
 
 
 @pytest.mark.integration
@@ -117,15 +193,34 @@ def test_query_database_integration(db_params):
     not os.environ.get('RUN_DB_TESTS'),
     reason='Database integration tests are disabled. Set RUN_DB_TESTS=1 to enable.',
 )
-def test_db_connection_class_integration(db_params):
-    """Test the DBConnection class with actual credentials."""
+def test_connector_class_integration(postgres_params):
+    """Test the database connector with actual credentials."""
     try:
-        db_connection = DBConnection(
-            DatabaseConnectionType.LOCAL,
-            **db_params,
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.POSTGRES,
+            connection_params=postgres_params
         )
-        assert db_connection.conn is not None
-        assert check_connection(db_connection.conn) is True
-        db_connection.conn.close()
+        assert connector is not None
+        assert connector.check_connection() is True
     except ConnectionError as e:
         pytest.skip(f'Could not connect to database: {str(e)}')
+
+
+@pytest.mark.integration
+@pytest.mark.db
+@pytest.mark.connection
+@pytest.mark.skipif(
+    not os.environ.get('RUN_DB_TESTS') or not os.environ.get('RUN_MYSQL_TESTS'),
+    reason='MySQL database integration tests are disabled. Set both RUN_DB_TESTS=1 and RUN_MYSQL_TESTS=1 to enable.',
+)
+def test_mysql_connector_class_integration(mysql_params):
+    """Test the MySQL database connector with actual credentials."""
+    try:
+        connector = DatabaseFactory.create_connector(
+            DatabaseType.MYSQL,
+            connection_params=mysql_params
+        )
+        assert connector is not None
+        assert connector.check_connection() is True
+    except ConnectionError as e:
+        pytest.skip(f'Could not connect to MySQL database: {str(e)}')

@@ -4,14 +4,14 @@ from urllib.parse import urlparse
 
 import psycopg2
 
-from supabase_pydantic.db.constants import (
+from supabase_pydantic.db.constants import DatabaseConnectionType
+from supabase_pydantic.db.drivers.postgres.queries import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
     GET_CONSTRAINTS,
     GET_ENUM_TYPES,
     GET_TABLE_COLUMN_DETAILS,
     SCHEMAS_QUERY,
-    DatabaseConnectionType,
 )
 from supabase_pydantic.db.exceptions import ConnectionError
 from supabase_pydantic.db.marshalers.schema import construct_table_info

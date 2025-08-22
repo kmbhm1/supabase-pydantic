@@ -8,8 +8,9 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from supabase_pydantic.db.connection import construct_tables
-from supabase_pydantic.db.constants import DatabaseConnectionType
+from supabase_pydantic.db.database_type import DatabaseType
+from supabase_pydantic.db.factory import DatabaseFactory
+from supabase_pydantic.db.models import PostgresConnectionParams
 from supabase_pydantic.db.seed.generator import generate_seed_data
 
 
@@ -18,19 +19,19 @@ load_dotenv()
 
 
 @pytest.fixture
-def db_params():
+def postgres_params():
     """Get database connection parameters from environment variables."""
-    return {
-        'DB_NAME': os.environ.get('TEST_DB_NAME', 'postgres'),
-        'DB_USER': os.environ.get('TEST_DB_USER', 'postgres'),
-        'DB_PASS': os.environ.get('TEST_DB_PASS', 'postgres'),
-        'DB_HOST': os.environ.get('TEST_DB_HOST', 'localhost'),
-        'DB_PORT': os.environ.get('TEST_DB_PORT', '5432'),
-    }
+    return PostgresConnectionParams(
+        dbname=os.environ.get('TEST_DB_NAME', 'postgres'),
+        user=os.environ.get('TEST_DB_USER', 'postgres'),
+        password=os.environ.get('TEST_DB_PASS', 'postgres'),
+        host=os.environ.get('TEST_DB_HOST', 'localhost'),
+        port=os.environ.get('TEST_DB_PORT', '5432'),
+    )
 
 
 @pytest.fixture
-def db_url():
+def postgres_url():
     """Get database URL from environment variables."""
     return os.environ.get(
         'TEST_DB_URL',
@@ -39,16 +40,38 @@ def db_url():
 
 
 @pytest.fixture
-def tables(db_params):
-    """Get table information from the database."""
+def schema_reader(postgres_params):
+    """Get schema reader for the database."""
     try:
-        return construct_tables(
-            DatabaseConnectionType.LOCAL,
-            schemas=('public',),
-            **db_params,
+        reader = DatabaseFactory.create_schema_reader(
+            DatabaseType.POSTGRES,
+            connector=DatabaseFactory.create_connector(
+                DatabaseType.POSTGRES,
+                connection_params=postgres_params
+            )
         )
+        return reader
     except Exception as e:
-        pytest.skip(f'Could not construct tables: {str(e)}')
+        pytest.skip(f'Could not create schema reader: {str(e)}')
+
+
+@pytest.fixture
+def tables(schema_reader):
+    """Get table information from the database using schema reader."""
+    try:
+        tables_dict = {}
+        schemas = schema_reader.get_schemas()
+        for schema in schemas:
+            if schema == 'public':  # Only get 'public' schema
+                table_models = schema_reader.get_tables(schema)
+                tables_dict[schema] = {}
+                for table in table_models:
+                    table.columns = schema_reader.get_columns(schema, table.name)
+                    table.constraints = schema_reader.get_constraints(schema, table.name)
+                    tables_dict[schema][table.name] = table
+        return tables_dict
+    except Exception as e:
+        pytest.skip(f'Could not get tables: {str(e)}')
 
 
 @pytest.mark.integration

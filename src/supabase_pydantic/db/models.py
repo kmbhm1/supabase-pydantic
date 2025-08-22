@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from supabase_pydantic.core.constants import OrmType
 from supabase_pydantic.core.models import EnumInfo
@@ -312,7 +312,7 @@ class PostgresConnectionParams(BaseModel):
         None, description='Database connection URL in format: postgresql://username:password@host:port/database'
     )
 
-    @validator('db_url')
+    @field_validator('db_url')
     def validate_db_url(cls, v: str | None) -> str | None:
         """Validate db_url format."""
         if v is not None:
@@ -321,7 +321,7 @@ class PostgresConnectionParams(BaseModel):
                 raise ValueError("PostgreSQL connection URL must start with 'postgresql://'")
         return v
 
-    @validator('port')
+    @field_validator('port')
     def validate_port(cls, v: str | int | None) -> str | None:
         """Validate port is numeric."""
         if v is not None:
@@ -369,7 +369,7 @@ class MySQLConnectionParams(BaseModel):
     host: str | None = None
     port: str | None = Field(default='3306', description='MySQL default port is 3306')
 
-    @validator('port')
+    @field_validator('port')
     def validate_port(cls, v: str | int | None) -> str | None:
         """Validate that port is a valid integer."""
         if v is not None:

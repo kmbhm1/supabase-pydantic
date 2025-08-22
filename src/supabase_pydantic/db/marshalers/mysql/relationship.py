@@ -2,7 +2,6 @@
 
 import logging
 from collections import defaultdict
-from typing import Any
 
 from supabase_pydantic.db.constants import RelationType
 from supabase_pydantic.db.marshalers.abstract.base_relationship_marshaler import BaseRelationshipMarshaler
@@ -13,7 +12,6 @@ from supabase_pydantic.db.marshalers.relationships import (
     determine_relationship_type as determine_rel_type,
 )
 from supabase_pydantic.db.models import ForeignKeyInfo, RelationshipInfo, TableInfo
-from supabase_pydantic.utils.strings import to_pascal_case
 
 # Get Logger
 logger = logging.getLogger(__name__)
@@ -57,71 +55,6 @@ class MySQLRelationshipMarshaler(BaseRelationshipMarshaler):
             tables: Dictionary of table information objects.
         """
         analyze_relationships(tables)
-
-    def marshal(self, data: list[dict[str, Any]], schema: str, **kwargs: Any) -> dict[str, list[RelationshipInfo]]:
-        """Marshal foreign key data into RelationshipInfo objects.
-
-        Args:
-            data: Raw foreign key data from the database
-            schema: Schema name
-            **kwargs: Additional arguments
-
-        Returns:
-            Dictionary of table names to lists of RelationshipInfo objects
-        """
-        if not data:
-            logger.warning(f'No relationship data to marshal for schema {schema}')
-            return {}
-
-        # Group foreign keys by table
-        table_relationships: dict[str, list[RelationshipInfo]] = {}
-        processed_relations: set[str] = set()  # Track processed relationships to avoid duplicates
-
-        for relation in data:
-            table_name = relation.get('table_name', '')
-            constraint_name = relation.get('constraint_name', '')
-            column_name = relation.get('column_name', '')
-            foreign_table_name = relation.get('foreign_table_name', '')
-            foreign_column_name = relation.get('foreign_column_name', '')
-
-            # Skip if missing essential data
-            if not table_name or not column_name or not foreign_table_name or not foreign_column_name:
-                logger.warning(f'Relationship data missing required fields: {relation}')
-                continue
-
-            # Skip if already processed this relationship
-            relation_key = f'{table_name}:{column_name}:{foreign_table_name}:{foreign_column_name}'
-            if relation_key in processed_relations:
-                continue
-            processed_relations.add(relation_key)
-
-            # Determine relationship type
-            # By default, assume one-to-many: one row in foreign table can have many rows in this table
-            rel_type = RelationType.MANY_TO_ONE
-
-            # Create relationship info
-            relationship_info = RelationshipInfo(
-                constraint_name=constraint_name,
-                table=table_name,
-                column=column_name,
-                foreign_table=foreign_table_name,
-                foreign_column=foreign_column_name,
-                type=rel_type,
-                # Convert snake_case to PascalCase for class names
-                foreign_table_class=to_pascal_case(foreign_table_name),
-                update_rule=relation.get('update_rule', ''),
-                delete_rule=relation.get('delete_rule', ''),
-            )
-
-            # Add to table relationships
-            if table_name not in table_relationships:
-                table_relationships[table_name] = []
-            table_relationships[table_name].append(relationship_info)
-
-        # Post-process to determine actual relationship types
-        self._determine_relationship_types(table_relationships)
-
-        return table_relationships
 
     def _determine_relationship_types(self, table_relationships: dict[str, list[RelationshipInfo]]) -> None:
         """Determine the relationship types based on foreign key constraints.

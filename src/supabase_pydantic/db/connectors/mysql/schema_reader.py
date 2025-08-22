@@ -91,21 +91,35 @@ class MySQLSchemaReader(BaseSchemaReader):
         MySQL enum values come as a comma-separated string with quotes like:
         'value1','value2','value3'
 
+        MySQL supports two ways of escaping single quotes in enum values:
+        1. Using a backslash: 'value\'2'
+        2. Using doubled quotes: 'value''3'
+
         Args:
             enum_values_string: String of enum values from MySQL
 
         Returns:
             List of enum values
-        """
+        """  # noqa: D301
         if not enum_values_string:
             return []
 
-        # Split by commas, but account for possible commas in enum values
-        # This regex matches values inside single quotes, properly handling escaping
-        matches = re.findall(r"'((?:[^'\\]|\\.)*)'", enum_values_string)
+        # First, temporarily replace doubled quotes with a unique marker
+        # This prevents them from being treated as closing quotes
+        marker = '###QUOTED_QUOTE###'
+        processed_string = enum_values_string.replace("''", marker)
 
-        # Unescape any escaped quotes in the values
-        values = [value.replace("\\'", "'") for value in matches]
+        # Use the existing regex to find quoted values
+        matches = re.findall(r"'((?:[^'\\]|\\.)*)'", processed_string)
+
+        # Process the matches to restore the escaped quotes
+        values = []
+        for value in matches:
+            # Handle backslash escaping
+            processed = value.replace("\\'", "'")
+            # Restore the doubled quotes to single quotes
+            processed = processed.replace(marker, "'")
+            values.append(processed)
 
         return values
 

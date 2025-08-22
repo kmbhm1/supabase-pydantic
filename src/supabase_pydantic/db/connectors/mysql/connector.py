@@ -173,15 +173,16 @@ class MySQLConnector(BaseDBConnector):
         Returns:
             List of result rows as tuples.
         """
+        cursor = conn.cursor()
         try:
-            cursor = conn.cursor()
             cursor.execute(query, params)
             results = cursor.fetchall()
-            cursor.close()
             return list(results)  # Ensure we return the correct type
         except Exception as e:
             logger.error(f'Error executing query: {str(e)}')
             raise
+        finally:
+            cursor.close()
 
     def get_url_connection_params(self, url: str) -> dict[str, Any]:
         """Parse connection URL into parameters.
@@ -261,6 +262,15 @@ class MySQLConnector(BaseDBConnector):
             if 'db_url' in params and params['db_url']:
                 # Parse URL and validate components
                 url_params = self.get_url_connection_params(params['db_url'])
+
+                # Map 'database' to 'dbname' if needed
+                if 'database' in url_params:
+                    url_params['dbname'] = url_params.pop('database')
+
+                # Ensure port is a string
+                if 'port' in url_params and not isinstance(url_params['port'], str):
+                    url_params['port'] = str(url_params['port'])
+
                 # Merge URL params with original params, prioritizing URL values
                 merged_params = {**params, **url_params}
                 return MySQLConnectionParams(**merged_params)

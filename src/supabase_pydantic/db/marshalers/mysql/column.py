@@ -6,11 +6,7 @@ from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.marshalers.abstract.base_column_marshaler import BaseColumnMarshaler
 from supabase_pydantic.db.marshalers.column import (
     get_alias as get_col_alias,
-)
-from supabase_pydantic.db.marshalers.column import (
     process_udt_field,
-)
-from supabase_pydantic.db.marshalers.column import (
     standardize_column_name as std_column_name,
 )
 
@@ -33,9 +29,15 @@ class MySQLColumnMarshaler(BaseColumnMarshaler):
 
     def process_column_type(self, db_type: str, type_info: str, extra_info: dict | None = None) -> str:
         """Process database-specific column type into standard Python type."""
-        # Use the common process_udt_field function with MySQL database type
+        # Call process_udt_field with the correct parameter order:
+        # (udt_name, data_type, db_type)
         result = process_udt_field(type_info, db_type, db_type=DatabaseType.MYSQL)
-        return str(result) if result is not None else ''
+
+        # Handle None return value by returning empty string
+        if result is None:
+            return ''
+
+        return str(result)
 
     def process_array_type(self, element_type: str) -> str:
         """Process array types for the database.

@@ -2,9 +2,8 @@
 
 import logging
 import re
-from typing import Any, cast
+from typing import cast
 
-from supabase_pydantic.db.drivers.mysql.constants import MYSQL_CONSTRAINT_TYPE_MAP
 from supabase_pydantic.db.marshalers.abstract.base_constraint_marshaler import BaseConstraintMarshaler
 from supabase_pydantic.db.marshalers.constraints import (
     add_constraints_to_table_details as add_constraints,
@@ -12,7 +11,7 @@ from supabase_pydantic.db.marshalers.constraints import (
 from supabase_pydantic.db.marshalers.constraints import (
     parse_constraint_definition_for_fk,
 )
-from supabase_pydantic.db.models import ConstraintInfo, TableInfo
+from supabase_pydantic.db.models import TableInfo
 
 # Get Logger
 logger = logging.getLogger(__name__)
@@ -41,7 +40,8 @@ class MySQLConstraintMarshaler(BaseConstraintMarshaler):
         match = re.match(pattern, constraint_def, re.IGNORECASE)
         if match:
             source_column, target_table, target_column = match.groups()
-            return (source_column.strip('`'), target_table.strip('`'), target_column.strip('`'))
+            # Strip backticks and any extra whitespace
+            return (source_column.strip('`').strip(), target_table.strip('`').strip(), target_column.strip('`').strip())
 
         return None
 
@@ -93,68 +93,3 @@ class MySQLConstraintMarshaler(BaseConstraintMarshaler):
         """
         # Use the common implementation
         add_constraints(tables, schema, constraint_data)
-
-    def marshal(
-        self, data: list[dict[str, Any]], schema: str, **kwargs: Any
-    ) -> dict[tuple[str, str], list[ConstraintInfo]]:
-        """Marshal constraint data into ConstraintInfo objects.
-
-        Args:
-            data: Raw constraint data from the database
-            schema: Schema name
-            **kwargs: Additional arguments
-
-        Returns:
-            Dictionary of table names to lists of ConstraintInfo objects
-        """
-        if not data:
-            logger.warning(f'No constraint data to marshal for schema {schema}')
-            return {}
-
-        # Group constraints by table
-        table_constraints: dict[tuple[str, str], list[ConstraintInfo]] = {}
-        processed_constraints: set[str] = set()  # Track processed constraints to avoid duplicates
-
-        for constraint in data:
-            table_name = constraint.get('table_name', '')
-            constraint_name = constraint.get('constraint_name', '')
-
-            # Skip if missing essential data
-            if not table_name or not constraint_name:
-                logger.warning(f'Constraint data missing table_name or constraint_name: {constraint}')
-                continue
-
-            # Skip if already processed this constraint for this table
-            constraint_key = f'{table_name}:{constraint_name}'
-            if constraint_key in processed_constraints:
-                continue
-            processed_constraints.add(constraint_key)
-
-            # Get constraint type with fallback
-            constraint_type = constraint.get('constraint_type', '')
-            constraint_type_mapped = MYSQL_CONSTRAINT_TYPE_MAP.get(constraint_type, 'OTHER')
-
-            # Handle column lists from GROUP_CONCAT in MySQL query
-            column_list = constraint.get('column_list', '')
-            if column_list:
-                columns = column_list.split(',')
-            else:
-                columns = [constraint.get('column_name', '')]
-                columns = [col for col in columns if col]  # Remove empty strings
-
-            # Create constraint info
-            constraint_info = ConstraintInfo(
-                name=constraint_name,
-                columns=columns,
-                table=table_name,
-                schema=schema,
-                constraint_type=constraint_type_mapped,
-            )
-
-            # Add to table constraints
-            table_key = (schema, table_name)
-            if table_key not in table_constraints:
-                table_constraints[table_key] = []
-            table_constraints[table_key].append(constraint_info)
-
-        return table_constraints

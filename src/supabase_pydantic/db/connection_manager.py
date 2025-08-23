@@ -118,7 +118,7 @@ def setup_database_connection(
         masked_params['password'] = '******'
     if masked_params.get('db_url'):
         masked_params['db_url'] = '******'
-    logger.info(f'Connection parameters: {masked_params}')
+    logger.debug(f'Connection parameters: {masked_params}')
 
     # Remove None values to avoid passing empty parameters
     conn_params_dict = {k: v for k, v in conn_params_dict.items() if v is not None}

@@ -43,6 +43,43 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
 #     help='Use project ID for connection.',
 # )
 
+# Helper Functions
+
+
+_LEVEL_NAME_TO_NUM = {
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG,
+    # Optional “TRACE” convenience; Loguru uses 5 by default. Stdlib will treat it like DEBUG-1.
+    'TRACE': 5,
+}
+
+
+def _resolve_level(log_level: str | None, debug: bool, verbose: int, quiet: int) -> int:
+    """
+    Priority (highest wins):
+      1) --log-level
+      2) -v / -q adjustments
+      3) --debug
+      4) default INFO
+    """  # noqa: D205, D212, D415
+    if log_level:
+        return _LEVEL_NAME_TO_NUM[log_level.upper()]
+
+    # Base from --debug or INFO
+    base = logging.DEBUG if debug else logging.INFO
+
+    # Apply -v / -q deltas: each -v lowers the numeric value (more verbose),
+    # each -q raises it (less verbose). Step size ≈ one stdlib level.
+    # INFO(20) + quiet*10 - verbose*10
+    candidate = base + (quiet * 10) - (verbose * 10)
+
+    # Clamp to valid range
+    candidate = max(_LEVEL_NAME_TO_NUM['TRACE'], min(candidate, logging.CRITICAL))
+    return candidate
+
 
 @click.command(short_help='Generates code with specified configurations.')  # noqa
 @generator_config.option(
@@ -144,10 +181,46 @@ connect_sources = RequiredMutuallyExclusiveOptionGroup('Connection Configuration
     help='Disable Pydantic\'s "model_" prefix protection to allow fields with "model_" prefix without aliasing.',
 )
 @click.option(
+    '--log-level',
+    type=click.Choice(['critical', 'error', 'warning', 'info', 'debug', 'trace'], case_sensitive=False),
+    default=None,
+    help='Set the log level explicitly (overrides --debug/-v/-q).',
+)
+@click.option(
+    '-v',
+    '--verbose',
+    count=True,
+    help='Increase verbosity (e.g., -v → INFO, -vv → DEBUG).',
+)
+@click.option(
+    '-q',
+    '--quiet',
+    count=True,
+    help='Decrease verbosity (e.g., -q → WARNING, -qq → ERROR).',
+)
+@click.option(
     '--debug/--no-debug',
     is_flag=True,
     default=False,
-    help='Enable debug logging.',
+    help='Enable debug logging (kept for compatibility; overridden by --log-level).',
+)
+@click.option(
+    '--log-timefmt',
+    default='HH:mm:ss',
+    show_default=True,
+    help='Loguru time format (e.g., "HH:mm:ss", "MM-DD HH:mm:ss", "HH:mm:ss.SSS").',
+)
+@click.option(
+    '--datefmt',
+    default='%H:%M:%S',
+    show_default=True,
+    help='Stdlib time format (strftime), e.g., "%H:%M:%S" or "%m-%d %H:%M:%S".',
+)
+@click.option(
+    '--log-ms/--no-log-ms',
+    default=False,
+    show_default=True,
+    help='Append milliseconds to timestamps.',
 )
 def gen(
     models: tuple[str],
@@ -159,25 +232,45 @@ def gen(
     all_schemas: bool,
     schema: tuple[str],
     local: bool = False,
-    # linked: bool = False,
     db_url: str | None = None,
     db_type: str | None = None,
-    # project_id: str | None = None,
     no_crud_models: bool = False,
     no_enums: bool = False,
     disable_model_prefix_protection: bool = False,
+    # NEW / UPDATED:
+    log_level: str | None = None,
+    verbose: int = 0,
+    quiet: int = 0,
     debug: bool = False,
+    log_timefmt: str = 'HH:mm:ss',
+    datefmt: str = '%H:%M:%S',
+    log_ms: bool = False,
 ) -> None:
     """Generate models from a database."""
-    # Configure logging once per command invocation
-    setup_logging(debug)
-    logger.debug(f'Debug mode is {"on" if debug else "off"}')
+    # logging setup
+    effective_level = _resolve_level(log_level, debug, verbose, quiet)
 
-    # Validate connection options and prepare environment variables
+    setup_logging(
+        level=effective_level,
+        loguru_timefmt=log_timefmt,
+        stdlib_datefmt=datefmt,
+        include_ms=log_ms,
+        force=True,  # reliably override any pre-configured handlers
+    )
+
+    # example: reflect the resolved level
+    logger.debug(
+        f'Logging configured: level={effective_level} '
+        f'({logging.getLevelName(effective_level)}), '
+        f'timefmt={log_timefmt}/{datefmt}, ms={log_ms}'
+    )
+
+    # validate connection options and prepare environment variables
     if not local and db_url is None:
         logger.error('Please provide a valid connection source (--local or --db-url). Exiting...')
         return
 
+    # setup database connection
     try:
         # Convert db_type string to DatabaseType enum if provided
         database_type = None
@@ -249,6 +342,9 @@ def gen(
         disable_model_prefix_protection=disable_model_prefix_protection,
         connection_params=connection_params.to_dict(),
     )
+    if not table_dict:
+        logger.warning('Exiting; No table information obtained from the database')
+        return
 
     schemas_with_no_tables = [k for k, v in table_dict.items() if len(v) == 0]
     if len(schemas_with_no_tables) > 0:

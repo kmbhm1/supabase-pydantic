@@ -67,7 +67,11 @@ class DatabaseBuilder:
         # Connect to database
         with self.connector as connection:
             if not self.connector.check_connection(connection):
-                raise ConnectionError('Failed to establish database connection')
+                if logger.level == 'DEBUG':
+                    raise ConnectionError('Failed to establish database connection')
+                else:
+                    logger.error('Failed to establish database connection')
+                    return all_tables_info
 
             # Discover all schemas
             schema_names = self.schema_reader.get_schemas(connection)

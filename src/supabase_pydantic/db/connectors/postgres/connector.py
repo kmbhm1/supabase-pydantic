@@ -38,7 +38,7 @@ class PostgresConnector(BaseDBConnector[PostgresConnectionParams]):
                 self.connection_params = None
         else:
             self.connection_params = None
-        logger.info('PostgresConnector initialized - connector.py is being used!')
+        logger.debug('PostgresConnector initialized')
 
     def validate_connection_params(self, params: PostgresConnectionParams | dict[str, Any]) -> PostgresConnectionParams:
         """Validate and convert connection parameters to PostgresConnectionParams.

@@ -89,7 +89,8 @@ class MySQLConnector(BaseDBConnector):
 
         except Exception as e:
             logger.error(f'MySQL connection failed: {str(e)}')
-            raise ConnectionError(f'Failed to connect to MySQL database: {str(e)}')
+            if logger.level == 'DEBUG':
+                raise ConnectionError(f'Failed to connect to MySQL database: {str(e)}')
 
     @contextmanager
     def __call__(self) -> Generator[MySQLConnection, None, None]:
@@ -139,6 +140,10 @@ class MySQLConnector(BaseDBConnector):
             test_connection = None
             try:
                 test_connection = self.connect()
+                if test_connection is None:
+                    logger.error('MySQL connection failed: Could not establish connection to server')
+                    return False
+
                 cursor = test_connection.cursor()
                 cursor.execute('SELECT 1')
                 cursor.fetchone()
@@ -149,7 +154,10 @@ class MySQLConnector(BaseDBConnector):
                     self.close_connection(test_connection)
 
         except Exception as e:
-            logger.error(f'Connection check failed: {str(e)}')
+            if "'NoneType' object has no attribute 'cursor'" in str(e):
+                logger.error('MySQL connection failed: Could not establish connection to server')
+            else:
+                logger.error(f'Connection check failed: {str(e)}')
             return False
 
     def close_connection(self, conn: MySQLConnection) -> None:

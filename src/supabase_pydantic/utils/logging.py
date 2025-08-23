@@ -117,7 +117,7 @@ def setup_logging(
         kwargs = {'handlers': [InterceptHandler()], 'level': effective_level}
         if force and hasattr(logging, 'basicConfig'):
             kwargs['force'] = True  # type: ignore[arg-type]
-        logging.basicConfig(**kwargs)
+        logging.basicConfig(**kwargs)  # type: ignore
         return
 
     # ----- STDLIB FALLBACK -----
@@ -137,4 +137,4 @@ def setup_logging(
     )
     if force and hasattr(logging, 'basicConfig'):
         kwargs['force'] = True  # type: ignore[assignment]
-    logging.basicConfig(**kwargs)
+    logging.basicConfig(**kwargs)  # type: ignore

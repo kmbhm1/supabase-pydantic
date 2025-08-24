@@ -13,7 +13,65 @@ from supabase_pydantic.db.factories.connection_factory import ConnectionParamFac
 from supabase_pydantic.db.models import MySQLConnectionParams, PostgresConnectionParams
 from supabase_pydantic.db.utils.url_parser import detect_database_type
 
+# Get Logger
 logger = logging.getLogger(__name__)
+
+
+_ENV_KEYS = ('DB_NAME', 'DB_USER', 'DB_PASS', 'DB_HOST', 'DB_PORT', 'DB_URL')
+
+
+def _load_dotenv_if_any(env_file: str | None) -> None:
+    """Load environment variables from .env file if specified or find default."""
+    dotenv_path = env_file or find_dotenv(usecwd=True)
+    if dotenv_path:
+        logger.debug(f'Loading environment variables from {dotenv_path}')
+        load_dotenv(dotenv_path)
+    else:
+        logger.debug('No .env file found, using system environment variables')
+
+
+def _collect_from_environment() -> dict[str, Any]:
+    """Collect environment variables from .env file if specified or find default."""
+    return {k: os.getenv(k) for k in _ENV_KEYS}
+
+
+def _normalize_overrides(kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Map kwargs into DB_* env keys; support db_url specially."""
+    out: dict[str, Any] = {}
+    for k, v in kwargs.items():
+        if v is None:
+            continue
+        key = 'DB_URL' if k.lower() == 'db_url' else f'DB_{k.upper()}'
+        out[key] = v
+    return out
+
+
+def _required_vars(conn_type: DatabaseConnectionType) -> list[str]:
+    """Return required environment variables based on connection type."""
+    return ['DB_URL'] if conn_type == DatabaseConnectionType.DB_URL else ['DB_NAME', 'DB_USER', 'DB_PASS', 'DB_HOST']
+
+
+def _fill_missing_with_local_defaults(
+    env_vars: dict[str, Any],
+    db_type: DatabaseType,
+) -> dict[str, Any]:
+    """Fill only missing keys from local defaults; do not overwrite provided ones."""
+    defaults = local_default_env_configuration(db_type)
+    merged = env_vars.copy()
+    for k, v in defaults.items():
+        if merged.get(k) in (None, ''):
+            merged[k] = v
+    return merged
+
+
+def _mask(params: dict[str, Any]) -> dict[str, Any]:
+    """Mask sensitive information in connection parameters."""
+    masked = params.copy()
+    if masked.get('password'):
+        masked['password'] = '******'
+    if masked.get('db_url'):
+        masked['db_url'] = '******'
+    return masked
 
 
 def setup_database_connection(
@@ -21,88 +79,49 @@ def setup_database_connection(
     db_type: DatabaseType | None = None,
     env_file: str | None = None,
     local: bool = False,
+    db_url: str | None = None,
     **kwargs: Any,
 ) -> tuple[PostgresConnectionParams | MySQLConnectionParams, DatabaseType]:
-    """Set up database connection parameters from environment variables.
+    """Set up database connection parameters from environment variables or direct inputs.
 
-    Args:
-        conn_type: Connection type (LOCAL or DB_URL)
-        db_type: Database type (POSTGRES or MYSQL), or None to auto-detect
-        env_file: Path to .env file, or None to use default
-        local: Whether to use local default values if env vars are missing
-        **kwargs: Additional parameters to override environment variables
-
-    Returns:
-        Tuple of (connection parameters object, database type)
-
-    Raises:
-        ValueError: If database connection parameters are invalid
+    Precedence: explicit db_url arg > kwargs > OS env (+ .env).
     """
-    env_vars: dict[str, Any] = {}
+    # 1) ingest config sources
+    _load_dotenv_if_any(env_file)
+    env_vars = _collect_from_environment()
 
-    # Load environment variables
-    try:
-        # Try to load from .env file if specified or find default
-        if env_file:
-            dotenv_path = env_file
-        else:
-            dotenv_path = find_dotenv(usecwd=True)
+    # 2) apply kwargs overrides (db_url handled specially)
+    env_vars.update(_normalize_overrides(kwargs))
 
-        if dotenv_path:
-            logger.debug(f'Loading environment variables from {dotenv_path}')
-            load_dotenv(dotenv_path)
-        else:
-            logger.debug('No .env file found, using system environment variables')
+    # 3) explicit db_url arg wins over everything
+    if db_url:
+        env_vars['DB_URL'] = db_url
 
-        # Get database connection parameters from environment
-        env_vars.update(
-            **{
-                'DB_NAME': os.environ.get('DB_NAME', None),
-                'DB_USER': os.environ.get('DB_USER', None),
-                'DB_PASS': os.environ.get('DB_PASS', None),
-                'DB_HOST': os.environ.get('DB_HOST', None),
-                'DB_PORT': os.environ.get('DB_PORT', None),
-                'DB_URL': os.environ.get('DB_URL', None),
-            }
-        )
+    # 4) required fields present?
+    required = _required_vars(conn_type)
+    missing = [k for k in required if not env_vars.get(k)]
+    if missing:
+        if local:
+            # ensure db_type is set before defaults, default to POSTGRES
+            db_type = db_type or DatabaseType.POSTGRES
+            logger.info(f'Using default local connection values for {db_type.value.lower()}')
+            env_vars = _fill_missing_with_local_defaults(env_vars, db_type)
+            # re-check after filling
+            missing = [k for k in required if not env_vars.get(k)]
+        if missing:
+            raise ValueError(f'Missing required connection variables: {", ".join(missing)}')
 
-        # Override with any directly provided parameters
-        for k, v in kwargs.items():
-            if v is not None:
-                # Special case for db_url to avoid DB_DB_URL
-                if k == 'db_url':
-                    env_vars['DB_URL'] = v
-                else:
-                    env_var_key = f'DB_{k.upper()}'
-                    env_vars[env_var_key] = v
+    # 5) database type resolution
+    if db_type is None and env_vars.get('DB_URL'):
+        detected = detect_database_type(env_vars['DB_URL'])
+        if detected:
+            db_type = detected
+            logger.info(f'Auto-detected database type: {db_type.value}')
+    if db_type is None:
+        db_type = DatabaseType.POSTGRES
+        logger.info(f'No database type specified, using default: {db_type.value}')
 
-        # Check for missing environment variables and use defaults if local mode
-        missing_vars = [k for k, v in env_vars.items() if v is None]
-        if missing_vars:
-            logger.warning(f'Missing environment variables: {", ".join(missing_vars)}')
-            if local:
-                logger.info('Using default local connection values')
-                env_vars = local_default_env_configuration()
-                logger.debug('Default connection: localhost:5432, database: postgres, user: postgres')
-            else:
-                logger.error('Environment variables required but not found')
-                raise ValueError('Database connection configuration is incomplete')
-
-        # Validate based on connection type
-        if conn_type == DatabaseConnectionType.DB_URL and env_vars.get('DB_URL') is None:
-            logger.error('DB_URL is required for DB_URL connection type')
-            raise ValueError('DB_URL is required for DB_URL connection type')
-        elif conn_type == DatabaseConnectionType.LOCAL and not all(
-            [env_vars.get('DB_NAME'), env_vars.get('DB_USER'), env_vars.get('DB_PASS'), env_vars.get('DB_HOST')]
-        ):
-            logger.error('DB_NAME, DB_USER, DB_PASS, and DB_HOST are required for LOCAL connection type')
-            raise ValueError('Incomplete database connection parameters')
-
-    except Exception as e:
-        logger.error(f'Error setting up database connection: {str(e)}')
-        raise
-
-    # Map environment variable names to connector parameter names
+    # 6) map to connector params (drop Nones)
     conn_params_dict = {
         'dbname': env_vars.get('DB_NAME'),
         'user': env_vars.get('DB_USER'),
@@ -111,31 +130,10 @@ def setup_database_connection(
         'port': env_vars.get('DB_PORT'),
         'db_url': env_vars.get('DB_URL'),
     }
-
-    # Log masked connection parameters (hide sensitive info)
-    masked_params = conn_params_dict.copy()
-    if masked_params.get('password'):
-        masked_params['password'] = '******'
-    if masked_params.get('db_url'):
-        masked_params['db_url'] = '******'
-    logger.debug(f'Connection parameters: {masked_params}')
-
-    # Remove None values to avoid passing empty parameters
     conn_params_dict = {k: v for k, v in conn_params_dict.items() if v is not None}
 
-    # Auto-detect database type if not specified and using DB_URL
-    if db_type is None and conn_params_dict.get('db_url'):
-        detected_db_type = detect_database_type(conn_params_dict['db_url'])
-        if detected_db_type:
-            db_type = detected_db_type
-            logger.info(f'Auto-detected database type: {db_type.value}')
+    logger.debug(f'Connection parameters: {_mask(conn_params_dict)}')
 
-    # Default to PostgreSQL for backward compatibility
-    if db_type is None:
-        db_type = DatabaseType.POSTGRES
-        logger.info(f'No database type specified, using default: {db_type.value}')
-
-    # Create connection parameters object
+    # 7) construct typed params via your factory
     connection_params = ConnectionParamFactory.create_connection_params(conn_params_dict, db_type)
-
     return connection_params, db_type

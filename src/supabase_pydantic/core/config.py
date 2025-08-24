@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 
 from supabase_pydantic.core.constants import FrameWorkType, OrmType
+from supabase_pydantic.db.database_type import DatabaseType
 
 
 @dataclass
@@ -69,12 +70,28 @@ def get_standard_jobs(
     return jobs
 
 
-def local_default_env_configuration() -> dict[str, str | None]:
-    """Get the environment variables for a local connection."""
-    return {
-        'DB_NAME': 'postgres',
-        'DB_USER': 'postgres',
-        'DB_PASS': 'postgres',
-        'DB_HOST': 'localhost',
-        'DB_PORT': '54322',
-    }
+def local_default_env_configuration(db_type: DatabaseType = DatabaseType.POSTGRES) -> dict[str, str | None]:
+    """Get the environment variables for a local connection.
+
+    Args:
+        db_type: Database type (POSTGRES or MYSQL)
+
+    Returns:
+        Dict of environment variables with default values for local connection
+    """
+    if db_type == DatabaseType.MYSQL:
+        return {
+            'DB_NAME': 'mysql',
+            'DB_USER': 'root',
+            'DB_PASS': 'password',
+            'DB_HOST': 'localhost',
+            'DB_PORT': '3306',
+        }
+    else:  # default to postgres
+        return {
+            'DB_NAME': 'postgres',
+            'DB_USER': 'postgres',
+            'DB_PASS': 'postgres',
+            'DB_HOST': 'localhost',
+            'DB_PORT': '54322',
+        }

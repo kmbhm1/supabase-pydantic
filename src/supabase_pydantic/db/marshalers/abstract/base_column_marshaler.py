@@ -32,13 +32,13 @@ class BaseColumnMarshaler(ABC):
         pass
 
     @abstractmethod
-    def process_column_type(self, db_type: str, type_info: str, extra_info: dict | None = None) -> str:
+    def process_column_type(self, db_type: str, type_info: str, enum_types: list[str] | None = None) -> str:
         """Process database-specific column type into standard Python type.
 
         Args:
             db_type: Database-specific type name.
             type_info: Additional type information.
-            extra_info: Optional dictionary with extra type information.
+            enum_types: Optional list of known enum type names.
 
         Returns:
             Python/Pydantic type name.

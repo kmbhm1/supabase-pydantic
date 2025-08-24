@@ -59,20 +59,24 @@ def get_alias(column_name: str, disable_model_prefix_protection: bool = False) -
     )
 
 
-def process_udt_field(udt_name: str, data_type: str, db_type: DatabaseType = DatabaseType.POSTGRES) -> str:
+def process_udt_field(
+    udt_name: str, data_type: str, db_type: DatabaseType = DatabaseType.POSTGRES, known_enum_types: list[str] = []
+) -> str:
     """Process a user-defined type field.
 
     Args:
         udt_name: The user-defined type name
         data_type: The database data type
         db_type: The database type (used to select appropriate type maps)
+        known_enum_types: Optional list of known enum type names to avoid warnings
 
     Returns:
         A string representing the Python/Pydantic type
     """
     logger.debug(f'Processing type: data_type={data_type}, udt_name={udt_name}, db_type={db_type}')
 
-    pydantic_type: str
+    # Clean the udt_name for comparison
+    clean_udt_name = udt_name.strip('_').lower()
 
     # Select the appropriate type map based on the database type
     type_map: dict[str, tuple[str, str | None]]
@@ -84,6 +88,7 @@ def process_udt_field(udt_name: str, data_type: str, db_type: DatabaseType = Dat
     logger.debug(f'Using type map: {list(type_map.keys())[:5]}... (showing first 5 keys)')
 
     # First, check if this is an array type
+    pydantic_type: str
     if data_type.lower() == 'array' or data_type.lower().endswith('[]'):
         # Extract the element type name
         element_type_name = udt_name.strip('_').lower()
@@ -96,7 +101,9 @@ def process_udt_field(udt_name: str, data_type: str, db_type: DatabaseType = Dat
         else:
             # Default to Any for unknown types
             element_pydantic_type = 'Any'
-            logger.warning(f'Unknown array element type: {element_type_name}, using Any')
+            # Only log warning if not a known enum type
+            if element_type_name.lower() != 'user-defined' and element_type_name.lower() not in known_enum_types:
+                logger.warning(f'Unknown array element type: {element_type_name}, using Any')
 
         # Create a properly typed list
         pydantic_type = f'list[{element_pydantic_type}]'
@@ -114,8 +121,10 @@ def process_udt_field(udt_name: str, data_type: str, db_type: DatabaseType = Dat
         else:
             # No match found in the type map, default to Any
             pydantic_type = 'Any'
-            logger.warning(
-                f'No type mapping found for {data_type_lower}, using Any. Available keys: {list(type_map.keys())[:10]}'
-            )
+            # Only log warning if not a known enum type and the data type is user-defined
+            if data_type_lower != 'user-defined' and clean_udt_name not in known_enum_types:
+                logger.warning(
+                    f'No type mapping found for {data_type_lower}, using Any. Available keys: {list(type_map.keys())[:10]}'  # noqa: E501
+                )
 
     return pydantic_type

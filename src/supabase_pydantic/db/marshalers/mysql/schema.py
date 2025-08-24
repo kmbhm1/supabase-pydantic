@@ -297,7 +297,10 @@ class MySQLSchemaMarshaler(BaseSchemaMarshaler):
 
         # Construct table information
         tables = get_table_details_from_columns(
-            processed_column_data, disable_model_prefix_protection, column_marshaler=self.column_marshaler
+            column_details=processed_column_data,
+            disable_model_prefix_protection=disable_model_prefix_protection,
+            column_marshaler=self.column_marshaler,
+            enum_types=type_data,
         )
         logger.debug(f'Tables extracted from columns: {list(tables.keys())}')
         add_foreign_key_info_to_table_details(tables, fk_data)

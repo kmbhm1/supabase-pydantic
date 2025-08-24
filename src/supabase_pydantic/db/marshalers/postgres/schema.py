@@ -6,6 +6,7 @@ from supabase_pydantic.db.marshalers.schema import (
     add_user_defined_types_to_tables,
     analyze_bridge_tables,
     analyze_table_relationships,
+    get_enum_types_by_schema,
     get_table_details_from_columns,
     update_column_constraint_definitions,
     update_columns_with_constraints,
@@ -77,8 +78,12 @@ class PostgresSchemaMarshaler(BaseSchemaMarshaler):
         processed_constraint_data = self.process_constraints(constraint_data)
 
         # Construct table information
+        enum_types = get_enum_types_by_schema(type_data, schema)
         tables = get_table_details_from_columns(
-            processed_column_data, disable_model_prefix_protection, column_marshaler=self.column_marshaler
+            column_details=processed_column_data,
+            disable_model_prefix_protection=disable_model_prefix_protection,
+            column_marshaler=self.column_marshaler,
+            enum_types=enum_types,
         )
         add_foreign_key_info_to_table_details(tables, processed_fk_data)
         add_constraints_to_table_details(tables, schema, processed_constraint_data)

@@ -23,9 +23,9 @@ class PostgresColumnMarshaler(BaseColumnMarshaler):
         result = get_col_alias(column_name)
         return str(result) if result is not None else ''
 
-    def process_column_type(self, db_type: str, type_info: str, extra_info: dict | None = None) -> str:
+    def process_column_type(self, db_type: str, type_info: str, enum_types: list[str] | None = None) -> str:
         """Process database-specific column type into standard Python type."""
-        result = process_udt_field(type_info, db_type)
+        result = process_udt_field(type_info, db_type, known_enum_types=enum_types)
         return str(result) if result is not None else ''
 
     def process_array_type(self, element_type: str) -> str:

@@ -31,11 +31,11 @@ class MySQLColumnMarshaler(BaseColumnMarshaler):
         result = get_col_alias(column_name)
         return str(result) if result is not None else ''
 
-    def process_column_type(self, db_type: str, type_info: str, extra_info: dict | None = None) -> str:
+    def process_column_type(self, db_type: str, type_info: str, enum_types: list[str] | None = None) -> str:
         """Process database-specific column type into standard Python type."""
         # Call process_udt_field with the correct parameter order:
-        # (udt_name, data_type, db_type)
-        result = process_udt_field(type_info, db_type, db_type=DatabaseType.MYSQL)
+        # (udt_name, data_type, db_type, known_enum_types)
+        result = process_udt_field(type_info, db_type, db_type=DatabaseType.MYSQL, known_enum_types=enum_types)
 
         # Handle None return value by returning empty string
         if result is None:

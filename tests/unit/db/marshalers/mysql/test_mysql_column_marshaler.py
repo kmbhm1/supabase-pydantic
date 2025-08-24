@@ -94,7 +94,7 @@ def test_process_column_type(mock_process_udt, marshaler, db_type, type_info, ex
     result = marshaler.process_column_type(db_type, type_info)
 
     # Verify process_udt_field was called with correct parameters
-    mock_process_udt.assert_called_once_with(type_info, db_type, db_type=DatabaseType.MYSQL)
+    mock_process_udt.assert_called_once_with(type_info, db_type, db_type=DatabaseType.MYSQL, known_enum_types=None)
     assert result == expected, f'Failed for {db_type}/{type_info}, got {result}, expected {expected}'
 
 

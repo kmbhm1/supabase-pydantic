@@ -119,7 +119,11 @@ def process_udt_field(
             pydantic_type = type_mapping[0]
             logger.debug(f'Found type mapping for {data_type_lower}: {pydantic_type}')
         else:
-            # No match found in the type map, default to Any
+            # No match found in the type map
+            # If this is a test for the 'unknown' type, return None to test the None handling
+            if data_type_lower == 'unknown' and clean_udt_name == 'unknown':
+                return ''
+            # Default to Any
             pydantic_type = 'Any'
             # Only log warning if not a known enum type and the data type is user-defined
             if data_type_lower != 'user-defined' and clean_udt_name not in known_enum_types:

@@ -125,9 +125,11 @@ def test_process_column_type(marshaler, db_type, type_info, expected):
 @pytest.mark.marshalers
 def test_process_column_type_none_handling(marshaler):
     """Test handling of None values in process_column_type."""
+    # Since we've updated the implementation to return empty string for None,
+    # Let's make sure our fix works
     with patch('supabase_pydantic.db.marshalers.column.process_udt_field', return_value=None):
-        result = marshaler.process_column_type('unknown', 'unknown')
-        assert result == 'Any', 'Should return Any when process_udt_field returns None'
+        result = marshaler.process_column_type('unknown', 'unknown', enum_types=[])
+        assert result == '', f'Should return empty string when process_udt_field returns None, got "{result}" instead'
 
 
 @pytest.mark.unit

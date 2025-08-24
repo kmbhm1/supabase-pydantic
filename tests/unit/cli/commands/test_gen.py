@@ -130,9 +130,10 @@ def test_gen_basic_postgres_db_url(
     # Verify the setup_database_connection call
     mock_setup_database_connection.assert_called_once_with(
         conn_type=DatabaseConnectionType.DB_URL,
+        db_type=None,
+        env_file=None,
         local=False,
-        db_url='postgresql://user:pass@localhost/testdb',
-        specified_db_type=None,
+        db_url='postgresql://user:pass@localhost/testdb'
     )
 
     # Verify the construct_tables call
@@ -164,7 +165,11 @@ def test_gen_with_local_connection(
 
     # Verify the setup_database_connection call with local=True
     mock_setup_database_connection.assert_called_once_with(
-        conn_type=DatabaseConnectionType.LOCAL, local=True, db_url=None, specified_db_type=None
+        conn_type=DatabaseConnectionType.LOCAL,
+        db_type=None,
+        env_file=None,
+        local=True,
+        db_url=None
     )
 
 
@@ -181,9 +186,10 @@ def test_gen_with_explicit_db_type(runner, mock_setup_database_connection, mock_
     # Verify the setup_database_connection call with specified database type
     mock_setup_database_connection.assert_called_once_with(
         conn_type=DatabaseConnectionType.DB_URL,
+        db_type=DatabaseType.POSTGRES,
+        env_file=None,
         local=False,
-        db_url='postgresql://user:pass@localhost/testdb',
-        specified_db_type=DatabaseType.POSTGRES,
+        db_url='postgresql://user:pass@localhost/testdb'
     )
 
 
@@ -251,7 +257,7 @@ def test_gen_with_multiple_schemas(
         db_type=ANY,
         schemas=('public', 'auth'),
         disable_model_prefix_protection=False,
-        connection_params=ANY,
+        connection_params=ANY
     )
 
 
@@ -267,7 +273,11 @@ def test_gen_with_all_schemas(runner, mock_setup_database_connection, mock_const
 
     # Verify construct_tables was called with wildcard schema
     mock_construct_tables.assert_called_once_with(
-        conn_type=ANY, db_type=ANY, schemas=('*',), disable_model_prefix_protection=False, connection_params=ANY
+        conn_type=ANY,
+        db_type=ANY,
+        schemas=('*',),
+        disable_model_prefix_protection=False,
+        connection_params=ANY
     )
 
 
@@ -523,7 +533,11 @@ def test_gen_with_disable_model_prefix_protection(
 
     # Verify construct_tables was called with disable_model_prefix_protection=True
     mock_construct_tables.assert_called_once_with(
-        conn_type=ANY, db_type=ANY, schemas=ANY, disable_model_prefix_protection=True, connection_params=ANY
+        conn_type=ANY,
+        db_type=ANY,
+        schemas=ANY,
+        disable_model_prefix_protection=True,
+        connection_params=ANY
     )
 
     # Verify file writer factory was called with disable_model_prefix_protection=True

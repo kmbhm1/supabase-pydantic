@@ -89,7 +89,7 @@ class MySQLConnector(BaseDBConnector):
 
         except Exception as e:
             logger.error(f'MySQL connection failed: {str(e)}')
-            if logger.level == 'DEBUG':
+            if logger.getEffectiveLevel() <= logging.DEBUG:
                 raise ConnectionError(f'Failed to connect to MySQL database: {str(e)}')
 
     @contextmanager

@@ -28,7 +28,7 @@ class PostgresSchemaReader(BaseSchemaReader):
         Args:
             connector: PostgreSQL connector instance.
         """
-        logger.debug('PostgresSchemaReader initialized')
+        logger.info('PostgresSchemaReader initialized')
         super().__init__(connector)
 
     def get_schemas(self, conn: Any) -> list[str]:

@@ -67,7 +67,7 @@ class DatabaseBuilder:
         # Connect to database
         with self.connector as connection:
             if not self.connector.check_connection(connection):
-                if logger.level == 'DEBUG':
+                if logger.getEffectiveLevel() <= logging.DEBUG:
                     raise ConnectionError('Failed to establish database connection')
                 else:
                     logger.error('Failed to establish database connection')

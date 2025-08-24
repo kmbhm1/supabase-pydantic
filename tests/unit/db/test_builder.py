@@ -1,5 +1,6 @@
 """Tests for database builder module."""
 
+import logging
 import pytest
 from unittest.mock import patch, Mock, MagicMock
 
@@ -246,7 +247,7 @@ def test_build_tables_with_wildcard_schema(mock_factory):
 @pytest.mark.unit
 @pytest.mark.db
 def test_build_tables_connection_error(mock_factory):
-    """Test handling connection error in build_tables."""
+    """Test handling connection error in build_tables in both normal and debug modes."""
     # Setup connection error
     mock_connection = Mock()
     mock_factory['connector'].__enter__.return_value = mock_connection
@@ -255,11 +256,21 @@ def test_build_tables_connection_error(mock_factory):
     # Create builder
     builder = DatabaseBuilder(db_type=DatabaseType.POSTGRES, conn_type=DatabaseConnectionType.DB_URL)
 
-    # Call build_tables and expect ConnectionError
-    with pytest.raises(ConnectionError) as exc_info:
+    # 1. Test normal mode - should not raise ConnectionError
+    # Just log the error
+    try:
         builder.build_tables()
+    except ConnectionError:
+        pytest.fail("ConnectionError should not be raised in normal mode")
 
-    assert 'Failed to establish database connection' in str(exc_info.value)
+    # 2. Test debug mode - should raise ConnectionError
+    # Set logger level to DEBUG by patching the getEffectiveLevel method
+    with patch('supabase_pydantic.db.builder.logger.getEffectiveLevel', return_value=logging.DEBUG):
+        # Call build_tables and expect ConnectionError
+        with pytest.raises(ConnectionError) as exc_info:
+            builder.build_tables()
+
+        assert 'Failed to establish database connection' in str(exc_info.value)
 
 
 @pytest.mark.unit

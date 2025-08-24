@@ -37,7 +37,7 @@ def test_init_logs_initialization(mock_connector):
     with patch('supabase_pydantic.db.connectors.postgres.schema_reader.logger') as mock_logger:
         PostgresSchemaReader(mock_connector)
 
-        mock_logger.info.assert_called_once_with('PostgresSchemaReader initialized - schema_reader.py is being used!')
+        mock_logger.info.assert_called_once_with('PostgresSchemaReader initialized')
 
 
 @pytest.mark.unit

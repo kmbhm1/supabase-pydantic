@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import mysql.connector
 import psycopg2
 import pytest
+import logging
 
 from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.factory import DatabaseFactory
@@ -84,9 +85,9 @@ def test_create_postgres_connector(mock_psycopg2):
 def test_postgres_connector_operational_error():
     """Test that PostgreSQL OperationalError is caught and re-raised as ConnectionError."""
     error_message = 'unable to connect to the database'
-    # Mock the connector class
+    # Mock the psycopg2.connect function
     with patch(
-        'supabase_pydantic.db.connectors.postgres.connector.psycopg2.connect',
+        'psycopg2.connect',
         side_effect=psycopg2.OperationalError(error_message),
     ):
         with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
@@ -239,21 +240,29 @@ def test_create_mysql_connector(mock_mysql_connector):
 @pytest.mark.db
 @pytest.mark.connection
 def test_mysql_connector_operational_error():
-    """Test that MySQL OperationalError is caught and re-raised as ConnectionError."""
+    """Test that MySQL OperationalError is handled properly in normal and debug modes."""
     error_message = 'unable to connect to the database'
-    # Mock the connector class - fix patch to match exactly how the module is imported and used
+    # Mock the mysql.connector.connect function
     with patch(
-        'mysql.connector.connect',  # This matches the import in connector.py
+        'mysql.connector.connect',
         side_effect=mysql.connector.Error(error_message),
     ):
         with patch('supabase_pydantic.db.factory.DatabaseFactory._connector_registry') as mock_registry:
             # Return the real MySQLConnector class
             mock_registry.get.return_value = MySQLConnector
+
+            # 1. Test normal mode (no exception should be raised)
             params = MySQLConnectionParams(
                 dbname='testdb', user='root', password='mysql', host='localhost', port='3306'
             )
-            with pytest.raises(ConnectionError) as exc_info:
-                connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=params)
-                with connector:
-                    pass  # Connection will fail during context manager entry
-            assert error_message in str(exc_info.value)
+            # Should not raise ConnectionError in normal mode
+            connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=params)
+
+            # 2. Test debug mode (exception should be raised)
+            # Set logger level to DEBUG by patching the getEffectiveLevel method
+            with patch('supabase_pydantic.db.connectors.mysql.connector.logger.getEffectiveLevel', return_value=logging.DEBUG):
+                with pytest.raises(ConnectionError) as exc_info:
+                    connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=params)
+                    with connector:
+                        pass  # Connection will fail during context manager entry
+                assert error_message in str(exc_info.value)

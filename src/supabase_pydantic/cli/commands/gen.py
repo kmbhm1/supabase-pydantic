@@ -286,7 +286,13 @@ def gen(
 
         # Set up the database connection using our connection manager
         conn_type = DatabaseConnectionType.DB_URL if db_url else DatabaseConnectionType.LOCAL
-        connection_params, detected_db_type = setup_database_connection(conn_type, db_url, database_type)
+        connection_params, detected_db_type = setup_database_connection(
+            conn_type=conn_type,
+            db_type=database_type,
+            env_file=None,
+            local=local,
+            db_url=db_url
+        )
 
         logger.info(f'Successfully established connection parameters for {detected_db_type.value}')
 

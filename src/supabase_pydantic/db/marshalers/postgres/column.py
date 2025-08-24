@@ -26,7 +26,11 @@ class PostgresColumnMarshaler(BaseColumnMarshaler):
     def process_column_type(self, db_type: str, type_info: str, enum_types: list[str] | None = None) -> str:
         """Process database-specific column type into standard Python type."""
         result = process_udt_field(type_info, db_type, known_enum_types=enum_types)
-        return str(result) if result is not None else ''
+        if result is None:
+            return ''
+        # Make sure we check for None again and return empty string
+        # This can happen if the underlying function changes behavior
+        return '' if result is None else str(result)
 
     def process_array_type(self, element_type: str) -> str:
         """Process array types for the database."""

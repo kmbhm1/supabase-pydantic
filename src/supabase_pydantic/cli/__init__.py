@@ -23,7 +23,7 @@ def cli(ctx: Any) -> None:
     """
     # Initialize logging globally (defaults to INFO). Individual commands may
     # reconfigure (e.g., --debug) if needed.
-    setup_logging(False)
+    setup_logging('INFO')
 
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)

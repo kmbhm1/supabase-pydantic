@@ -206,15 +206,15 @@ def _resolve_level(log_level: str | None, debug: bool, verbose: int, quiet: int)
 )
 @click.option(
     '--log-timefmt',
-    default='HH:mm:ss',
+    default='YYYY-MM-DD HH:mm:ss',  # Changed from 'HH:mm:ss'
     show_default=True,
-    help='Loguru time format (e.g., "HH:mm:ss", "MM-DD HH:mm:ss", "HH:mm:ss.SSS").',
+    help='Loguru time format (e.g., "YYYY-MM-DD HH:mm:ss", "MM-DD HH:mm:ss").',
 )
 @click.option(
     '--datefmt',
-    default='%H:%M:%S',
+    default='%Y-%m-%d %H:%M:%S',  # Changed from '%H:%M:%S'
     show_default=True,
-    help='Stdlib time format (strftime), e.g., "%H:%M:%S" or "%m-%d %H:%M:%S".',
+    help='Stdlib time format (strftime), e.g., "%Y-%m-%d %H:%M:%S").',
 )
 @click.option(
     '--log-ms/--no-log-ms',
@@ -242,8 +242,8 @@ def gen(
     verbose: int = 0,
     quiet: int = 0,
     debug: bool = False,
-    log_timefmt: str = 'HH:mm:ss',
-    datefmt: str = '%H:%M:%S',
+    log_timefmt: str = 'YYYY-MM-DD HH:mm:ss',
+    datefmt: str = '%Y-%m-%d %H:%M:%S',
     log_ms: bool = False,
 ) -> None:
     """Generate models from a database."""

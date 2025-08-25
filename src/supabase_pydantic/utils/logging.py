@@ -61,10 +61,9 @@ class InterceptHandler(logging.Handler):
 def setup_logging(
     level: int | str = 'INFO',
     *,
-    # Short timestamp formats: Loguru uses moment-style, stdlib uses strftime.
-    # These defaults show HH:mm:ss; toggle milliseconds by changing both.
-    loguru_timefmt: str = 'HH:mm:ss',
-    stdlib_datefmt: str = '%H:%M:%S',
+    # Full timestamp with date and time
+    loguru_timefmt: str = 'YYYY-MM-DD HH:mm:ss',
+    stdlib_datefmt: str = '%Y-%m-%d %H:%M:%S',
     include_ms: bool = False,
     force: bool = False,  # Python 3.8+: override pre-existing handlers
 ) -> None:
@@ -72,8 +71,8 @@ def setup_logging(
 
     Args:
         level: Desired log level (e.g., "DEBUG", "INFO", 20, etc.).
-        loguru_timefmt: Time format for Loguru (e.g., "HH:mm:ss", "HH:mm:ss.SSS").
-        stdlib_datefmt: Time format for stdlib (strftime, e.g., "%H:%M:%S").
+        loguru_timefmt: Time format for Loguru (e.g., "YYYY-MM-DD HH:mm:ss").
+        stdlib_datefmt: Time format for stdlib (strftime, e.g., "%Y-%m-%d %H:%M:%S").
         include_ms: Append milliseconds in both Loguru and stdlib outputs.
         force: If True and Python>=3.8, force override existing handlers.
     """
@@ -91,17 +90,17 @@ def setup_logging(
         logging.root.handlers = []
         logging.root.setLevel(effective_level)
 
-        # Build Loguru format
+        # Build Loguru format with dashes between components
         # Example:
-        #  12:34:56 | INFO     | file.py:123 my_func() | message
+        #  2023-09-12 14:30:15 - INFO - message
         parts = [
             f'<green>{{time:{loguru_timefmt + (".SSS" if include_ms and ".SSS" not in loguru_timefmt else "")}}}</green>',  # noqa: E501
-            '<level>{level:<8}</level>',
+            '<level>{level}</level>',
         ]
         if debug_details:
             parts.append('<cyan>{file.name}:{line}</cyan> {function}()')
         parts.append('{message}')
-        loguru_fmt = ' | '.join(parts)
+        loguru_fmt = ' - '.join(parts)
 
         logger.remove()
         logger.add(
@@ -121,14 +120,14 @@ def setup_logging(
         return
 
     # ----- STDLIB FALLBACK -----
-    # Build stdlib format (match Loguru look-and-feel)
-    # %(asctime)s doesn't include ms; to add ms, append ".%(msecs)03d"
+    # Build stdlib format with dashes between components
+    # 2023-09-12 14:30:15 - INFO - message
     asctime = '%(asctime)s' + ('.%(msecs)03d' if include_ms else '')
-    parts = [asctime, '%(levelname)-8s']
+    parts = [asctime, '%(levelname)s']
     if debug_details:
         parts.append('%(filename)s:%(lineno)d %(funcName)s()')
     parts.append('%(message)s')
-    stdlib_fmt = ' | '.join(parts)
+    stdlib_fmt = ' - '.join(parts)
 
     kwargs = dict(
         level=effective_level,

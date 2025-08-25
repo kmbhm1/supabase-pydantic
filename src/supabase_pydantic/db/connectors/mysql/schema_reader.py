@@ -156,7 +156,7 @@ class MySQLSchemaReader(BaseSchemaReader):
             params = {'schema': schema}
             logger.debug(f"Executing MySQL tables query for schema '{schema}': {TABLES_QUERY}")
             result = self.execute_query(connection, TABLES_QUERY, params)
-            table_names = [row.get('table_name', 'unknown') for row in result]
+            table_names = [row.get('TABLE_NAME', 'unknown') for row in result]
             logger.info(f'Found {len(result)} tables in schema {schema}: {table_names}')
             return result
         except Exception as e:

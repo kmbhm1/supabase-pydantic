@@ -51,7 +51,7 @@ class MySQLConnector(BaseDBConnector):
 
         logger.debug(f'MySQL connection parameters initialized: {self.masked_params}')
 
-    def connect(self) -> MySQLConnection:
+    def connect(self) -> MySQLConnection:  # type: ignore
         """Create a new database connection.
 
         Returns:

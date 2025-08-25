@@ -10,8 +10,10 @@ from supabase_pydantic.core.writers.abstract import AbstractClassWriter, Abstrac
 from supabase_pydantic.core.writers.utils import get_base_class_post_script as post
 from supabase_pydantic.core.writers.utils import get_section_comment
 from supabase_pydantic.db.constants import RelationType
+from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.marshalers.column import column_name_reserved_exceptions, string_is_reserved
-from supabase_pydantic.db.models import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo, get_pydantic_type
+from supabase_pydantic.db.models import ColumnInfo, ForeignKeyInfo, SortedColumns, TableInfo
+from supabase_pydantic.utils.types import get_pydantic_type
 
 # Get Logger
 logger = logging.getLogger(__name__)
@@ -25,8 +27,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         null_defaults: bool = False,
         generate_enums: bool = True,
         disable_model_prefix_protection: bool = False,
+        database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
-        super().__init__(table, class_type, null_defaults)
+        super().__init__(table, class_type, null_defaults, database_type)
         self.generate_enums = generate_enums
         self.disable_model_prefix_protection = disable_model_prefix_protection
         self.separated_columns: SortedColumns = self.table.sort_and_separate_columns(
@@ -488,6 +491,7 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         generate_crud_models: bool = True,
         generate_enums: bool = True,
         disable_model_prefix_protection: bool = False,
+        database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
         # Developer's Note:
         # Use functools.partial to wrap the writer so that it always
@@ -499,7 +503,7 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             disable_model_prefix_protection=disable_model_prefix_protection,  # type: ignore
         )
 
-        super().__init__(tables, file_path, writer_with_options, add_null_parent_classes)
+        super().__init__(tables, file_path, writer_with_options, add_null_parent_classes, database_type)
         self.generate_crud_models = generate_crud_models
         self.generate_enums = generate_enums
         self.disable_model_prefix_protection = disable_model_prefix_protection
@@ -508,7 +512,9 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         """Update the imports with the necessary data types."""
 
         def _pyi(c: ColumnInfo) -> str | None:  # pyi = pydantic import  # noqa
-            import_stmt: str | None = get_pydantic_type(c.post_gres_datatype, default_import)[1]
+            import_stmt: str | None = get_pydantic_type(
+                c.post_gres_datatype, database_type=self.database_type, default=default_import
+            )[1]
             return import_stmt
 
         # column data types
@@ -529,8 +535,10 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             any(
                 # Check columns with model_ prefix in their original name or alias
                 (c.alias and c.alias.lower().startswith('model_'))
+                # Or check prefixed field names that were added because the original started with model_
                 or (c.name.lower().startswith('field_model_'))
-                or (c.name.lower().startswith('model_'))
+                # Or check direct column names starting with model or model_
+                or (c.name.lower().startswith('model'))
                 for c in table.columns
             )
             for table in self.tables

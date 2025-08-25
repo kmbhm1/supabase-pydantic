@@ -260,7 +260,9 @@ def test_mysql_connector_operational_error():
 
             # 2. Test debug mode (exception should be raised)
             # Set logger level to DEBUG by patching the getEffectiveLevel method
-            with patch('supabase_pydantic.db.connectors.mysql.connector.logger.getEffectiveLevel', return_value=logging.DEBUG):
+            with patch(
+                'supabase_pydantic.db.connectors.mysql.connector.logger.getEffectiveLevel', return_value=logging.DEBUG
+            ):
                 with pytest.raises(ConnectionError) as exc_info:
                     connector = DatabaseFactory.create_connector(DatabaseType.MYSQL, connection_params=params)
                     with connector:

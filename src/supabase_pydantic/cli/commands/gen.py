@@ -287,11 +287,7 @@ def gen(
         # Set up the database connection using our connection manager
         conn_type = DatabaseConnectionType.DB_URL if db_url else DatabaseConnectionType.LOCAL
         connection_params, detected_db_type = setup_database_connection(
-            conn_type=conn_type,
-            db_type=database_type,
-            env_file=None,
-            local=local,
-            db_url=db_url
+            conn_type=conn_type, db_type=database_type, env_file=None, local=local, db_url=db_url
         )
 
         logger.info(f'Successfully established connection parameters for {detected_db_type.value}')
@@ -437,6 +433,7 @@ def gen(
                 generate_crud_models=not no_crud_models,
                 generate_enums=not no_enums,
                 disable_model_prefix_protection=disable_model_prefix_protection,
+                database_type=detected_db_type,
             ).save(overwrite)
             paths += [p, vf] if vf is not None else [p]
             logger.info(f"{job} models generated successfully for schema '{s}': {p}")

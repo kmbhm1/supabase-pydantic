@@ -261,7 +261,7 @@ def test_build_tables_connection_error(mock_factory):
     try:
         builder.build_tables()
     except ConnectionError:
-        pytest.fail("ConnectionError should not be raised in normal mode")
+        pytest.fail('ConnectionError should not be raised in normal mode')
 
     # 2. Test debug mode - should raise ConnectionError
     # Set logger level to DEBUG by patching the getEffectiveLevel method

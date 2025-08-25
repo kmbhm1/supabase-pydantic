@@ -43,7 +43,7 @@ class InterceptHandler(logging.Handler):
         try:
             lvl = logger.level(record.levelname).name
         except Exception:
-            lvl = record.levelno
+            lvl = record.levelno  # type: ignore
 
         # Compute correct depth by skipping frames from stdlib logging module
         frame: FrameType | None = logging.currentframe()

@@ -4,6 +4,7 @@ from supabase_pydantic.core.constants import WriterClassType
 from supabase_pydantic.core.models import EnumInfo
 from supabase_pydantic.core.writers.abstract import AbstractClassWriter, AbstractFileWriter, get_section_comment
 from supabase_pydantic.db.constants import RelationType
+from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.models import ColumnInfo, SortedColumns, TableInfo
 from supabase_pydantic.utils.strings import to_pascal_case
 from supabase_pydantic.utils.types import get_sqlalchemy_v2_type
@@ -28,9 +29,13 @@ def pluralize(word: str) -> str:
 
 class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
     def __init__(
-        self, table: TableInfo, class_type: WriterClassType = WriterClassType.BASE, null_defaults: bool = False
+        self,
+        table: TableInfo,
+        class_type: WriterClassType = WriterClassType.BASE,
+        null_defaults: bool = False,
+        database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
-        super().__init__(table, class_type, null_defaults)
+        super().__init__(table, class_type, null_defaults, database_type)
         self._tname = to_pascal_case(self.table.name)
         # Access schema from the table object
         self.schema = self.table.schema
@@ -111,7 +116,8 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
             return ''
 
         # base type
-        base_type, pyth_type, _ = get_sqlalchemy_v2_type(c.post_gres_datatype)
+        print(f'write_column({c.post_gres_datatype}, {self.database_type})')
+        base_type, pyth_type, _ = get_sqlalchemy_v2_type(c.post_gres_datatype, database_type=self.database_type)
         # Handle special types
         if base_type.lower() == 'uuid':
             base_type = 'UUID(as_uuid=True)'
@@ -377,8 +383,9 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         file_path: str,
         writer: type[AbstractClassWriter] = SqlAlchemyFastAPIClassWriter,
         add_null_parent_classes: bool = False,
+        database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
-        super().__init__(tables, file_path, writer, add_null_parent_classes)
+        super().__init__(tables, file_path, writer, add_null_parent_classes, database_type)
 
     def write(self) -> str:
         """Override the base write method to handle newlines correctly."""
@@ -397,7 +404,10 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         """Update the imports with the necessary data types."""
 
         def _pyi(c: ColumnInfo) -> str | None:  # pyi = pydantic import  # noqa
-            import_stmt: str | None = get_sqlalchemy_v2_type(c.post_gres_datatype, default_import)[2]
+            import_stmt: str | None = get_sqlalchemy_v2_type(
+                c.post_gres_datatype, database_type=self.database_type, default=default_import
+            )[2]
+            # print(f'import_stmt: {import_stmt}')
             return import_stmt
 
         # column data types
@@ -446,7 +456,7 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
             attr = 'write_class' if is_base else 'write_operational_class'
 
             def _method(t: TableInfo) -> Any:
-                return getattr(self.writer(t), attr)
+                return getattr(self.writer(t, database_type=self.database_type), attr)
 
             if 'add_fk' in kwargs:
                 classes = [_method(t)(add_fk=kwargs['add_fk']) for t in self.tables]
@@ -553,7 +563,7 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         classes = []
         for table in self.tables:
             # Create writer with the specified class type
-            writer = self.writer(table, class_type=class_type)
+            writer = self.writer(table, class_type=class_type, database_type=self.database_type)
             class_def = writer.write_class()
             if class_def:
                 classes.append(class_def)

@@ -53,13 +53,15 @@ SELECT
     c.identity_generation,
     c.udt_name,
     CASE
-        WHEN c.data_type = 'ARRAY' THEN pg_catalog.format_type(pg_catalog.regtype(c.udt_name)::oid, NULL)
+        WHEN c.data_type = 'ARRAY' THEN pg_catalog.format_type(e.oid, NULL)
         ELSE NULL
     END as array_element_type
 FROM
     information_schema.columns AS c
 JOIN
     information_schema.tables AS t ON c.table_name = t.table_name AND c.table_schema = t.table_schema
+LEFT JOIN pg_type e
+    ON e.typname = c.udt_name
 WHERE
     c.table_schema = %s
     AND (t.table_type = 'BASE TABLE' OR t.table_type = 'VIEW')

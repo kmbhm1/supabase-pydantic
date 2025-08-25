@@ -76,7 +76,7 @@ def process_udt_field(
     logger.debug(f'Processing type: data_type={data_type}, udt_name={udt_name}, db_type={db_type}')
 
     # Clean the udt_name for comparison
-    clean_udt_name = udt_name.strip('_').lower()
+    # clean_udt_name = udt_name.strip('_').lower()
 
     # Select the appropriate type map based on the database type
     type_map: dict[str, tuple[str, str | None]]
@@ -91,7 +91,9 @@ def process_udt_field(
     pydantic_type: str
     if data_type.lower() == 'array' or data_type.lower().endswith('[]'):
         # Extract the element type name
-        element_type_name = udt_name.strip('_').lower()
+        # TODO: whether to include underscores in element type name
+        # element_type_name = udt_name.strip('_').lower()
+        element_type_name = udt_name.lower()
 
         # Simplified approach: check if the element type exists in the type map
         element_mapping = type_map.get(element_type_name)
@@ -121,12 +123,12 @@ def process_udt_field(
         else:
             # No match found in the type map
             # If this is a test for the 'unknown' type, return None to test the None handling
-            if data_type_lower == 'unknown' and clean_udt_name == 'unknown':
+            if data_type_lower == 'unknown' and udt_name == 'unknown':
                 return ''
             # Default to Any
             pydantic_type = 'Any'
             # Only log warning if not a known enum type and the data type is user-defined
-            if data_type_lower != 'user-defined' and clean_udt_name not in known_enum_types:
+            if data_type_lower != 'user-defined' and udt_name not in known_enum_types:
                 logger.warning(
                     f'No type mapping found for {data_type_lower}, using Any. Available keys: {list(type_map.keys())[:10]}'  # noqa: E501
                 )

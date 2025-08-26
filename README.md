@@ -14,7 +14,7 @@ Currently, this is ideal for integrating [FastAPI](https://fastapi.tiangolo.com/
 
 > **📣 NEW (Aug 2025)**: MySQL support! Generate models directly from MySQL databases with the `--db-type mysql` flag. [See the docs](https://kmbhm1.github.io/supabase-pydantic/examples/add-mysql-support/)
 >
-> **📣 NEW (Aug 2025)**: SQLAlchemy models with Insert and Update variants for better type safety. [Learn more](https://kmbhm1.github.io/supabase-pydantic/examples/insert-update-models/)
+> **📣 NEW (Aug 2025)**: SQLAlchemy models with Insert and Update variants for better type safety. [Learn more](https://kmbhm1.github.io/supabase-pydantic/examples/sqlalchemy-models/)
 
 ## Installation
 

@@ -52,7 +52,7 @@ check-next-version: ## Check next version with semantic-release
 
 lint: ## Run ruff linter and sort imports
 	@echo "Running ruff linter and sorting imports"
-	@poetry run ruff check --select I --fix .
+	@poetry run ruff check --select I,UP007,F401,UP006 --fix .
 	@poetry run ruff check .
 
 format: ## Run ruff formatter
@@ -62,6 +62,10 @@ format: ## Run ruff formatter
 typecheck: ## Run mypy type checker
 	@echo "Type checking with mypy"
 	@poetry run mypy .
+
+vulture: ## Find unused code with vulture
+	@echo "Finding unused code with vulture"
+	@poetry run vulture src/ tests/
 
 pre-commit-setup: ## Install pre-commit hooks for git
 	@echo "Setting up pre-commit"

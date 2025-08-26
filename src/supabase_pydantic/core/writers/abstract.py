@@ -7,6 +7,7 @@ from pathlib import Path
 
 from supabase_pydantic.core.constants import BASE_CLASS_POSTFIX, WriterClassType
 from supabase_pydantic.core.writers.utils import generate_unique_filename
+from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.models import TableInfo
 from supabase_pydantic.utils.strings import to_pascal_case
 
@@ -33,12 +34,17 @@ def get_section_comment(title: str, description_lines: list[str] | None = None) 
 
 class AbstractClassWriter(ABC):
     def __init__(
-        self, table: TableInfo, class_type: WriterClassType = WriterClassType.BASE, null_defaults: bool = False
+        self,
+        table: TableInfo,
+        class_type: WriterClassType = WriterClassType.BASE,
+        null_defaults: bool = False,
+        database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
         self.table = table
         self.class_type = class_type
         self._null_defaults = null_defaults
         self.name = to_pascal_case(self.table.name)
+        self.database_type = database_type
 
     @staticmethod
     def _proper_name(name: str, use_base: bool = False) -> str:
@@ -123,11 +129,13 @@ class AbstractFileWriter(ABC):
         file_path: str,
         writer: Callable[..., AbstractClassWriter],
         add_null_parent_classes: bool = False,
+        database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
         self.tables = tables
         self.file_path = file_path
         self.add_null_parent_classes = add_null_parent_classes
         self.writer = writer
+        self.database_type = database_type
         self.jstr = '\n\n\n'
 
     def write(self) -> str:

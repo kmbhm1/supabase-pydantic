@@ -4,14 +4,14 @@ from urllib.parse import urlparse
 
 import psycopg2
 
-from supabase_pydantic.db.constants import (
+from supabase_pydantic.db.constants import DatabaseConnectionType
+from supabase_pydantic.db.drivers.postgres.queries import (
     GET_ALL_PUBLIC_TABLES_AND_COLUMNS,
     GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,
     GET_CONSTRAINTS,
     GET_ENUM_TYPES,
     GET_TABLE_COLUMN_DETAILS,
     SCHEMAS_QUERY,
-    DatabaseConnectionType,
 )
 from supabase_pydantic.db.exceptions import ConnectionError
 from supabase_pydantic.db.marshalers.schema import construct_table_info
@@ -100,7 +100,7 @@ class DBConnection:
     def __enter__(self) -> Any:
         return self.conn
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> Literal[False]:
         self.conn.close()
         logger.info('PostGres connection is closed.')
         return False

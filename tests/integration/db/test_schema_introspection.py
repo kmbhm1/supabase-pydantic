@@ -8,8 +8,9 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from supabase_pydantic.db.connection import construct_tables
-from supabase_pydantic.db.constants import DatabaseConnectionType
+from supabase_pydantic.db.database_type import DatabaseType
+from supabase_pydantic.db.factory import DatabaseFactory
+from supabase_pydantic.db.models import PostgresConnectionParams
 
 
 # Load environment variables from .env file
@@ -17,19 +18,19 @@ load_dotenv()
 
 
 @pytest.fixture
-def db_params():
+def postgres_params():
     """Get database connection parameters from environment variables."""
-    return {
-        'DB_NAME': os.environ.get('TEST_DB_NAME', 'postgres'),
-        'DB_USER': os.environ.get('TEST_DB_USER', 'postgres'),
-        'DB_PASS': os.environ.get('TEST_DB_PASS', 'postgres'),
-        'DB_HOST': os.environ.get('TEST_DB_HOST', 'localhost'),
-        'DB_PORT': os.environ.get('TEST_DB_PORT', '5432'),
-    }
+    return PostgresConnectionParams(
+        dbname=os.environ.get('TEST_DB_NAME', 'postgres'),
+        user=os.environ.get('TEST_DB_USER', 'postgres'),
+        password=os.environ.get('TEST_DB_PASS', 'postgres'),
+        host=os.environ.get('TEST_DB_HOST', 'localhost'),
+        port=os.environ.get('TEST_DB_PORT', '5432'),
+    )
 
 
 @pytest.fixture
-def db_url():
+def postgres_url():
     """Get database URL from environment variables."""
     return os.environ.get(
         'TEST_DB_URL',
@@ -37,31 +38,12 @@ def db_url():
     )
 
 
-@pytest.mark.integration
-@pytest.mark.db
-@pytest.mark.connection
-@pytest.mark.construction
-@pytest.mark.skipif(
-    not os.environ.get('RUN_DB_TESTS'),
-    reason='Database integration tests are disabled. Set RUN_DB_TESTS=1 to enable.',
-)
-def test_construct_tables_local_integration(db_params):
-    """Test constructing tables using local connection parameters."""
-    try:
-        tables = construct_tables(
-            DatabaseConnectionType.LOCAL,
-            schemas=('public',),
-            **db_params,
-        )
-        assert isinstance(tables, dict)
-        assert 'public' in tables
-        # Check basic structure - will vary depending on test database
-        for table_name, table_info in tables['public'].items():
-            # Just verify we have table information objects with expected structure
-            assert hasattr(table_info, 'name')
-            assert hasattr(table_info, 'columns')
-    except Exception as e:
-        pytest.skip(f'Could not construct tables: {str(e)}')
+@pytest.fixture
+def schema_reader(postgres_params):
+    """Create a schema reader for postgres database testing."""
+    # Create connector and schema reader using the factory
+    connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params=postgres_params)
+    return DatabaseFactory.create_schema_reader(DatabaseType.POSTGRES, connector=connector)
 
 
 @pytest.mark.integration
@@ -72,20 +54,62 @@ def test_construct_tables_local_integration(db_params):
     not os.environ.get('RUN_DB_TESTS'),
     reason='Database integration tests are disabled. Set RUN_DB_TESTS=1 to enable.',
 )
-def test_construct_tables_db_url_integration(db_url):
-    """Test constructing tables using a database URL."""
+def test_read_schema_integration(schema_reader):
+    """Test reading schema information using local connection parameters."""
     try:
-        tables = construct_tables(
-            DatabaseConnectionType.DB_URL,
-            schemas=('public',),
-            DB_URL=db_url,
-        )
-        assert isinstance(tables, dict)
-        assert 'public' in tables
-        # Check basic structure - will vary depending on test database
-        for table_name, table_info in tables['public'].items():
-            # Just verify we have table information objects with expected structure
-            assert hasattr(table_info, 'name')
-            assert hasattr(table_info, 'columns')
+        schemas = schema_reader.get_schemas()
+        assert isinstance(schemas, list)
+        assert len(schemas) > 0
+
+        # Get tables for the first schema
+        schema = schemas[0]  # Usually 'public'
+        tables = schema_reader.get_tables(schema)
+        assert isinstance(tables, list)
+
+        # If there are tables, check their structure
+        if tables:
+            table = tables[0]
+            assert table.name is not None
+
+            # Get columns for the first table
+            columns = schema_reader.get_columns(schema, table.name)
+            assert isinstance(columns, list)
+
+            # Check column structure if columns exis
+            if columns:
+                column = columns[0]
+                assert column.name is not None
+                assert column.data_type is not None
     except Exception as e:
-        pytest.skip(f'Could not construct tables: {str(e)}')
+        pytest.skip(f'Could not read schema: {str(e)}')
+
+
+@pytest.mark.integration
+@pytest.mark.db
+@pytest.mark.connection
+@pytest.mark.construction
+@pytest.mark.skipif(
+    not os.environ.get('RUN_DB_TESTS'),
+    reason='Database integration tests are disabled. Set RUN_DB_TESTS=1 to enable.',
+)
+def test_read_schema_from_url_integration(postgres_url):
+    """Test reading schema information using a database URL."""
+    try:
+        connector = DatabaseFactory.create_connector(DatabaseType.POSTGRES, connection_params={'db_url': postgres_url})
+        reader = DatabaseFactory.create_schema_reader(DatabaseType.POSTGRES, connector=connector)
+
+        schemas = reader.get_schemas()
+        assert isinstance(schemas, list)
+        assert len(schemas) > 0
+
+        # Get tables for the first schema
+        schema = schemas[0]  # Usually 'public'
+        tables = reader.get_tables(schema)
+        assert isinstance(tables, list)
+
+        # If there are tables, check their structure
+        if tables:
+            table = tables[0]
+            assert table.name is not None
+    except Exception as e:
+        pytest.skip(f'Could not read schema: {str(e)}')

@@ -104,7 +104,7 @@ def test_clean_command_handles_other_errors(runner, mock_env_vars):
 def test_gen_command_with_invalid_db_url(runner):
     """Test gen command with invalid database URL."""
     result = runner.invoke(cli, ['gen', '--db-url', 'invalid_url'])
-    assert 'Invalid database URL' in result.output
+    assert 'PostgreSQL connection URL must start with' in result.output
     assert result.exit_code == 0
 
 
@@ -127,8 +127,19 @@ def test_gen_command_with_valid_db_url(runner):
         result = runner.invoke(
             cli, ['gen', '--db-url', 'postgresql://user:pass@localhost:5432/db', '--schema', 'public']
         )
-        assert 'Checking local database connection' in result.output
+        assert 'Successfully established connection parameters for postgres' in result.output
         assert result.exit_code == 0
+
+
+@pytest.mark.unit
+@pytest.mark.cli
+def test_clean_command_2(runner, mock_env_vars):
+    """Test the clean command functionality."""
+    with patch('supabase_pydantic.cli.commands.clean.clean_directories') as mock_clean:
+        result = runner.invoke(cli, ['clean'])
+        assert 'Cleaning up the project...' in result.output
+        assert result.exit_code == 0
+        mock_clean.assert_called_once()
 
 
 @pytest.mark.unit
@@ -227,13 +238,12 @@ def test_gen_command_with_seed_data_no_tables(runner):
         patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs,
         patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory,
         patch('supabase_pydantic.cli.commands.gen.generate_seed_data') as mock_seed,
-        patch('supabase_pydantic.cli.commands.gen.format_with_ruff'),
+        patch('supabase_pydantic.utils.formatting.format_with_ruff'),
         patch('supabase_pydantic.utils.io.clean_directories'),
         patch(
             'os.environ',
             {'DB_NAME': 'test_db', 'DB_USER': 'user', 'DB_PASS': 'pass', 'DB_HOST': 'localhost', 'DB_PORT': '5432'},
         ),
-        patch('supabase_pydantic.cli.commands.gen.check_readiness', return_value=True),
     ):
         mock_construct.return_value = {'public': []}
         mock_dirs.return_value = {'default': '/tmp'}

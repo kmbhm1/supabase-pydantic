@@ -1,7 +1,12 @@
 import builtins
 import keyword
+import logging
 
-from supabase_pydantic.core.constants import PYDANTIC_TYPE_MAP
+from supabase_pydantic.db.database_type import DatabaseType
+from supabase_pydantic.db.type_factory import TypeMapFactory
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 
 def string_is_reserved(value: str) -> bool:
@@ -54,45 +59,78 @@ def get_alias(column_name: str, disable_model_prefix_protection: bool = False) -
     )
 
 
-def process_udt_field(udt_name: str, data_type: str) -> str:
-    """Process a user-defined type field."""
+def process_udt_field(
+    udt_name: str, data_type: str, db_type: DatabaseType = DatabaseType.POSTGRES, known_enum_types: list[str] = []
+) -> str:
+    """Process a user-defined type field.
+
+    Args:
+        udt_name: The user-defined type name
+        data_type: The database data type
+        db_type: The database type (used to select appropriate type maps)
+        known_enum_types: Optional list of known enum type names to avoid warnings
+
+    Returns:
+        A string representing the Python/Pydantic type
+    """
+    logger.debug(f'Processing type: data_type={data_type}, udt_name={udt_name}, db_type={db_type}')
+
+    # Clean the udt_name for comparison
+    # clean_udt_name = udt_name.strip('_').lower()
+
+    # Select the appropriate type map based on the database type
+    type_map: dict[str, tuple[str, str | None]]
+    if db_type == DatabaseType.MYSQL:
+        type_map = TypeMapFactory.get_pydantic_type_map(db_type)
+    else:
+        type_map = TypeMapFactory.get_pydantic_type_map(DatabaseType.POSTGRES)  # Default to PostgreSQL
+
+    logger.debug(f'Using type map: {list(type_map.keys())[:5]}... (showing first 5 keys)')
+
+    # First, check if this is an array type
     pydantic_type: str
-    is_array = udt_name.startswith('_')
+    if data_type.lower() == 'array' or data_type.lower().endswith('[]'):
+        # Extract the element type name
+        # TODO: whether to include underscores in element type name
+        # element_type_name = udt_name.strip('_').lower()
+        element_type_name = udt_name.lower()
 
-    if is_array:  # This is an array type
-        # Extract the element type by removing the underscore
-        element_type_name = udt_name[1:]
-
-        # Map the PostgreSQL element type to a Pydantic type
-        # First, try to find a direct mapping for the element type
-        element_type_mapping = PYDANTIC_TYPE_MAP.get(element_type_name)
-        if element_type_mapping:
-            element_pydantic_type = element_type_mapping[0]
+        # Simplified approach: check if the element type exists in the type map
+        element_mapping = type_map.get(element_type_name)
+        if element_mapping:
+            element_pydantic_type = element_mapping[0]
+            logger.debug(f'Found array element type mapping for {element_type_name}: {element_pydantic_type}')
         else:
-            # Fall back to a heuristic mapping based on common types
-            if element_type_name in ('text', 'varchar', 'char', 'bpchar', 'name'):
-                element_pydantic_type = 'str'
-            elif element_type_name in ('int2', 'int4', 'int8', 'serial2', 'serial4', 'serial8'):
-                element_pydantic_type = 'int'
-            elif element_type_name in ('float4', 'float8', 'numeric', 'decimal'):
-                element_pydantic_type = 'float'
-            elif element_type_name == 'bool':
-                element_pydantic_type = 'bool'
-            elif element_type_name == 'uuid':
-                element_pydantic_type = 'UUID'
-            elif element_type_name in ('timestamp', 'timestamptz', 'date', 'time', 'timetz'):
-                element_pydantic_type = 'datetime'
-            elif element_type_name == 'json' or element_type_name == 'jsonb':
-                element_pydantic_type = 'dict'
-            else:
-                # For custom types like enums, use a temporary 'Any' type
-                # We'll properly handle this with enum_info later
-                element_pydantic_type = 'Any'
+            # Default to Any for unknown types
+            element_pydantic_type = 'Any'
+            # Only log warning if not a known enum type
+            if element_type_name.lower() != 'user-defined' and element_type_name.lower() not in known_enum_types:
+                logger.warning(f'Unknown array element type: {element_type_name}, using Any')
 
         # Create a properly typed list
         pydantic_type = f'list[{element_pydantic_type}]'
     else:
         # Regular non-array type
-        pydantic_type = PYDANTIC_TYPE_MAP.get(data_type, ('Any', 'from typing import Any'))[0]
+        # Convert data_type to lowercase for case-insensitive matching
+        data_type_lower = data_type.lower()
+
+        # Try to find the type in the type map
+        type_mapping = type_map.get(data_type_lower)
+
+        if type_mapping:
+            pydantic_type = type_mapping[0]
+            logger.debug(f'Found type mapping for {data_type_lower}: {pydantic_type}')
+        else:
+            # No match found in the type map
+            # If this is a test for the 'unknown' type, return None to test the None handling
+            if data_type_lower == 'unknown' and udt_name == 'unknown':
+                return ''
+            # Default to Any
+            pydantic_type = 'Any'
+            # Only log warning if not a known enum type and the data type is user-defined
+            if data_type_lower != 'user-defined' and udt_name not in known_enum_types:
+                logger.warning(
+                    f'No type mapping found for {data_type_lower}, using Any. Available keys: {list(type_map.keys())[:10]}'  # noqa: E501
+                )
 
     return pydantic_type

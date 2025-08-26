@@ -55,6 +55,7 @@ inflection = "^0.5.1"
 requests = ">=2.32.4"
 urllib3 = "^2.5.0"
 loguru = "^0.7.2"
+mysql-connector-python = "^9.4.0"
 
 [tool.poetry.group.dev.dependencies]
 sqlalchemy = { extras = ["mypy"], version = "^2.0.31" }
@@ -80,6 +81,8 @@ ruff = ">=0.4.1"
 jinja2 = "^3.1.6"
 types-pyyaml = "^6.0.12.20250809"
 pyyaml = "^6.0.1"
+types-pymysql = "^1.1.0.20250711"
+vulture = "^2.14"
 
 [tool.supabase_pydantic]
 overwrite_existing_files = true
@@ -116,6 +119,7 @@ exclude = [
     "pyproject.toml",
     "poetry.lock",
     "pyrightconfig.json",
+    "whitelist.py",
     ".*.yml",
     ".*.yaml",
     ".*.toml",
@@ -169,6 +173,7 @@ ignore = [
     "Q002", # Remove bad quotes
     "Q003", # Unnecessary single quotes
     "W191", # Indentation contains tabs
+    "W291", # Trailing whitespace
 ]
 
 [tool.ruff.lint.flake8-quotes]
@@ -194,6 +199,7 @@ exclude = [
     "tests/*",
     'entities/*',  # generated files
     'poc',
+    'whitelist.py'
 ]
 python_version = "3.10"
 mypy_path = "."

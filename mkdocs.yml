@@ -58,8 +58,9 @@ nav:
     - Analyze Multiple Schemas: examples/generate-multiple-basemodels.md
     - Working with Insert and Update Models: examples/insert-update-models.md
     - Generating Enum Models: examples/enum-model-generation.md
-    - Model Prefix Protection: examples/model_prefix_example.md
+    - Model Prefix Protection: examples/model-prefix-example.md
     - SQLAlchemy ORM Models: examples/sqlalchemy-models.md
+    - MySQL Database Support: examples/mysql-support.md
   - API:
     - API Reference: api/api-reference.md
     - CLI Reference: api/cli.md

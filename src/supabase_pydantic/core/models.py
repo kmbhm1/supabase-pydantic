@@ -13,6 +13,8 @@ class EnumInfo:
         e.g., 'order_status' in 'public' -> 'PublicOrderStatusEnum'
         """
         class_name = ''.join(word.capitalize() for word in self.name.split('_')) + 'Enum'
+        # TODO: decide whether to keep underscores in prefix for original enum; issue #84
+        # print(f'Enum info: {self.name}, {class_name}')
         return f'{self.schema.capitalize()}{class_name}'
 
     def python_member_name(self, value: str) -> str:

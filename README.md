@@ -12,7 +12,7 @@ A project for generating Pydantic and SQLAlchemy models from Supabase and MySQL 
 
 Currently, this is ideal for integrating [FastAPI](https://fastapi.tiangolo.com/) with [supabase-py](https://supabase.com/docs/reference/python/introduction) as a primary use-case, but more updates are coming! This project is inspired by the TS [type generating](https://supabase.com/docs/guides/api/rest/generating-types) capabilities of supabase cli. Its aim is to provide a similar experience for Python developers.
 
-> **📣 NEW (Aug 2025)**: MySQL support! Generate models directly from MySQL databases with the `--db-type mysql` flag. [See the docs](https://kmbhm1.github.io/supabase-pydantic/examples/add-mysql-support/)
+> **📣 NEW (Aug 2025)**: MySQL support! Generate models directly from MySQL databases with the `--db-type mysql` flag. [See the docs](https://kmbhm1.github.io/supabase-pydantic/examples/mysql-support/)
 >
 > **📣 NEW (Aug 2025)**: SQLAlchemy models with Insert and Update variants for better type safety. [Learn more](https://kmbhm1.github.io/supabase-pydantic/examples/sqlalchemy-models/)
 

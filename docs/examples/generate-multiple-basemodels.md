@@ -17,20 +17,20 @@ To generate a BaseModel file for a specific schema, use one or more `--schema` o
 ```bash title="Generate BaseModel for a Specific Schema"
 $ sb-pydantic gen --type pydantic --framework fastapi --local --schema public --schema auth --schema extensions
 
-PostGres connection is open.
-Processing schema: public
-Processing schema: auth
-Processing schema: extensions
-PostGres connection is closed.
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'auth': /path/to/your/project/entities/fastapi/schema_auth_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'extensions': /path/to/your/project/entities/fastapi/schema_extensions_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'public': /path/to/your/project/entities/fastapi/schema_public_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_auth_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_extensions_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
+2023-07-15 14:22:10 - INFO - PostGres connection is open.
+2023-07-15 14:22:11 - INFO - Processing schema: public
+2023-07-15 14:22:11 - INFO - Processing schema: auth
+2023-07-15 14:22:11 - INFO - Processing schema: extensions
+2023-07-15 14:22:12 - INFO - PostGres connection is closed.
+2023-07-15 14:22:12 - INFO - Generating Pydantic models...
+2023-07-15 14:22:14 - INFO - Pydantic models generated successfully for schema 'auth': /path/to/your/project/entities/fastapi/schema_auth_latest.py
+2023-07-15 14:22:14 - INFO - Generating Pydantic models...
+2023-07-15 14:22:16 - INFO - Pydantic models generated successfully for schema 'extensions': /path/to/your/project/entities/fastapi/schema_extensions_latest.py
+2023-07-15 14:22:16 - INFO - Generating Pydantic models...
+2023-07-15 14:22:18 - INFO - Pydantic models generated successfully for schema 'public': /path/to/your/project/entities/fastapi/schema_public_latest.py
+2023-07-15 14:22:18 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_auth_latest.py
+2023-07-15 14:22:18 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_extensions_latest.py
+2023-07-15 14:22:19 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
 ```
 
 An example of the generated BaseModel file for the `auth` schema can be found here: 
@@ -499,71 +499,71 @@ To generate BaseModel files for all schemas, use the `--all-schemas` option with
 ```bash title="Generate BaseModels for All Schemas"
 $ sb-pydantic gen --type pydantic --framework fastapi --local --all-schemas
 
-PostGres connection is open.
-Processing schema: public
-Processing schema: graphql
-Processing schema: graphql_public
-Processing schema: vault
-Processing schema: pgsodium_masks
-Processing schema: pgsodium
-Processing schema: auth
-Processing schema: storage
-Processing schema: realtime
-Processing schema: net
-Processing schema: supabase_functions
-Processing schema: pg_toast_temp_20
-Processing schema: pg_temp_20
-Processing schema: pg_toast_temp_27
-Processing schema: pg_temp_27
-Processing schema: pg_toast_temp_19
-Processing schema: pg_temp_19
-Processing schema: _supavisor
-Processing schema: _analytics
-Processing schema: _realtime
-Processing schema: pg_toast_temp_31
-Processing schema: pg_temp_31
-Processing schema: pg_toast_temp_30
-Processing schema: pg_temp_30
-Processing schema: pg_toast_temp_32
-Processing schema: pg_temp_32
-Processing schema: pg_toast_temp_28
-Processing schema: extensions
-Processing schema: pg_temp_28
-Processing schema: pg_toast_temp_29
-Processing schema: pg_temp_29
-Processing schema: pg_toast
-PostGres connection is closed.
-The following schemas have no tables and will be skipped: graphql, graphql_public, pgsodium_masks, pg_toast_temp_20, pg_temp_20, pg_toast_temp_27, pg_temp_27, pg_toast_temp_19, pg_temp_19, _supavisor, _realtime, pg_toast_temp_31, pg_temp_31, pg_toast_temp_30, pg_temp_30, pg_toast_temp_32, pg_temp_32, pg_toast_temp_28, pg_temp_28, pg_toast_temp_29, pg_temp_29, pg_toast
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'public': /path/to/your/project/entities/fastapi/schema_public_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'vault': /path/to/your/project/entities/fastapi/schema_vault_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'pgsodium': /path/to/your/project/entities/fastapi/schema_pgsodium_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'auth': /path/to/your/project/entities/fastapi/schema_auth_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'storage': /path/to/your/project/entities/fastapi/schema_storage_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'realtime': /path/to/your/project/entities/fastapi/schema_realtime_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'net': /path/to/your/project/entities/fastapi/schema_net_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'supabase_functions': /path/to/your/project/entities/fastapi/schema_supabase_functions_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema '_analytics': /path/to/your/project/entities/fastapi/schema__analytics_latest.py
-Generating Pydantic models...
-Pydantic models generated successfully for schema 'extensions': /path/to/your/project/entities/fastapi/schema_extensions_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_vault_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_pgsodium_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_auth_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_storage_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_realtime_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_net_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_supabase_functions_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema__analytics_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schema_extensions_latest.py
+2023-07-15 14:30:05 - INFO - PostGres connection is open.
+2023-07-15 14:30:06 - INFO - Processing schema: public
+2023-07-15 14:30:06 - INFO - Processing schema: graphql
+2023-07-15 14:30:06 - INFO - Processing schema: graphql_public
+2023-07-15 14:30:06 - INFO - Processing schema: vault
+2023-07-15 14:30:06 - INFO - Processing schema: pgsodium_masks
+2023-07-15 14:30:06 - INFO - Processing schema: pgsodium
+2023-07-15 14:30:07 - INFO - Processing schema: auth
+2023-07-15 14:30:07 - INFO - Processing schema: storage
+2023-07-15 14:30:07 - INFO - Processing schema: realtime
+2023-07-15 14:30:07 - INFO - Processing schema: net
+2023-07-15 14:30:07 - INFO - Processing schema: supabase_functions
+2023-07-15 14:30:07 - INFO - Processing schema: pg_toast_temp_20
+2023-07-15 14:30:07 - INFO - Processing schema: pg_temp_20
+2023-07-15 14:30:08 - INFO - Processing schema: pg_toast_temp_27
+2023-07-15 14:30:08 - INFO - Processing schema: pg_temp_27
+2023-07-15 14:30:08 - INFO - Processing schema: pg_toast_temp_19
+2023-07-15 14:30:08 - INFO - Processing schema: pg_temp_19
+2023-07-15 14:30:08 - INFO - Processing schema: _supavisor
+2023-07-15 14:30:08 - INFO - Processing schema: _analytics
+2023-07-15 14:30:08 - INFO - Processing schema: _realtime
+2023-07-15 14:30:08 - INFO - Processing schema: pg_toast_temp_31
+2023-07-15 14:30:09 - INFO - Processing schema: pg_temp_31
+2023-07-15 14:30:09 - INFO - Processing schema: pg_toast_temp_30
+2023-07-15 14:30:09 - INFO - Processing schema: pg_temp_30
+2023-07-15 14:30:09 - INFO - Processing schema: pg_toast_temp_32
+2023-07-15 14:30:09 - INFO - Processing schema: pg_temp_32
+2023-07-15 14:30:09 - INFO - Processing schema: pg_toast_temp_28
+2023-07-15 14:30:09 - INFO - Processing schema: extensions
+2023-07-15 14:30:09 - INFO - Processing schema: pg_temp_28
+2023-07-15 14:30:10 - INFO - Processing schema: pg_toast_temp_29
+2023-07-15 14:30:10 - INFO - Processing schema: pg_temp_29
+2023-07-15 14:30:10 - INFO - Processing schema: pg_toast
+2023-07-15 14:30:10 - INFO - PostGres connection is closed.
+2023-07-15 14:30:10 - INFO - The following schemas have no tables and will be skipped: graphql, graphql_public, pgsodium_masks, pg_toast_temp_20, pg_temp_20, pg_toast_temp_27, pg_temp_27, pg_toast_temp_19, pg_temp_19, _supavisor, _realtime, pg_toast_temp_31, pg_temp_31, pg_toast_temp_30, pg_temp_30, pg_toast_temp_32, pg_temp_32, pg_toast_temp_28, pg_temp_28, pg_toast_temp_29, pg_temp_29, pg_toast
+2023-07-15 14:30:10 - INFO - Generating Pydantic models...
+2023-07-15 14:30:12 - INFO - Pydantic models generated successfully for schema 'public': /path/to/your/project/entities/fastapi/schema_public_latest.py
+2023-07-15 14:30:12 - INFO - Generating Pydantic models...
+2023-07-15 14:30:14 - INFO - Pydantic models generated successfully for schema 'vault': /path/to/your/project/entities/fastapi/schema_vault_latest.py
+2023-07-15 14:30:14 - INFO - Generating Pydantic models...
+2023-07-15 14:30:15 - INFO - Pydantic models generated successfully for schema 'pgsodium': /path/to/your/project/entities/fastapi/schema_pgsodium_latest.py
+2023-07-15 14:30:15 - INFO - Generating Pydantic models...
+2023-07-15 14:30:17 - INFO - Pydantic models generated successfully for schema 'auth': /path/to/your/project/entities/fastapi/schema_auth_latest.py
+2023-07-15 14:30:17 - INFO - Generating Pydantic models...
+2023-07-15 14:30:19 - INFO - Pydantic models generated successfully for schema 'storage': /path/to/your/project/entities/fastapi/schema_storage_latest.py
+2023-07-15 14:30:19 - INFO - Generating Pydantic models...
+2023-07-15 14:30:20 - INFO - Pydantic models generated successfully for schema 'realtime': /path/to/your/project/entities/fastapi/schema_realtime_latest.py
+2023-07-15 14:30:20 - INFO - Generating Pydantic models...
+2023-07-15 14:30:22 - INFO - Pydantic models generated successfully for schema 'net': /path/to/your/project/entities/fastapi/schema_net_latest.py
+2023-07-15 14:30:22 - INFO - Generating Pydantic models...
+2023-07-15 14:30:24 - INFO - Pydantic models generated successfully for schema 'supabase_functions': /path/to/your/project/entities/fastapi/schema_supabase_functions_latest.py
+2023-07-15 14:30:24 - INFO - Generating Pydantic models...
+2023-07-15 14:30:26 - INFO - Pydantic models generated successfully for schema '_analytics': /path/to/your/project/entities/fastapi/schema__analytics_latest.py
+2023-07-15 14:30:26 - INFO - Generating Pydantic models...
+2023-07-15 14:30:28 - INFO - Pydantic models generated successfully for schema 'extensions': /path/to/your/project/entities/fastapi/schema_extensions_latest.py
+2023-07-15 14:30:28 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_public_latest.py
+2023-07-15 14:30:28 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_vault_latest.py
+2023-07-15 14:30:28 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_pgsodium_latest.py
+2023-07-15 14:30:29 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_auth_latest.py
+2023-07-15 14:30:29 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_storage_latest.py
+2023-07-15 14:30:29 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_realtime_latest.py
+2023-07-15 14:30:29 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_net_latest.py
+2023-07-15 14:30:29 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_supabase_functions_latest.py
+2023-07-15 14:30:29 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema__analytics_latest.py
+2023-07-15 14:30:30 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schema_extensions_latest.py
 ```
 
 Note that each schema will have its own BaseModel file generated in the `entities` directory of your project. As a result, each will have a prepended `schema_` prefix and a `_latest` suffix, with the name of the corresponding schema.

@@ -233,11 +233,11 @@ $ cd /path/to/your/project  # ... then activate your environment
 $ pip install supabase-pydantic
 $ sb-pydantic gen --type pydantic --framework fastapi --local
 
-PostGres connection is open.
-PostGres connection is closed.
-Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+2023-07-15 10:15:32 - INFO - PostGres connection is open.
+2023-07-15 10:15:33 - INFO - PostGres connection is closed.
+2023-07-15 10:15:33 - INFO - Generating FastAPI Pydantic models...
+2023-07-15 10:15:35 - INFO - FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+2023-07-15 10:15:35 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
 ```
 
 ... and that's it. You now have a `schemas.py` file in your project that contains the Pydantic models for the Slack database:

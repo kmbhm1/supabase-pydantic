@@ -116,7 +116,6 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
             return ''
 
         # base type
-        print(f'write_column({c.post_gres_datatype}, {self.database_type})')
         base_type, pyth_type, _ = get_sqlalchemy_v2_type(c.post_gres_datatype, database_type=self.database_type)
         # Handle special types
         if base_type.lower() == 'uuid':

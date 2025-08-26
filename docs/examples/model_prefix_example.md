@@ -67,11 +67,11 @@ By default, supabase-pydantic will protect against Pydantic's reserved "model_" 
 ```bash title="Generate models with default protection"
 $ supabase-pydantic gen --schema public --uri postgresql://user:password@localhost:5432/your_database
 
-PostGres connection is open.
-PostGres connection is closed.
-Generating models...
-Models generated successfully: /path/to/your/project/models.py
-File formatted successfully: /path/to/your/project/models.py
+2023-07-15 10:42:18 - INFO - PostGres connection is open.
+2023-07-15 10:42:19 - INFO - PostGres connection is closed.
+2023-07-15 10:42:19 - INFO - Generating models...
+2023-07-15 10:42:22 - INFO - Models generated successfully: /path/to/your/project/models.py
+2023-07-15 10:42:22 - INFO - File formatted successfully: /path/to/your/project/models.py
 ```
 
 The generated model will include aliased fields:
@@ -99,11 +99,11 @@ To disable this protection and use the original column names directly in your mo
 ```bash title="Generate models with protection disabled"
 $ supabase-pydantic gen --schema public --uri postgresql://user:password@localhost:5432/your_database --disable-model-prefix-protection
 
-PostGres connection is open.
-PostGres connection is closed.
-Generating models...
-Models generated successfully: /path/to/your/project/models.py
-File formatted successfully: /path/to/your/project/models.py
+2023-07-15 10:43:45 - INFO - PostGres connection is open.
+2023-07-15 10:43:46 - INFO - PostGres connection is closed.
+2023-07-15 10:43:46 - INFO - Generating models...
+2023-07-15 10:43:48 - INFO - Models generated successfully: /path/to/your/project/models.py
+2023-07-15 10:43:48 - INFO - File formatted successfully: /path/to/your/project/models.py
 ```
 
 This will generate models with direct "model_" prefixed fields:

@@ -54,7 +54,6 @@ def get_sqlalchemy_v2_type(
     default: tuple[str, str | None] = ('String,str', 'from sqlalchemy import String'),
 ) -> tuple[str, str, str | None]:
     """Get the SQLAlchemy v2 type from the database type."""
-    print(f'get_sqlalchemy_v2_type({db_type}, {database_type}, {default})')
     type_map = TypeMapFactory.get_sqlalchemy_v2_type_map(database_type)
     both_types, imports = adapt_type_map(db_type, default, type_map)
     sql, py = both_types.split(',')

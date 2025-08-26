@@ -17,13 +17,13 @@ To generate seed data, you simply need to append the `--seed` option to the `gen
 ``` bash title="Generate Seed Data"
 $ sb-pydantic gen --type pydantic --framework fastapi --local --seed
 
-PostGres connection is open.
-PostGres connection is closed.
-Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
-Generating seed data...
-Seed data generated successfully: /path/to/your/project/entities/seed_latest.sql
+2023-07-15 10:25:18 - INFO - PostGres connection is open.
+2023-07-15 10:25:19 - INFO - PostGres connection is closed.
+2023-07-15 10:25:19 - INFO - Generating FastAPI Pydantic models...
+2023-07-15 10:25:22 - INFO - FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+2023-07-15 10:25:22 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+2023-07-15 10:25:22 - INFO - Generating seed data...
+2023-07-15 10:25:24 - INFO - Seed data generated successfully: /path/to/your/project/entities/seed_latest.sql
 ```
 
 Note that the seed sql file will be generated in the `entities` directory of your project: 

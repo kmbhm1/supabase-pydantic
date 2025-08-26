@@ -12,11 +12,12 @@ Supabase Pydantic is a Python library that **generates** Pydantic models for Sup
 ``` bash title="A First Example" hl_lines="1"
 $ sb-pydantic gen --type pydantic --framework fastapi --local
 
-PostGres connection is open.
-PostGres connection is closed.
-Generating FastAPI Pydantic models...
-FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
-File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+2023-09-12 14:30:15 - INFO - PostgreSQL connection opened successfully
+2023-09-12 14:30:17 - INFO - Processing schema: public
+2023-09-12 14:30:19 - INFO - PostgreSQL connection closed successfully
+2023-09-12 14:30:20 - INFO - Generating FastAPI Pydantic models...
+2023-09-12 14:30:22 - INFO - FastAPI Pydantic models generated successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
+2023-09-12 14:30:23 - INFO - File formatted successfully: /path/to/your/project/entities/fastapi/schemas_latest.py
 ```
 
 Some users may find it more convenient to integrate a Makefile command:

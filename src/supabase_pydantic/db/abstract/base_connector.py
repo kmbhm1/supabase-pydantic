@@ -137,7 +137,7 @@ class BaseDBConnector(ABC, Generic[T]):
             self.connection = self.connect(self.connection_params)
         return self.connection
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> Literal[False]:
         """Context manager exit.
 
         Args:

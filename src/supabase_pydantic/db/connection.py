@@ -100,7 +100,7 @@ class DBConnection:
     def __enter__(self) -> Any:
         return self.conn
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> Literal[False]:
         self.conn.close()
         logger.info('PostGres connection is closed.')
         return False

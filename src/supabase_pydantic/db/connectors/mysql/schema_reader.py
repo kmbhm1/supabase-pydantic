@@ -59,7 +59,7 @@ class MySQLSchemaReader(BaseSchemaReader):
 
                 # Log the actual query being executed with values for debugging
                 query_log = query
-                for i, param_name in enumerate(param_names):
+                for i, _ in enumerate(param_names):
                     param_value = param_values[i]
                     safe_value = repr(param_value) if param_value is not None else 'NULL'
                     query_log = query_log.replace('%s', f"'{safe_value}'", 1)

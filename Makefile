@@ -1,4 +1,3 @@
-
 #######################################################
 # Project setup & housekeeeping 					  #
 #######################################################
@@ -65,7 +64,7 @@ typecheck: ## Run mypy type checker
 
 vulture: ## Find unused code with vulture
 	@echo "Finding unused code with vulture"
-	@poetry run vulture src/ tests/
+	@poetry run vulture src/ whitelist.py
 
 pre-commit-setup: ## Install pre-commit hooks for git
 	@echo "Setting up pre-commit"
@@ -140,6 +139,14 @@ smoke-test-sqlalchemy: ## Run a quick test generating SQLAlchemy models
 smoke-test-sqlalchemy-debug: ## Run a quick test with debugging generating SQLAlchemy models
 	@echo "Running smoke test for SQLAlchemy with debugging"
 	@sb-pydantic gen --type sqlalchemy --framework fastapi --local --debug
+
+smoke-test-mysql: ## Run a quick test generating FastAPI models from MySQL
+	@echo "Running smoke test for MySQL"
+	@sb-pydantic gen --type pydantic --framework fastapi --db-url=mysql://test_user:test_password@localhost:3306/test_db --db-type mysql
+
+smoke-test-mysql-debug: ## Run a quick test with debugging generating FastAPI models from MySQL
+	@echo "Running smoke test for MySQL with debugging"
+	@sb-pydantic gen --type pydantic --framework fastapi --db-url=mysql://test_user:test_password@localhost:3306/test_db --db-type mysql --debug
 
 
 #######################################################

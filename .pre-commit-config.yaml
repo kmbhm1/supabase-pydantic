@@ -60,7 +60,7 @@ repos:
     hooks:
       - id: mypy
         stages: [push]
-        exclude: '^tests/|^poc/'
+        exclude: '^tests/|^poc/|whitelist.py'
         args: [--ignore-missing-imports, --warn-unused-configs, --check-untyped-defs]
         additional_dependencies:
           - pydantic

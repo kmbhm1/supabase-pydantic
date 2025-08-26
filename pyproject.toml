@@ -55,7 +55,7 @@ inflection = "^0.5.1"
 requests = ">=2.32.4"
 urllib3 = "^2.5.0"
 loguru = "^0.7.2"
-mysql-connector-python = "^9.4.0"
+mysql-connector-python = ">=8.0.32,<9.4.0"
 
 [tool.poetry.group.dev.dependencies]
 sqlalchemy = { extras = ["mypy"], version = "^2.0.31" }

@@ -55,13 +55,20 @@ SELECT
     CASE
         WHEN c.data_type = 'ARRAY' THEN pg_catalog.format_type(e.oid, NULL)
         ELSE NULL
-    END as array_element_type
+    END AS array_element_type,
+    pgd.description
 FROM
     information_schema.columns AS c
 JOIN
     information_schema.tables AS t ON c.table_name = t.table_name AND c.table_schema = t.table_schema
 LEFT JOIN pg_type e
     ON e.typname = c.udt_name
+LEFT JOIN pg_catalog.pg_class cls
+    ON cls.relname = c.table_name
+   AND cls.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = c.table_schema)
+LEFT JOIN pg_catalog.pg_description pgd
+    ON pgd.objoid = cls.oid
+   AND pgd.objsubid = c.ordinal_position
 WHERE
     c.table_schema = %s
     AND (t.table_type = 'BASE TABLE' OR t.table_type = 'VIEW')

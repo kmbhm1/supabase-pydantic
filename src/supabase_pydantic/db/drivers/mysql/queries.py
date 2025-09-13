@@ -65,7 +65,8 @@ SELECT
         ELSE NULL
     END as identity_generation,
     c.data_type as udt_name,
-    NULL as array_element_type
+    NULL as array_element_type,
+    c.column_comment as description
 FROM
     information_schema.columns AS c
 JOIN

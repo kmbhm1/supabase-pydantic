@@ -91,9 +91,26 @@ def process_udt_field(
     pydantic_type: str
     if data_type.lower() == 'array' or data_type.lower().endswith('[]'):
         # Extract the element type name
-        # TODO: whether to include underscores in element type name
-        # element_type_name = udt_name.strip('_').lower()
+        # PostgreSQL array types are prefixed with underscore (e.g., _us_state for us_state[])
         element_type_name = udt_name.lower()
+
+        # PostgreSQL arrays have specific naming patterns:
+        # 1. Regular arrays add a leading underscore: us_state[] -> _us_state
+        # 2. Arrays of types with leading underscore add another: _first_type[] -> __first_type
+        # 3. Remove quotes around type names: "FourthType"[] -> _fourthtype
+
+        # First, store original for logging
+        original_element_type = element_type_name
+
+        # Remove all leading underscores (might be multiple for nested arrays)
+        enum_type_name_check = element_type_name.lstrip('_')
+
+        # Remove quotes if present (from array_element_type)
+        if enum_type_name_check.startswith('"') and enum_type_name_check.endswith('"'):
+            enum_type_name_check = enum_type_name_check[1:-1]
+
+        logger.debug(f'Checking array element: original={original_element_type}, cleaned={enum_type_name_check}')
+        logger.debug(f'Known enum types (before conversion): {known_enum_types}')
 
         # Simplified approach: check if the element type exists in the type map
         element_mapping = type_map.get(element_type_name)
@@ -101,11 +118,32 @@ def process_udt_field(
             element_pydantic_type = element_mapping[0]
             logger.debug(f'Found array element type mapping for {element_type_name}: {element_pydantic_type}')
         else:
+            # Match against known enum types (case-insensitive)
+            known_enum_lower = [e.lower() for e in known_enum_types]
+
+            # Check multiple variants: original type, without leading underscore, etc.
+            variants_to_check = [
+                original_element_type.lower(),  # Original from DB
+                enum_type_name_check.lower(),  # Cleaned (without _)
+            ]
+
+            # For types with double underscore, add single underscore variant
+            if original_element_type.startswith('__'):
+                variants_to_check.append('_' + enum_type_name_check.lower())
+
+            is_known_enum = any(variant in known_enum_lower for variant in variants_to_check)
+
+            # Debug log to help diagnose issues
+            logger.debug(f'Checking if any of {variants_to_check} is in {known_enum_lower}: {is_known_enum}')
+
             # Default to Any for unknown types
             element_pydantic_type = 'Any'
+
             # Only log warning if not a known enum type
-            if element_type_name.lower() != 'user-defined' and element_type_name.lower() not in known_enum_types:
-                logger.warning(f'Unknown array element type: {element_type_name}, using Any')
+            if element_type_name.lower() != 'user-defined' and not is_known_enum:
+                logger.warning(
+                    f'Unknown array element type: {original_element_type} (cleaned: {enum_type_name_check}), using Any'
+                )
 
         # Create a properly typed list
         pydantic_type = f'list[{element_pydantic_type}]'

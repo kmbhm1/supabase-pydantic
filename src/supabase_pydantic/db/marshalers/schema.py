@@ -1,3 +1,5 @@
+import logging
+
 from supabase_pydantic.core.models import EnumInfo
 from supabase_pydantic.db.marshalers.abstract.base_column_marshaler import BaseColumnMarshaler
 from supabase_pydantic.db.marshalers.column import get_alias, process_udt_field, standardize_column_name
@@ -13,6 +15,9 @@ from supabase_pydantic.db.marshalers.relationships import (
     analyze_table_relationships,
 )
 from supabase_pydantic.db.models import ColumnInfo, TableInfo, UserEnumType, UserTypeMapping
+
+# Make sure logger is defined
+logger = logging.getLogger(__name__)
 
 
 def get_table_details_from_columns(
@@ -136,6 +141,9 @@ def add_user_defined_types_to_tables(
     enums = get_enum_types(enum_types, schema)
     mappings = get_user_type_mappings(enum_type_mapping, schema)
 
+    # Log available enums for debugging
+    logger.debug(f'Available enum types: {[e.type_name for e in enums]}')
+
     # First, process direct enum mappings
     for mapping in mappings:
         table_key = (schema, mapping.table_name)
@@ -162,30 +170,70 @@ def add_user_defined_types_to_tables(
 
             # Check if this is an array column with array_element_type
             if col.array_element_type:
-                # Clean up the array_element_type by removing array brackets if present
                 clean_element_type = col.array_element_type
                 if clean_element_type and clean_element_type.endswith('[]'):
                     clean_element_type = clean_element_type[:-2]  # Remove the trailing []
 
+                logger.debug(f'Column {table.name}.{col.name} has array_element_type: {col.array_element_type}')
+                logger.debug(f'Cleaned element type: {clean_element_type}')
+
+                # Try to find a matching enum using our new helper method
+                matched_enum = None
+
+                # First, try exact match with our helper method
                 for enum in enums:
-                    if enum.type_name == clean_element_type:
-                        col.enum_info = EnumInfo(name=enum.type_name, values=enum.enum_values, schema=table.schema)
+                    if enum.matches_type_name(clean_element_type):
+                        matched_enum = enum
+                        logger.debug(f'✅ Matched enum {enum.type_name} for element type {clean_element_type}')
                         break
                     else:
-                        # Check if the array_element_type is a qualified type name (schema.typename)
-                        # and extract just the type name part for comparison
-                        if '.' in clean_element_type:
-                            type_name = clean_element_type.split('.')[-1]
-                            if enum.type_name == type_name:
-                                col.enum_info = EnumInfo(
-                                    name=enum.type_name, values=enum.enum_values, schema=table.schema
-                                )
-                                break
+                        logger.debug(f'❌ Failed to match {clean_element_type} with enum {enum.type_name}')
+
+                # If no match, try a special case for _first_type/_second_type
+                if not matched_enum and clean_element_type and clean_element_type.startswith('_'):
+                    clean_name = clean_element_type.lstrip('_')
+                    for enum in enums:
+                        if enum.type_name.lower() == clean_name.lower():
+                            matched_enum = enum
+                            logger.debug(f'✅ Special case match: {clean_element_type} -> {enum.type_name}')
+                            break
+                        elif enum.type_name.lower() == clean_element_type.lower():
+                            matched_enum = enum
+                            logger.debug(f'✅ Direct match for {clean_element_type} with {enum.type_name}')
+                            break
+
+                if matched_enum:
+                    col.enum_info = EnumInfo(
+                        name=matched_enum.type_name, values=matched_enum.enum_values, schema=table.schema
+                    )
+                else:
+                    # Just log the element type that wasn't matched
+                    logger.warning(f'Unknown array element type: {clean_element_type}, using Any')
 
 
 def get_enum_types_by_schema(enum_types: list, schema: str) -> list[str]:
-    """Get enum types by schema."""
-    return [e[0] for e in enum_types if e[1] == schema]
+    """Get enum types by schema with proper normalization.
+
+    Includes both original type names and normalized versions (with leading underscores removed)
+    to ensure all possible matching patterns are included.
+    """
+    # Get the standard type names
+    type_names = [e[0] for e in enum_types if e[1] == schema]
+
+    # Also include versions with leading underscores removed
+    normalized_names = []
+    for name in type_names:
+        # Include original name
+        normalized_names.append(name)
+
+        # Include version with leading underscores removed
+        if name.startswith('_'):
+            clean_name = name.lstrip('_')
+            normalized_names.append(clean_name)
+            logger.debug(f'Added normalized enum name: {name} -> {clean_name}')
+
+    logger.debug(f'Normalized enum type list: {normalized_names}')
+    return normalized_names
 
 
 def construct_table_info(

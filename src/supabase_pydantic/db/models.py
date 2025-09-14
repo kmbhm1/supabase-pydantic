@@ -42,6 +42,32 @@ class UserEnumType(AsDictParent):
     type: str
     enum_values: list[str] = field(default_factory=list)
 
+    def matches_type_name(self, type_name: str) -> bool:
+        """Check if a given type name matches this enum type, handling PostgreSQL array naming conventions."""
+        if not type_name:
+            return False
+
+        # Remove all leading underscores (PostgreSQL array types add underscores)
+        clean_name = type_name
+        while clean_name.startswith('_'):
+            clean_name = clean_name[1:]
+
+        # Remove array brackets if present
+        if clean_name.endswith('[]'):
+            clean_name = clean_name[:-2]
+
+        # Remove quotes if present
+        if clean_name.startswith('"') and clean_name.endswith('"'):
+            clean_name = clean_name[1:-1]
+
+        # Handle schema qualification (e.g., public.Fifth_Type)
+        if '.' in clean_name:
+            clean_name = clean_name.split('.')[-1]
+
+        # PostgreSQL sometimes lowercases type names for arrays
+        # Compare both lowercased and original
+        return self.type_name.lower() == clean_name.lower()
+
 
 @dataclass
 class UserTypeMapping(AsDictParent):

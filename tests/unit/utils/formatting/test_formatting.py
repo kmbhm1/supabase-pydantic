@@ -19,7 +19,8 @@ def test_format_with_ruff_failure_fails_silently(mocker, caplog):
     format_with_ruff('non_existent_file.py')
     # Check that the error was logged
     assert error_output in caplog.text
-    assert 'WARNING: An error occurred while trying to format non_existent_file.py with ruff' in caplog.text
+    assert 'An error occurred while trying to format non_existent_file.py with ruff' in caplog.text
+    assert 'The file was generated, but not formatted' in caplog.text
 
 
 @pytest.mark.unit

@@ -224,6 +224,7 @@ class MySQLSchemaMarshaler(BaseSchemaMarshaler):
                         column.get('IDENTITY_GENERATION'),
                         column.get('UDT_NAME', column.get('DATA_TYPE')),
                         column.get('ARRAY_ELEMENT_TYPE'),
+                        column.get('COLUMN_COMMENT', ''),  # Add column description/comment as 12th value
                     )
                 )
             else:

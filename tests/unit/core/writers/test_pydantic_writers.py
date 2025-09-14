@@ -983,8 +983,22 @@ def test_enum_array_in_pydantic_model():
             None,
             '_test_status',
             'test_status[]',
+            None,  # Add description as 12th element
         ),
-        ('public', 'test_table', 'status', None, 'YES', 'USER-DEFINED', None, 'BASE TABLE', None, 'test_status', None),
+        (
+            'public',
+            'test_table',
+            'status',
+            None,
+            'YES',
+            'USER-DEFINED',
+            None,
+            'BASE TABLE',
+            None,
+            'test_status',
+            None,
+            None,  # Add description as 12th element
+        ),
     ]
 
     # Process mock data
@@ -1017,3 +1031,66 @@ def test_enum_array_in_pydantic_model():
     # Verify the array is typed properly with the enum class
     assert 'list[PublicTestStatusEnum]' in array_field_code, 'Array field not typed correctly with enum class'
     assert 'PublicTestStatusEnum' in scalar_field_code, 'Scalar field not typed correctly with enum class'
+
+
+@pytest.mark.unit
+@pytest.mark.writers
+@pytest.mark.pydantic
+def test_column_description_in_pydantic_field():
+    """Test that column descriptions are correctly included in Pydantic fields with proper escaping."""
+    # Create a table with columns that have descriptions
+    table = TableInfo(
+        name='Product',
+        schema='public',
+        columns=[
+            ColumnInfo(
+                name='id',
+                post_gres_datatype='integer',
+                is_nullable=False,
+                primary=True,
+                datatype='int',
+                description='Primary key for the product',
+            ),
+            ColumnInfo(
+                name='name',
+                post_gres_datatype='varchar',
+                is_nullable=False,
+                datatype='str',
+                description='Name of the product',
+            ),
+            ColumnInfo(
+                name='description',
+                post_gres_datatype='text',
+                is_nullable=True,
+                datatype='str',
+                description='A "detailed" description with "quotes" that need escaping',
+            ),
+            ColumnInfo(
+                name='price',
+                post_gres_datatype='numeric',
+                is_nullable=False,
+                datatype='Decimal',
+                # No description for this column
+            ),
+        ],
+    )
+
+    # Create a writer for the table
+    writer = PydanticFastAPIClassWriter(table)
+
+    # Generate the class
+    class_code = writer.write_class()
+
+    # Check that descriptions are included and quotes are escaped
+    assert 'id: int' in class_code
+    assert 'description="Primary key for the product"' in class_code
+
+    assert 'name: str' in class_code
+    assert 'description="Name of the product"' in class_code
+
+    assert 'description: str | None' in class_code
+    assert 'description="A \\"detailed\\" description with \\"quotes\\" that need escaping"' in class_code
+
+    # Check that a field without description doesn't have the description parameter
+    price_field_line = next(line for line in class_code.split('\n') if 'price: ' in line)
+    assert 'description=' not in price_field_line

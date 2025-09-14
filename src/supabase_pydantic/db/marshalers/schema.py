@@ -46,6 +46,7 @@ def get_table_details_from_columns(
             identity_generation,
             udt_name,
             array_element_type,
+            description,
         ) = row
         table_key: tuple[str, str] = (schema, table_name)
         if table_key not in tables:
@@ -67,6 +68,7 @@ def get_table_details_from_columns(
             max_length=max_length,
             is_identity=identity_generation is not None,
             array_element_type=array_element_type,
+            description=description,
         )
         tables[table_key].add_column(column_info)
 

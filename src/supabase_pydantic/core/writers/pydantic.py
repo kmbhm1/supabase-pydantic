@@ -211,6 +211,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             field_values['default'] = 'None'
         if c.alias is not None:
             field_values['alias'] = f'"{c.alias}"'
+        if c.description is not None:
+            clean_description = c.description.replace('"', '\\"')
+            field_values['description'] = f'"{clean_description}"'
 
         # Construct the final column definition
         col = f'{c.name}: {type_str}'

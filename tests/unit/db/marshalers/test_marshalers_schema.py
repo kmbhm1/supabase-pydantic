@@ -18,18 +18,57 @@ from supabase_pydantic.db.marshalers.schema import (
 @pytest.fixture
 def column_details():
     return [
-        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
-        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None),
+        (
+            'public',
+            'users',
+            'user_id',
+            'uuid_generate_v4()',
+            'NO',
+            'uuid',
+            None,
+            'BASE TABLE',
+            None,
+            'uuid',
+            None,
+            None,
+        ),
+        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None, None),
     ]
 
 
 @pytest.fixture
 def column_construct_test_details():
     return [
-        ('public', 'users', 'user_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
-        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None),
-        ('public', 'orders', 'order_id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
-        ('public', 'orders', 'user_id', None, 'YES', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
+        (
+            'public',
+            'users',
+            'user_id',
+            'uuid_generate_v4()',
+            'NO',
+            'uuid',
+            None,
+            'BASE TABLE',
+            None,
+            'uuid',
+            None,
+            None,
+        ),
+        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None, None),
+        (
+            'public',
+            'orders',
+            'order_id',
+            'uuid_generate_v4()',
+            'NO',
+            'uuid',
+            None,
+            'BASE TABLE',
+            None,
+            'uuid',
+            None,
+            None,
+        ),
+        ('public', 'orders', 'user_id', None, 'YES', 'uuid', None, 'BASE TABLE', None, 'uuid', None, None),
     ]
 
 
@@ -41,8 +80,8 @@ def constraints():
 @pytest.fixture
 def identity_column_details():
     return [
-        ('public', 'users', 'id', None, 'NO', 'integer', None, 'BASE TABLE', 'ALWAYS', 'int4', None),
-        ('public', 'users', 'name', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None),
+        ('public', 'users', 'id', None, 'NO', 'integer', None, 'BASE TABLE', 'ALWAYS', 'int4', None, None),
+        ('public', 'users', 'name', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None, None),
     ]
 
 

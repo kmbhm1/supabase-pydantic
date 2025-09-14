@@ -1,5 +1,49 @@
 # CHANGELOG
 
+## v0.24.2 (2025-09-05)
+
+### Chores
+
+- Align mysql-connector for conda ([#100](https://github.com/kmbhm1/supabase-pydantic/pull/100),
+  [`846449e`](https://github.com/kmbhm1/supabase-pydantic/commit/846449e))
+
+## v0.24.1 (2025-09-01)
+
+### Documentation
+
+- Update README ([#99](https://github.com/kmbhm1/supabase-pydantic/pull/99),
+  [`143964e`](https://github.com/kmbhm1/supabase-pydantic/commit/143964e))
+
+## v0.24.0 (2025-08-30)
+
+### Features
+
+- Add MySQL support ([#98](https://github.com/kmbhm1/supabase-pydantic/pull/98),
+  [`0a27a58`](https://github.com/kmbhm1/supabase-pydantic/commit/0a27a58))
+
+## v0.23.0 (2025-08-25)
+
+### Features
+
+- Add proper typing for list types ([#84](https://github.com/kmbhm1/supabase-pydantic/pull/84),
+  [`d2f1561`](https://github.com/kmbhm1/supabase-pydantic/commit/d2f1561))
+- Fix bug when trying to create typings for enum array fields ([#97](https://github.com/kmbhm1/supabase-pydantic/pull/97),
+  [`d2f1561`](https://github.com/kmbhm1/supabase-pydantic/commit/d2f1561))
+- Add SQLAlchemy generator ([#96](https://github.com/kmbhm1/supabase-pydantic/pull/96),
+  [`b3cafa5`](https://github.com/kmbhm1/supabase-pydantic/commit/b3cafa5))
+
+## v0.22.3 (2025-08-20)
+
+### Documentation
+
+- Update CHANGELOG.md with missing entries through v0.22.2 ([#95](https://github.com/kmbhm1/supabase-pydantic/pull/95),
+  [`65dcc00`](https://github.com/kmbhm1/supabase-pydantic/commit/65dcc00))
+
+### Continuous Integration
+
+- Update test coverage on failure ([#94](https://github.com/kmbhm1/supabase-pydantic/pull/94),
+  [`c5c76a2`](https://github.com/kmbhm1/supabase-pydantic/commit/c5c76a2))
+
 ## v0.22.2 (2025-08-18)
 
 ### Bug Fixes

@@ -136,10 +136,10 @@ def test_construct_table_info():
     """Test the construct_table_info function which integrates multiple processing steps."""
     # Mock column details
     column_details = [
-        ('public', 'users', 'id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
-        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None),
-        ('public', 'posts', 'id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
-        ('public', 'posts', 'user_id', None, 'YES', 'uuid', None, 'BASE TABLE', None, 'uuid', None),
+        ('public', 'users', 'id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None, None),
+        ('public', 'users', 'email', None, 'YES', 'text', 255, 'BASE TABLE', None, 'text', None, None),
+        ('public', 'posts', 'id', 'uuid_generate_v4()', 'NO', 'uuid', None, 'BASE TABLE', None, 'uuid', None, None),
+        ('public', 'posts', 'user_id', None, 'YES', 'uuid', None, 'BASE TABLE', None, 'uuid', None, None),
     ]
 
     # Mock foreign key details

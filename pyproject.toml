@@ -8,7 +8,7 @@ repository = "https://github.com/kmbhm1/supabase-pydantic"
 homepage = "https://kmbhm1.github.io/supabase-pydantic"
 readme = "README.md"
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Framework :: FastAPI",
     "Framework :: Pydantic",
@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: PL/SQL",
 ]
 keywords = [
     "supabase",
@@ -42,7 +43,7 @@ sb-pydantic = 'supabase_pydantic.cli:cli'
 supabase-pydantic = 'supabase_pydantic.cli:cli'
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.14"
+python = ">=3.10,<=3.14"
 psycopg2-binary = "^2.9.9"
 pydantic = "^2.6.3"
 types-psycopg2 = "^2.9.21.20240417"
@@ -292,7 +293,7 @@ upload_to_vcs_release = true
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py310, py311, py312, py313, lint, mypy
+envlist = py310, py311, py312, py313, py314, lint, mypy
 isolated_build = True
 skipsdist = false
 

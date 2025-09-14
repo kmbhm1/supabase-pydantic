@@ -90,7 +90,7 @@ class ColumnInfo(AsDictParent):
     is_identity: bool = False  # For auto-generated identity columns
     enum_info: EnumInfo | None = None  # New field for enum metadata
     array_element_type: str | None = None  # Stores element type for array columns
-    description: str | None = None # Stores the description of the column
+    description: str | None = None  # Stores the description of the column
 
     def __str__(self) -> str:
         """Return a string representation of the column."""

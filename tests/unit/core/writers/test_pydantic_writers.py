@@ -983,8 +983,22 @@ def test_enum_array_in_pydantic_model():
             None,
             '_test_status',
             'test_status[]',
+            None,  # Add description as 12th element
         ),
-        ('public', 'test_table', 'status', None, 'YES', 'USER-DEFINED', None, 'BASE TABLE', None, 'test_status', None),
+        (
+            'public',
+            'test_table',
+            'status',
+            None,
+            'YES',
+            'USER-DEFINED',
+            None,
+            'BASE TABLE',
+            None,
+            'test_status',
+            None,
+            None,  # Add description as 12th element
+        ),
     ]
 
     # Process mock data

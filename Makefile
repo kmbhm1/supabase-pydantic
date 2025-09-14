@@ -116,6 +116,10 @@ tox-py313: clean ## Run tests for Python 3.13 only
 	@echo "Running tox for Python 3.13"
 	@poetry run tox -e py313
 
+tox-py314: clean ## Run tests for Python 3.14 only
+	@echo "Running tox for Python 3.14"
+	@poetry run tox -e py314
+
 tox-lint: clean ## Run linting with tox
 	@echo "Running linting with tox"
 	@poetry run tox -e lint

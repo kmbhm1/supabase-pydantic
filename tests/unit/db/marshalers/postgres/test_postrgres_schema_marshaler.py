@@ -5,6 +5,7 @@ from unittest.mock import patch, MagicMock
 
 from supabase_pydantic.db.marshalers.postgres.schema import PostgresSchemaMarshaler
 from supabase_pydantic.db.models import TableInfo
+from supabase_pydantic.db.database_type import DatabaseType
 
 
 @pytest.fixture
@@ -223,7 +224,9 @@ def test_construct_table_info(
         mock_add_fk.assert_called_once_with(table_dict, sample_fk_data)
         mock_add_constraints.assert_called_once_with(table_dict, 'public', sample_constraint_data)
         mock_add_relations.assert_called_once_with(table_dict, sample_fk_data)
-        mock_add_types.assert_called_once_with(table_dict, 'public', sample_type_data, sample_type_mapping_data)
+        mock_add_types.assert_called_once_with(
+            table_dict, 'public', sample_type_data, sample_type_mapping_data, DatabaseType.POSTGRES
+        )
         mock_update_cols.assert_called_once_with(table_dict)
         mock_update_constraints.assert_called_once_with(table_dict)
         mock_analyze_bridge.assert_called_once_with(table_dict)

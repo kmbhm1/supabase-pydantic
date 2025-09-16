@@ -12,6 +12,7 @@ from supabase_pydantic.db.marshalers.schema import (
     add_user_defined_types_to_tables,
     construct_table_info,
 )
+from supabase_pydantic.db.database_type import DatabaseType
 
 
 @pytest.fixture
@@ -97,7 +98,9 @@ def test_add_user_defined_types_array_columns(array_column_tables, array_enum_ty
     enum_type_mapping = []  # Not needed for this test as we're testing array handling
 
     # Call the function
-    add_user_defined_types_to_tables(array_column_tables, 'public', array_enum_types, enum_type_mapping)
+    add_user_defined_types_to_tables(
+        array_column_tables, 'public', array_enum_types, enum_type_mapping, DatabaseType.POSTGRES
+    )
 
     # Get the test table
     table = array_column_tables[('public', 'test_table')]

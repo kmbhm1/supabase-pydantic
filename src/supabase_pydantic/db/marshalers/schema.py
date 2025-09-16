@@ -1,6 +1,7 @@
 import logging
 
 from supabase_pydantic.core.models import EnumInfo
+from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.marshalers.abstract.base_column_marshaler import BaseColumnMarshaler
 from supabase_pydantic.db.marshalers.column import get_alias, process_udt_field, standardize_column_name
 from supabase_pydantic.db.marshalers.constraints import (
@@ -15,6 +16,7 @@ from supabase_pydantic.db.marshalers.relationships import (
     analyze_table_relationships,
 )
 from supabase_pydantic.db.models import ColumnInfo, TableInfo, UserEnumType, UserTypeMapping
+from supabase_pydantic.db.type_factory import TypeMapFactory
 
 # Make sure logger is defined
 logger = logging.getLogger(__name__)
@@ -135,7 +137,11 @@ def get_user_type_mappings(enum_type_mapping: list, schema: str) -> list[UserTyp
 
 
 def add_user_defined_types_to_tables(
-    tables: dict[tuple[str, str], TableInfo], schema: str, enum_types: list, enum_type_mapping: list
+    tables: dict[tuple[str, str], TableInfo],
+    schema: str,
+    enum_types: list,
+    enum_type_mapping: list,
+    db_type: DatabaseType = DatabaseType.POSTGRES,
 ) -> None:
     """Get user defined types and add them to ColumnInfo."""
     enums = get_enum_types(enum_types, schema)
@@ -207,8 +213,17 @@ def add_user_defined_types_to_tables(
                         name=matched_enum.type_name, values=matched_enum.enum_values, schema=table.schema
                     )
                 else:
-                    # Just log the element type that wasn't matched
-                    logger.warning(f'Unknown array element type: {clean_element_type}, using Any')
+                    # Check if it's a standard PostgreSQL type before logging a warning
+                    # Get the PostgreSQL type map
+                    type_map = TypeMapFactory.get_pydantic_type_map(db_type)
+
+                    # Check both the original type and the version without underscore
+                    if clean_element_type in type_map or clean_element_type.lstrip('_') in type_map:
+                        # It's a standard type, no need to warn
+                        pass
+                    else:
+                        # Just log the element type that wasn't matched
+                        logger.warning(f'Unknown array element type: {clean_element_type}, using Any')
 
 
 def get_enum_types_by_schema(enum_types: list, schema: str) -> list[str]:

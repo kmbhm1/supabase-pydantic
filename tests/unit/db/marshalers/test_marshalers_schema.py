@@ -13,6 +13,7 @@ from supabase_pydantic.db.marshalers.schema import (
     get_user_type_mappings,
     add_user_defined_types_to_tables,
 )
+from supabase_pydantic.db.database_type import DatabaseType
 
 
 @pytest.fixture
@@ -211,7 +212,9 @@ def test_get_user_type_mappings(mock_enum_type_mapping):
 def test_add_user_defined_types_valid_input(
     mock_tables, mock_enum_types, mock_enum_type_mapping, get_enum_types_mock, get_user_type_mappings_mock
 ):
-    add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
+    add_user_defined_types_to_tables(
+        mock_tables, 'public', mock_enum_types, mock_enum_type_mapping, DatabaseType.POSTGRES
+    )
     assert mock_tables[('public', 'test_table')].columns[1].user_defined_values == [
         'A',
         'B',
@@ -231,7 +234,9 @@ def test_table_key_not_found(
     ]
 
     # Test that calling the function with a non-existent table doesn't raise an exception
-    add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
+    add_user_defined_types_to_tables(
+        mock_tables, 'public', mock_enum_types, mock_enum_type_mapping, DatabaseType.POSTGRES
+    )
 
     # The function should not raise an exception and should continue execution
     assert True
@@ -247,5 +252,7 @@ def test_column_name_not_found(
     get_user_type_mappings_mock.return_value = [
         MagicMock(table_name='test_table', column_name='nonexistent_column', type_name='my_enum')
     ]
-    add_user_defined_types_to_tables(mock_tables, 'public', mock_enum_types, mock_enum_type_mapping)
+    add_user_defined_types_to_tables(
+        mock_tables, 'public', mock_enum_types, mock_enum_type_mapping, DatabaseType.POSTGRES
+    )
     assert True, 'Should handle non-existent column gracefully'

@@ -1,3 +1,4 @@
+from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.marshalers.abstract.base_schema_marshaler import BaseSchemaMarshaler
 from supabase_pydantic.db.marshalers.schema import (
     add_constraints_to_table_details,
@@ -88,7 +89,7 @@ class PostgresSchemaMarshaler(BaseSchemaMarshaler):
         add_foreign_key_info_to_table_details(tables, processed_fk_data)
         add_constraints_to_table_details(tables, schema, processed_constraint_data)
         add_relationships_to_table_details(tables, processed_fk_data)
-        add_user_defined_types_to_tables(tables, schema, type_data, type_mapping_data)
+        add_user_defined_types_to_tables(tables, schema, type_data, type_mapping_data, DatabaseType.POSTGRES)
 
         # Update columns with constraints
         update_columns_with_constraints(tables)

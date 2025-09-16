@@ -113,7 +113,7 @@ def process_udt_field(
         logger.debug(f'Known enum types (before conversion): {known_enum_types}')
 
         # Simplified approach: check if the element type exists in the type map
-        element_mapping = type_map.get(element_type_name)
+        element_mapping = type_map.get(enum_type_name_check)
         if element_mapping:
             element_pydantic_type = element_mapping[0]
             logger.debug(f'Found array element type mapping for {element_type_name}: {element_pydantic_type}')

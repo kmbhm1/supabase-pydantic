@@ -518,6 +518,25 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             import_stmt: str | None = get_pydantic_type(
                 c.post_gres_datatype, database_type=self.database_type, default=default_import
             )[1]
+
+            # Handle array element types for import collection
+            if c.datatype.startswith('list[') and c.array_element_type:
+                # Clean the element type name by removing underscores (PostgreSQL array convention)
+                clean_element_type = c.array_element_type
+                if clean_element_type.startswith('_'):
+                    clean_element_type = clean_element_type.lstrip('_')
+
+                # Get imports for the element type
+                element_import: str | None = get_pydantic_type(
+                    clean_element_type, database_type=self.database_type, default=default_import
+                )[1]
+
+                if element_import:
+                    # Add element import in addition to any array import
+                    if import_stmt:
+                        return f'{import_stmt}\n{element_import}'
+                    return element_import
+
             return import_stmt
 
         # column data types

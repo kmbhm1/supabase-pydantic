@@ -116,11 +116,13 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
             return ''
 
         # base type
-        base_type, pyth_type, _ = get_sqlalchemy_v2_type(c.post_gres_datatype, database_type=self.database_type)
+        base_type, pyth_type, import_type = get_sqlalchemy_v2_type(
+            c.post_gres_datatype, database_type=self.database_type
+        )
         # Handle special types
         if base_type.lower() == 'uuid':
             base_type = 'UUID(as_uuid=True)'
-        elif 'time zone' in c.post_gres_datatype.lower():
+        elif 'with time zone' in c.post_gres_datatype.lower():
             base_type = 'TIMESTAMP(timezone=True)'
         # Handle enum types
         elif c.enum_info is not None:
@@ -431,6 +433,10 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         if any(c.enum_info is not None for t in self.tables for c in t.columns):
             imports.add('from sqlalchemy import Enum')
             imports.add('from enum import Enum as PyEnum, auto')
+
+        # Add TIMESTAMP import if any timestamp with timezone columns exist
+        if any('with time zone' in c.post_gres_datatype.lower() for t in self.tables for c in t.columns):
+            imports.add('from sqlalchemy.dialects.postgresql import TIMESTAMP')
 
         # column data types
         self._dt_imports(imports)

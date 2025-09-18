@@ -83,7 +83,7 @@ PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'time with time zone': ('datetime.time', 'import datetime'),
     'time without time zone': ('datetime.time', 'import datetime'),
     'timetz': ('datetime.time', 'import datetime'),  # Shortened form
-    'interval': ('timedelta', 'from datetime import timedelta'),
+    'interval': ('datetime.timedelta', 'import datetime'),
     # Boolean type
     'boolean': ('bool', None),
     'bool': ('bool', None),  # Shortened form
@@ -247,13 +247,13 @@ SQLALCHEMY_V2_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     # Binary type
     'bytea': ('LargeBinary,bytes', 'from sqlalchemy import LargeBinary'),
     # Date/Time types
-    'timestamp': ('DateTime,datetime', 'from sqlalchemy import DateTime\nimport datetime'),
-    'timestamp with time zone': ('DateTime,datetime', 'from sqlalchemy import DateTime\nimport datetime'),
+    'timestamp': ('DateTime,datetime.datetime', 'from sqlalchemy import DateTime\nimport datetime'),
+    'timestamp with time zone': ('DateTime,datetime.datetime', 'from sqlalchemy import DateTime\nimport datetime'),
     'timestamp without time zone': (
-        'DateTime,datetime',
+        'DateTime,datetime.datetime',
         'from sqlalchemy import DateTime\nimport datetime',
     ),
-    'timestamptz': ('DateTime,datetime', 'from sqlalchemy import DateTime\nimport datetime'),  # Shortened form
+    'timestamptz': ('DateTime,datetime.datetime', 'from sqlalchemy import DateTime\nimport datetime'),  # Shortened form
     'date': ('Date,datetime.date', 'from sqlalchemy import Date\nimport datetime'),
     'time': ('Time,datetime.time', 'from sqlalchemy import Time\nimport datetime'),
     'time with time zone': ('Time,datetime.time', 'from sqlalchemy import Time\nimport datetime'),

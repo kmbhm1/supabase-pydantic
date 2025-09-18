@@ -234,7 +234,7 @@ def test_SqlAlchemyFastAPIClassWriter_write_column(fastapi_class_writer):
                 name='created_at', post_gres_datatype='timestamp with time zone', is_nullable=False, datatype='datetime'
             )
         )
-        == 'created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))'
+        == 'created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True))'
         and fastapi_class_writer.write_column(
             ColumnInfo(
                 name='created_at', post_gres_datatype='timestamp with time zone', is_nullable=False, datatype='datetime'

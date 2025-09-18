@@ -132,13 +132,13 @@ SQLALCHEMY_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'int4': ('Integer', 'from sqlalchemy import Integer'),  # Internal form
     'int8': ('BigInteger', 'from sqlalchemy import BigInteger'),  # Internal form
     # Decimal/Numeric types
-    'numeric': ('Numeric', 'from sqlalchemy import Numeric'),
-    'decimal': ('Numeric', 'from sqlalchemy import Numeric'),
+    'numeric': ('Numeric', 'from sqlalchemy import Numeric\nfrom decimal import Decimal'),
+    'decimal': ('Numeric', 'from sqlalchemy import Numeric\nfrom decimal import Decimal'),
     # Floating point types
     'real': ('Float', 'from sqlalchemy import Float'),
     'float4': ('Float', 'from sqlalchemy import Float'),  # Internal form
     'double precision': ('Float', 'from sqlalchemy import Float'),
-    'float': ('Numeric', 'from sqlalchemy import Numeric'),  # Match PYDANTIC_TYPE_MAP
+    'float': ('Numeric', 'from sqlalchemy import Numeric\nfrom decimal import Decimal'),  # Match PYDANTIC_TYPE_MAP
     'float8': ('Float', 'from sqlalchemy import Float'),  # Internal form
     # Serial types
     'serial': ('Integer', 'from sqlalchemy import Integer'),
@@ -218,13 +218,16 @@ SQLALCHEMY_V2_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'int4': ('Integer,int', 'from sqlalchemy import Integer'),  # Internal form
     'int8': ('BigInteger,int', 'from sqlalchemy import BigInteger'),  # Internal form
     # Decimal/Numeric types
-    'numeric': ('Numeric,Decimal', 'from sqlalchemy import Numeric'),  # Changed to Decimal
-    'decimal': ('Numeric,Decimal', 'from sqlalchemy import Numeric'),
+    'numeric': ('Numeric,Decimal', 'from sqlalchemy import Numeric\nfrom decimal import Decimal'),  # Changed to Decimal
+    'decimal': ('Numeric,Decimal', 'from sqlalchemy import Numeric\nfrom decimal import Decimal'),
     # Floating point types
     'real': ('Float,float', 'from sqlalchemy import Float'),
     'float4': ('Float,float', 'from sqlalchemy import Float'),  # Internal form
     'double precision': ('Float,float', 'from sqlalchemy import Float'),
-    'float': ('Numeric,Decimal', 'from sqlalchemy import Numeric'),  # Match PYDANTIC_TYPE_MAP
+    'float': (
+        'Numeric,Decimal',
+        'from sqlalchemy import Numeric\nfrom decimal import Decimal',
+    ),  # Match PYDANTIC_TYPE_MAP
     'float8': ('Float,float', 'from sqlalchemy import Float'),  # Internal form
     # Serial types
     'serial': ('Integer,int', 'from sqlalchemy import Integer'),

@@ -7,6 +7,7 @@
 ![GitHub License](https://img.shields.io/github/license/kmbhm1/supabase-pydantic)
 [![codecov](https://codecov.io/github/kmbhm1/supabase-pydantic/graph/badge.svg?token=PYOJPJTOLM)](https://codecov.io/github/kmbhm1/supabase-pydantic)
 ![PePy Downloads](https://static.pepy.tech/badge/supabase-pydantic)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/supabase-pydantic)
 
 A project for generating Pydantic and SQLAlchemy models from Supabase and MySQL databases. This tool bridges the gap between your database schema and your Python code, providing type-safe models for FastAPI and other frameworks.
 

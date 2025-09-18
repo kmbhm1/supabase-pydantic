@@ -48,8 +48,8 @@ MYSQL_SQLALCHEMY_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'mediumint': ('Integer', 'from sqlalchemy import Integer'),
     'int': ('Integer', 'from sqlalchemy import Integer'),
     'bigint': ('BigInteger', 'from sqlalchemy import BigInteger'),
-    'decimal': ('Numeric', 'from sqlalchemy import Numeric'),
-    'float': ('Float', 'from sqlalchemy import Float'),
+    'decimal': ('Numeric,Decimal', 'from sqlalchemy import Numeric\nfrom decimal import Decimal'),
+    'float': ('Numeric,Decimal', 'from sqlalchemy import Numeric\nfrom decimal import Decimal'),
     'double': ('Float', 'from sqlalchemy import Float'),
     'bit': ('Boolean', 'from sqlalchemy import Boolean'),  # Map bit to Boolean for SQLAlchemy
     # String types

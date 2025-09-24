@@ -1,5 +1,47 @@
 # CHANGELOG
 
+## v0.25.6 (2025-09-18)
+
+### Documentation
+
+- Add PyPI monthly downloads badge to README ([#109](https://github.com/kmbhm1/supabase-pydantic/pull/109))
+
+## v0.25.5 (2025-09-18)
+
+### Bug Fixes
+
+- Add missing decimal import for numeric and float types in SQLAlchemy type maps ([#108](https://github.com/kmbhm1/supabase-pydantic/pull/108))
+
+## v0.25.4 (2025-09-18)
+
+### Bug Fixes
+
+- Update datetime type references to use fully qualified paths ([#107](https://github.com/kmbhm1/supabase-pydantic/pull/107))
+
+## v0.25.3 (2025-09-17)
+
+### Bug Fixes
+
+- Add proper datetime imports and handle timezone columns in SQLAlchemy schema generation ([#106](https://github.com/kmbhm1/supabase-pydantic/pull/106))
+
+## v0.25.2 (2025-09-16)
+
+### Bug Fixes
+
+- Add missing imports for array element types ([#104](https://github.com/kmbhm1/supabase-pydantic/pull/104))
+
+## v0.25.1 (2025-09-14)
+
+### Bug Fixes
+
+- Enhance enum handling and naming ([#103](https://github.com/kmbhm1/supabase-pydantic/pull/103))
+
+## v0.25.0 (2025-09-14)
+
+### Features
+
+- Major enum handling improvements and cross-schema support enhancements
+
 ## v0.24.2 (2025-09-05)
 
 ### Chores

@@ -149,6 +149,6 @@ SELECT a.attname AS column_name,
 FROM pg_attribute a
 JOIN pg_class c ON a.attrelid = c.oid
 JOIN pg_type t ON a.atttypid = t.oid
-WHERE c.relkind = 'r' -- Only look at ordinary tables
+WHERE c.relkind IN ('r', 'v') -- Only look at ordinary tables and views
   AND NOT a.attisdropped; -- Skip dropped (deleted) columns
 """

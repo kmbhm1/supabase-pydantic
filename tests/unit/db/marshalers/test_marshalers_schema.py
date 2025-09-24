@@ -92,7 +92,7 @@ def mock_enum_types():
         ('type_name', 'public', 'owner', 'category_1', True, 'e', ['user1', 'user2']),
         ('type_name_1', 'public', 'owner', 'category_2', True, 'e', ['value3', 'value4']),
         ('type_name_1', 'public', 'owner', 'category_3', True, 'c', ['value5', 'value6']),
-        ('type_name_1', 'private', 'owner', 'category_4', True, 'd', ['value7', 'value8']),
+        ('type_name_2', 'private', 'owner', 'category_4', True, 'e', ['value7', 'value8']),
     ]
 
 
@@ -185,7 +185,7 @@ def test_identity_columns(identity_column_details):
 @pytest.mark.db
 @pytest.mark.marshalers
 def test_get_enum_types(mock_enum_types):
-    # Call the function
+    # Call the function with a schema
     enum_types = get_enum_types(mock_enum_types, 'public')
 
     # Assert the output
@@ -193,15 +193,27 @@ def test_get_enum_types(mock_enum_types):
     assert any(et.type_name == 'type_name' for et in enum_types)
     assert any(et.type_name == 'type_name_1' for et in enum_types)
 
+    # Call the function without a schema
+    enum_types = get_enum_types(mock_enum_types)
+    assert len(enum_types) == 3
+    assert any(et.type_name == 'type_name' for et in enum_types)
+    assert any(et.type_name == 'type_name_1' for et in enum_types)
+    assert any(et.type_name == 'type_name_2' for et in enum_types)
+
 
 @pytest.mark.unit
 @pytest.mark.db
 @pytest.mark.marshalers
 def test_get_user_type_mappings(mock_enum_type_mapping):
-    # Call the function
-    user_type_mappings = get_user_type_mappings(mock_enum_type_mapping, 'public')
+    # Call the function without a schema
+    user_type_mappings = get_user_type_mappings(mock_enum_type_mapping)
 
     # Assert the output
+    assert len(user_type_mappings) == 5
+    assert user_type_mappings[0].type_category == 'category_1'
+
+    # Call the function with a schema
+    user_type_mappings = get_user_type_mappings(mock_enum_type_mapping, 'public')
     assert len(user_type_mappings) == 4
     assert user_type_mappings[0].type_category == 'category_1'
 

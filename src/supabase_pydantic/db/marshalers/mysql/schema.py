@@ -146,7 +146,7 @@ def add_mysql_user_defined_types_to_tables(
                         col.enum_info = None
                         if enum_info:
                             col.enum_info = EnumInfo(
-                                name=enum_info.type_name, values=enum_info.enum_values, schema=schema
+                                name=enum_info.type_name, values=enum_info.enum_values, schema=mapping.namespace
                             )
                         break
 
@@ -166,7 +166,7 @@ def add_mysql_user_defined_types_to_tables(
 
                 for enum in enums:
                     if enum.type_name == clean_element_type:
-                        col.enum_info = EnumInfo(name=enum.type_name, values=enum.enum_values, schema=table.schema)
+                        col.enum_info = EnumInfo(name=enum.type_name, values=enum.enum_values, schema=enum.namespace)
                         break
                     else:
                         # Check if the array_element_type is a qualified type name (schema.typename)
@@ -175,7 +175,7 @@ def add_mysql_user_defined_types_to_tables(
                             type_name = clean_element_type.split('.')[-1]
                             if enum.type_name == type_name:
                                 col.enum_info = EnumInfo(
-                                    name=enum.type_name, values=enum.enum_values, schema=table.schema
+                                    name=enum.type_name, values=enum.enum_values, schema=enum.namespace
                                 )
                                 break
 

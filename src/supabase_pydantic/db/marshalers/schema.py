@@ -82,7 +82,7 @@ def get_table_details_from_columns(
     return tables
 
 
-def get_enum_types(enum_types: list, schema: str) -> list[UserEnumType]:
+def get_enum_types(enum_types: list, schema: str | None = None) -> list[UserEnumType]:
     """Get enum types."""
     enums = []
     for row in enum_types:
@@ -95,7 +95,9 @@ def get_enum_types(enum_types: list, schema: str) -> list[UserEnumType]:
             t,  # type, typtype
             enum_values,
         ) = row
-        if t == 'e' and namespace == schema:
+        if schema is not None and namespace != schema:
+            continue
+        if t == 'e':
             enums.append(
                 UserEnumType(
                     type_name,
@@ -110,7 +112,7 @@ def get_enum_types(enum_types: list, schema: str) -> list[UserEnumType]:
     return enums
 
 
-def get_user_type_mappings(enum_type_mapping: list, schema: str) -> list[UserTypeMapping]:
+def get_user_type_mappings(enum_type_mapping: list, schema: str | None = None) -> list[UserTypeMapping]:
     """Get user type mappings."""
     mappings = []
     for row in enum_type_mapping:
@@ -122,17 +124,20 @@ def get_user_type_mappings(enum_type_mapping: list, schema: str) -> list[UserTyp
             type_category,
             type_description,
         ) = row
-        if namespace == schema:
-            mappings.append(
-                UserTypeMapping(
-                    column_name,
-                    table_name,
-                    namespace,
-                    type_name,
-                    type_category,
-                    type_description,
-                )
+
+        if schema is not None and namespace != schema:
+            continue
+
+        mappings.append(
+            UserTypeMapping(
+                column_name,
+                table_name,
+                namespace,
+                type_name,
+                type_category,
+                type_description,
             )
+        )
     return mappings
 
 
@@ -144,8 +149,8 @@ def add_user_defined_types_to_tables(
     db_type: DatabaseType = DatabaseType.POSTGRES,
 ) -> None:
     """Get user defined types and add them to ColumnInfo."""
-    enums = get_enum_types(enum_types, schema)
-    mappings = get_user_type_mappings(enum_type_mapping, schema)
+    enums = get_enum_types(enum_types)
+    mappings = get_user_type_mappings(enum_type_mapping)
 
     # Log available enums for debugging
     logger.debug(f'Available enum types: {[e.type_name for e in enums]}')
@@ -163,7 +168,7 @@ def add_user_defined_types_to_tables(
                         col.enum_info = None
                         if enum_info:
                             col.enum_info = EnumInfo(
-                                name=enum_info.type_name, values=enum_info.enum_values, schema=schema
+                                name=enum_info.type_name, values=enum_info.enum_values, schema=mapping.namespace
                             )
                         break
 
@@ -210,7 +215,7 @@ def add_user_defined_types_to_tables(
 
                 if matched_enum:
                     col.enum_info = EnumInfo(
-                        name=matched_enum.type_name, values=matched_enum.enum_values, schema=table.schema
+                        name=matched_enum.type_name, values=matched_enum.enum_values, schema=matched_enum.namespace
                     )
                 else:
                     # Check if it's a standard PostgreSQL type before logging a warning

@@ -149,9 +149,10 @@ def _resolve_level(log_level: str | None, debug: bool, verbose: int, quiet: int)
     '--no-overwrite',
     'overwrite',
     is_flag=True,
-    show_default=True,
+    flag_value=False,
     default=True,
-    help='Overwrite existing files.',
+    show_default=True,
+    help='Disable overwriting of existing files.',
 )
 @click.option(
     '--null-parent-classes',

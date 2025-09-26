@@ -501,11 +501,46 @@ def test_singular_names_backward_compatibility(runner, temp_output_dir, mock_dat
         # Read the generated content
         content = model_file.read_text()
 
+        # Check if --no-crud-models is used (only base schemas generated)
+        has_no_crud_models = '--no-crud-models' in args
+
         if should_have_singular:
             # Should have singular names
-            assert 'class User(' in content, f'User class not found {description}'
-            assert 'class Users(' not in content, f'Users class found {description} (should be singular)'
+            if has_no_crud_models:
+                # Only base schemas are generated with --no-crud-models
+                assert 'class UserBaseSchema(' in content, f'UserBaseSchema class not found {description}'
+                assert 'class ProductBaseSchema(' in content, f'ProductBaseSchema class not found {description}'
+                assert 'class CategoryBaseSchema(' in content, f'CategoryBaseSchema class not found {description}'
+                # Verify plural forms are not present
+                assert 'class UsersBaseSchema(' not in content, f'UsersBaseSchema class found {description} (should be singular)'
+                assert 'class ProductsBaseSchema(' not in content, f'ProductsBaseSchema class found {description} (should be singular)'
+                assert 'class CategoriesBaseSchema(' not in content, f'CategoriesBaseSchema class found {description} (should be singular)'
+            else:
+                # Both base schemas and operational classes are generated
+                assert 'class User(' in content, f'User class not found {description}'
+                assert 'class Product(' in content, f'Product class not found {description}'
+                assert 'class Category(' in content, f'Category class not found {description}'
+                # Verify plural forms are not present
+                assert 'class Users(' not in content, f'Users class found {description} (should be singular)'
+                assert 'class Products(' not in content, f'Products class found {description} (should be singular)'
+                assert 'class Categories(' not in content, f'Categories class found {description} (should be singular)'
         else:
             # Should have plural names (default)
-            assert 'class Users(' in content, f'Users class not found {description}'
-            assert 'class User(' not in content, f'User class found {description} (should be plural)'
+            if has_no_crud_models:
+                # Only base schemas are generated with --no-crud-models
+                assert 'class UsersBaseSchema(' in content, f'UsersBaseSchema class not found {description}'
+                assert 'class ProductsBaseSchema(' in content, f'ProductsBaseSchema class not found {description}'
+                assert 'class CategoriesBaseSchema(' in content, f'CategoriesBaseSchema class not found {description}'
+                # Verify singular forms are not present
+                assert 'class UserBaseSchema(' not in content, f'UserBaseSchema class found {description} (should be plural)'
+                assert 'class ProductBaseSchema(' not in content, f'ProductBaseSchema class found {description} (should be plural)'
+                assert 'class CategoryBaseSchema(' not in content, f'CategoryBaseSchema class found {description} (should be plural)'
+            else:
+                # Both base schemas and operational classes are generated
+                assert 'class Users(' in content, f'Users class not found {description}'
+                assert 'class Products(' in content, f'Products class not found {description}'
+                assert 'class Categories(' in content, f'Categories class not found {description}'
+                # Verify singular forms are not present
+                assert 'class User(' not in content, f'User class found {description} (should be plural)'
+                assert 'class Product(' not in content, f'Product class found {description} (should be plural)'
+                assert 'class Category(' not in content, f'Category class found {description} (should be plural)'

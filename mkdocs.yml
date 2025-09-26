@@ -58,6 +58,7 @@ nav:
     - Analyze Multiple Schemas: examples/generate-multiple-basemodels.md
     - Working with Insert and Update Models: examples/insert-update-models.md
     - Generating Enum Models: examples/enum-model-generation.md
+    - Singular Class Names: examples/singular-class-names.md
     - Model Prefix Protection: examples/model-prefix-example.md
     - SQLAlchemy ORM Models: examples/sqlalchemy-models.md
     - MySQL Database Support: examples/mysql-support.md

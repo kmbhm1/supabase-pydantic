@@ -178,15 +178,17 @@ def test_singular_names_end_to_end_pydantic(runner, temp_output_dir, mock_databa
     assert 'class Categories(' not in content, 'Categories class found (should be singular)'
 
     # Verify CRUD models are also singular
-    assert 'class UserInsert(' in content, "UserInsert not found (should be singular)"
-    assert 'class UserUpdate(' in content, "UserUpdate not found (should be singular)"
-    assert 'class ProductInsert(' in content, "ProductInsert not found (should be singular)"
-    assert 'class ProductUpdate(' in content, "ProductUpdate not found (should be singular)"
+    assert 'class UserInsert(' in content, 'UserInsert not found (should be singular)'
+    assert 'class UserUpdate(' in content, 'UserUpdate not found (should be singular)'
+    assert 'class ProductInsert(' in content, 'ProductInsert not found (should be singular)'
+    assert 'class ProductUpdate(' in content, 'ProductUpdate not found (should be singular)'
 
     # Verify operational classes inherit from singular base schemas
-    assert 'class User(UserBaseSchema):' in content, "User should inherit from UserBaseSchema (singular)"
-    assert 'class Product(ProductBaseSchema):' in content, "Product should inherit from ProductBaseSchema (singular)"
-    assert 'class Category(CategoryBaseSchema):' in content, "Category should inherit from CategoryBaseSchema (singular)"
+    assert 'class User(UserBaseSchema):' in content, 'User should inherit from UserBaseSchema (singular)'
+    assert 'class Product(ProductBaseSchema):' in content, 'Product should inherit from ProductBaseSchema (singular)'
+    assert 'class Category(CategoryBaseSchema):' in content, (
+        'Category should inherit from CategoryBaseSchema (singular)'
+    )
 
 
 @pytest.mark.integration
@@ -512,9 +514,15 @@ def test_singular_names_backward_compatibility(runner, temp_output_dir, mock_dat
                 assert 'class ProductBaseSchema(' in content, f'ProductBaseSchema class not found {description}'
                 assert 'class CategoryBaseSchema(' in content, f'CategoryBaseSchema class not found {description}'
                 # Verify plural forms are not present
-                assert 'class UsersBaseSchema(' not in content, f'UsersBaseSchema class found {description} (should be singular)'
-                assert 'class ProductsBaseSchema(' not in content, f'ProductsBaseSchema class found {description} (should be singular)'
-                assert 'class CategoriesBaseSchema(' not in content, f'CategoriesBaseSchema class found {description} (should be singular)'
+                assert 'class UsersBaseSchema(' not in content, (
+                    f'UsersBaseSchema class found {description} (should be singular)'
+                )
+                assert 'class ProductsBaseSchema(' not in content, (
+                    f'ProductsBaseSchema class found {description} (should be singular)'
+                )
+                assert 'class CategoriesBaseSchema(' not in content, (
+                    f'CategoriesBaseSchema class found {description} (should be singular)'
+                )
             else:
                 # Both base schemas and operational classes are generated
                 assert 'class User(' in content, f'User class not found {description}'
@@ -532,9 +540,15 @@ def test_singular_names_backward_compatibility(runner, temp_output_dir, mock_dat
                 assert 'class ProductsBaseSchema(' in content, f'ProductsBaseSchema class not found {description}'
                 assert 'class CategoriesBaseSchema(' in content, f'CategoriesBaseSchema class not found {description}'
                 # Verify singular forms are not present
-                assert 'class UserBaseSchema(' not in content, f'UserBaseSchema class found {description} (should be plural)'
-                assert 'class ProductBaseSchema(' not in content, f'ProductBaseSchema class found {description} (should be plural)'
-                assert 'class CategoryBaseSchema(' not in content, f'CategoryBaseSchema class found {description} (should be plural)'
+                assert 'class UserBaseSchema(' not in content, (
+                    f'UserBaseSchema class found {description} (should be plural)'
+                )
+                assert 'class ProductBaseSchema(' not in content, (
+                    f'ProductBaseSchema class found {description} (should be plural)'
+                )
+                assert 'class CategoryBaseSchema(' not in content, (
+                    f'CategoryBaseSchema class found {description} (should be plural)'
+                )
             else:
                 # Both base schemas and operational classes are generated
                 assert 'class Users(' in content, f'Users class not found {description}'

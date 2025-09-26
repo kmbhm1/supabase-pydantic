@@ -617,11 +617,17 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             def _method(t: TableInfo) -> Any:
                 writer = None
                 if class_type == WriterClassType.PARENT:
-                    writer = self.writer(t, class_type, True, generate_enums=self.generate_enums)
+                    writer = self.writer(
+                        t, class_type, True, generate_enums=self.generate_enums, singular_names=self.singular_names
+                    )
                 elif class_type == WriterClassType.BASE_WITH_PARENT:
-                    writer = self.writer(t, class_type, False, generate_enums=self.generate_enums)
+                    writer = self.writer(
+                        t, class_type, False, generate_enums=self.generate_enums, singular_names=self.singular_names
+                    )
                 else:
-                    writer = self.writer(t, class_type, generate_enums=self.generate_enums)  # Pass class_type here
+                    writer = self.writer(
+                        t, class_type, generate_enums=self.generate_enums, singular_names=self.singular_names
+                    )
 
                 # print(f'\nTable: {t.name}')
                 # print(f'Class type: {class_type}')

@@ -462,9 +462,7 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
             attr = 'write_class' if is_base else 'write_operational_class'
 
             def _method(t: TableInfo) -> Any:
-                writer_instance = self.writer(
-                    t, database_type=self.database_type, singular_names=self.singular_names
-                )
+                writer_instance = self.writer(t, database_type=self.database_type, singular_names=self.singular_names)
                 return getattr(writer_instance, attr)
 
             if 'add_fk' in kwargs:

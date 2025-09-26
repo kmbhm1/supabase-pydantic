@@ -6,7 +6,6 @@ from supabase_pydantic.core.writers.abstract import AbstractClassWriter, Abstrac
 from supabase_pydantic.db.constants import RelationType
 from supabase_pydantic.db.database_type import DatabaseType
 from supabase_pydantic.db.models import ColumnInfo, SortedColumns, TableInfo
-from supabase_pydantic.utils.strings import to_pascal_case
 from supabase_pydantic.utils.types import get_sqlalchemy_v2_type
 
 
@@ -33,10 +32,11 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
         table: TableInfo,
         class_type: WriterClassType = WriterClassType.BASE,
         null_defaults: bool = False,
+        singular_names: bool = False,
         database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
-        super().__init__(table, class_type, null_defaults, database_type)
-        self._tname = to_pascal_case(self.table.name)
+        super().__init__(table, class_type, null_defaults, singular_names, database_type)
+        self._tname = self._generate_class_name(self.table.name)
         # Access schema from the table object
         self.schema = self.table.schema
         self.separated_columns: SortedColumns = self.table.sort_and_separate_columns(
@@ -237,7 +237,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
 
         # Add relationships from foreign keys
         for fk in self.table.foreign_keys:
-            target_class = to_pascal_case(fk.foreign_table_name)
+            target_class = self._proper_name(fk.foreign_table_name)
             # Use exact class name for relationship name to ensure consistency
             rel_name = target_class.lower()
 
@@ -251,7 +251,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
             relationship_names.add(rel_name)
 
             # Use exact table name for back reference
-            back_ref = pluralize(to_pascal_case(self.table.name).lower())
+            back_ref = pluralize(self._proper_name(self.table.name).lower())
             if fk.relation_type == RelationType.ONE_TO_ONE:
                 type_hint = f'Mapped[{target_class} | None]'
                 rel_str = (
@@ -267,7 +267,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
         # Add relationships from relationships list
         if hasattr(self.table, 'relationships') and self.table.relationships:
             for rel in self.table.relationships:
-                target_class = to_pascal_case(rel.related_table_name)
+                target_class = self._proper_name(rel.related_table_name)
                 # Use exact class name for relationship name to ensure consistency
                 rel_name = target_class.lower()
 
@@ -282,7 +282,7 @@ class SqlAlchemyFastAPIClassWriter(AbstractClassWriter):
 
                 rel_type = rel.relation_type
                 # Use exact table name for back reference
-                back_ref = pluralize(to_pascal_case(self.table.name).lower())
+                back_ref = pluralize(self._proper_name(self.table.name).lower())
 
                 if rel_type == RelationType.ONE_TO_ONE:
                     type_hint = f'Mapped[{target_class} | None]'
@@ -384,9 +384,10 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         file_path: str,
         writer: type[AbstractClassWriter] = SqlAlchemyFastAPIClassWriter,
         add_null_parent_classes: bool = False,
+        singular_names: bool = False,
         database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
-        super().__init__(tables, file_path, writer, add_null_parent_classes, database_type)
+        super().__init__(tables, file_path, writer, add_null_parent_classes, singular_names, database_type)
 
     def write(self) -> str:
         """Override the base write method to handle newlines correctly."""

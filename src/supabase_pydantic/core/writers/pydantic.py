@@ -317,6 +317,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         - ONE_TO_ONE: use foreign table name (e.g., author)
         - ONE_TO_MANY/MANY_TO_MANY: use pluralized foreign table name (e.g., posts)
         """
+
         def _col(x: ForeignKeyInfo) -> str:
             # Get the target table name in proper case for type hint
             target_type = self._proper_name(x.foreign_table_name)
@@ -439,7 +440,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
     def write_operational_class(self) -> str | None:
         """Method to generate operational class definitions."""
         # Create a base schema writer and get its name
-        base_writer = PydanticFastAPIClassWriter(self.table, WriterClassType.BASE, generate_enums=self.generate_enums)
+        base_writer = PydanticFastAPIClassWriter(
+            self.table, WriterClassType.BASE, generate_enums=self.generate_enums, singular_names=self.singular_names
+        )
         m = base_writer.write_name()
         op_class = [
             f'class {self.name}({m}):',

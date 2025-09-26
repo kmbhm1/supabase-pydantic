@@ -173,16 +173,20 @@ def test_singular_names_end_to_end_pydantic(runner, temp_output_dir, mock_databa
     # Verify plural class names are NOT generated
     assert 'class UsersBaseSchema(' not in content, 'UsersBaseSchema found (should be singular)'
     assert 'class Users(' not in content, 'Users class found (should be singular)'
-    assert 'class ProductsBaseSchema(' not in content, 'ProductsBaseSchema found (should be singular)'
     assert 'class Products(' not in content, 'Products class found (should be singular)'
     assert 'class CategoriesBaseSchema(' not in content, 'CategoriesBaseSchema found (should be singular)'
     assert 'class Categories(' not in content, 'Categories class found (should be singular)'
 
     # Verify CRUD models are also singular
-    assert 'class UserInsert(' in content, 'UserInsert not found (should be singular)'
-    assert 'class UserUpdate(' in content, 'UserUpdate not found (should be singular)'
-    assert 'class ProductInsert(' in content, 'ProductInsert not found (should be singular)'
-    assert 'class ProductUpdate(' in content, 'ProductUpdate not found (should be singular)'
+    assert 'class UserInsert(' in content, "UserInsert not found (should be singular)"
+    assert 'class UserUpdate(' in content, "UserUpdate not found (should be singular)"
+    assert 'class ProductInsert(' in content, "ProductInsert not found (should be singular)"
+    assert 'class ProductUpdate(' in content, "ProductUpdate not found (should be singular)"
+
+    # Verify operational classes inherit from singular base schemas
+    assert 'class User(UserBaseSchema):' in content, "User should inherit from UserBaseSchema (singular)"
+    assert 'class Product(ProductBaseSchema):' in content, "Product should inherit from ProductBaseSchema (singular)"
+    assert 'class Category(CategoryBaseSchema):' in content, "Category should inherit from CategoryBaseSchema (singular)"
 
 
 @pytest.mark.integration

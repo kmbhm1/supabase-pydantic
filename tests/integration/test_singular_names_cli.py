@@ -25,13 +25,14 @@ def temp_output_dir():
 @pytest.fixture
 def mock_minimal_setup():
     """Minimal mock setup for CLI testing."""
-    with patch('supabase_pydantic.cli.commands.gen.setup_database_connection') as mock_setup, \
-         patch('supabase_pydantic.cli.commands.gen.construct_tables') as mock_construct, \
-         patch('supabase_pydantic.cli.commands.gen.get_working_directories') as mock_dirs, \
-         patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs, \
-         patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory, \
-         patch('supabase_pydantic.cli.commands.gen.format_with_ruff') as mock_format:
-
+    with (
+        patch('supabase_pydantic.cli.commands.gen.setup_database_connection') as mock_setup,
+        patch('supabase_pydantic.cli.commands.gen.construct_tables') as mock_construct,
+        patch('supabase_pydantic.cli.commands.gen.get_working_directories') as mock_dirs,
+        patch('supabase_pydantic.cli.commands.gen.get_standard_jobs') as mock_jobs,
+        patch('supabase_pydantic.cli.commands.gen.FileWriterFactory') as mock_factory,
+        patch('supabase_pydantic.cli.commands.gen.format_with_ruff') as mock_format,
+    ):
         # Setup basic mocks
         mock_setup.return_value = (Mock(), DatabaseType.POSTGRES)
         mock_construct.return_value = {'public': [Mock(name='test_table')]}
@@ -57,7 +58,7 @@ def mock_minimal_setup():
             'jobs': mock_jobs,
             'factory': mock_factory,
             'format': mock_format,
-            'writer': mock_writer
+            'writer': mock_writer,
         }
 
 
@@ -71,13 +72,11 @@ def runner():
 def test_singular_names_flag_parsing(runner, temp_output_dir, mock_minimal_setup):
     """Test that the --singular-names flag is correctly parsed and passed through."""
     # Test with --singular-names flag
-    result = runner.invoke(gen, [
-        '--db-url', 'postgresql://test:test@localhost/test',
-        '--dir', temp_output_dir,
-        '--singular-names'
-    ])
+    result = runner.invoke(
+        gen, ['--db-url', 'postgresql://test:test@localhost/test', '--dir', temp_output_dir, '--singular-names']
+    )
 
-    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+    assert result.exit_code == 0, f'Command failed with output: {result.output}'
 
     # Verify that get_file_writer was called with singular_names=True
     mock_minimal_setup['factory'].return_value.get_file_writer.assert_called_once()
@@ -92,12 +91,9 @@ def test_singular_names_flag_parsing(runner, temp_output_dir, mock_minimal_setup
 def test_default_behavior_without_flag(runner, temp_output_dir, mock_minimal_setup):
     """Test that without --singular-names flag, singular_names=False is passed."""
     # Test without --singular-names flag
-    result = runner.invoke(gen, [
-        '--db-url', 'postgresql://test:test@localhost/test',
-        '--dir', temp_output_dir
-    ])
+    result = runner.invoke(gen, ['--db-url', 'postgresql://test:test@localhost/test', '--dir', temp_output_dir])
 
-    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+    assert result.exit_code == 0, f'Command failed with output: {result.output}'
 
     # Verify that get_file_writer was called with singular_names=False (default)
     mock_minimal_setup['factory'].return_value.get_file_writer.assert_called_once()
@@ -112,16 +108,21 @@ def test_default_behavior_without_flag(runner, temp_output_dir, mock_minimal_set
 def test_singular_names_with_other_flags(runner, temp_output_dir, mock_minimal_setup):
     """Test that --singular-names works correctly with other CLI flags."""
     # Test with multiple flags including --singular-names
-    result = runner.invoke(gen, [
-        '--db-url', 'postgresql://test:test@localhost/test',
-        '--dir', temp_output_dir,
-        '--singular-names',
-        '--no-crud-models',
-        '--no-enums',
-        '--disable-model-prefix-protection'
-    ])
+    result = runner.invoke(
+        gen,
+        [
+            '--db-url',
+            'postgresql://test:test@localhost/test',
+            '--dir',
+            temp_output_dir,
+            '--singular-names',
+            '--no-crud-models',
+            '--no-enums',
+            '--disable-model-prefix-protection',
+        ],
+    )
 
-    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+    assert result.exit_code == 0, f'Command failed with output: {result.output}'
 
     # Verify that all flags were passed correctly
     mock_minimal_setup['factory'].return_value.get_file_writer.assert_called_once()
@@ -155,14 +156,20 @@ def test_singular_names_with_different_frameworks(runner, temp_output_dir, mock_
         # Reset the mock for each iteration
         mock_minimal_setup['factory'].reset_mock()
 
-        result = runner.invoke(gen, [
-            '--db-url', 'postgresql://test:test@localhost/test',
-            '--dir', temp_output_dir,
-            '--framework', framework,
-            '--singular-names'
-        ])
+        result = runner.invoke(
+            gen,
+            [
+                '--db-url',
+                'postgresql://test:test@localhost/test',
+                '--dir',
+                temp_output_dir,
+                '--framework',
+                framework,
+                '--singular-names',
+            ],
+        )
 
-        assert result.exit_code == 0, f"Command failed for framework {framework} with output: {result.output}"
+        assert result.exit_code == 0, f'Command failed for framework {framework} with output: {result.output}'
 
         # Verify that singular_names=True was passed for each framework
         mock_minimal_setup['factory'].return_value.get_file_writer.assert_called()
@@ -179,14 +186,20 @@ def test_singular_names_with_different_types(runner, temp_output_dir, mock_minim
         # Reset the mock for each iteration
         mock_minimal_setup['factory'].reset_mock()
 
-        result = runner.invoke(gen, [
-            '--db-url', 'postgresql://test:test@localhost/test',
-            '--dir', temp_output_dir,
-            '--type', model_type,
-            '--singular-names'
-        ])
+        result = runner.invoke(
+            gen,
+            [
+                '--db-url',
+                'postgresql://test:test@localhost/test',
+                '--dir',
+                temp_output_dir,
+                '--type',
+                model_type,
+                '--singular-names',
+            ],
+        )
 
-        assert result.exit_code == 0, f"Command failed for type {model_type} with output: {result.output}"
+        assert result.exit_code == 0, f'Command failed for type {model_type} with output: {result.output}'
 
         # Verify that singular_names=True was passed for each type
         mock_minimal_setup['factory'].return_value.get_file_writer.assert_called()
@@ -198,20 +211,24 @@ def test_singular_names_with_different_types(runner, temp_output_dir, mock_minim
 def test_singular_names_flag_is_boolean(runner, temp_output_dir, mock_minimal_setup):
     """Test that --singular-names is a boolean flag (no value required)."""
     # Test that the flag works without a value
-    result = runner.invoke(gen, [
-        '--db-url', 'postgresql://test:test@localhost/test',
-        '--dir', temp_output_dir,
-        '--singular-names'
-    ])
+    result = runner.invoke(
+        gen, ['--db-url', 'postgresql://test:test@localhost/test', '--dir', temp_output_dir, '--singular-names']
+    )
 
-    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+    assert result.exit_code == 0, f'Command failed with output: {result.output}'
 
     # Test that providing a value to the flag fails (it's a boolean flag)
-    result_with_value = runner.invoke(gen, [
-        '--db-url', 'postgresql://test:test@localhost/test',
-        '--dir', temp_output_dir,
-        '--singular-names', 'true'  # This should be treated as a separate argument
-    ])
+    result_with_value = runner.invoke(
+        gen,
+        [
+            '--db-url',
+            'postgresql://test:test@localhost/test',
+            '--dir',
+            temp_output_dir,
+            '--singular-names',
+            'true',  # This should be treated as a separate argument
+        ],
+    )
 
     # This should fail because 'true' would be interpreted as an unknown argument
     assert result_with_value.exit_code != 0
@@ -220,15 +237,22 @@ def test_singular_names_flag_is_boolean(runner, temp_output_dir, mock_minimal_se
 @pytest.mark.integration
 def test_singular_names_with_multiple_schemas(runner, temp_output_dir, mock_minimal_setup):
     """Test that --singular-names works with multiple schemas."""
-    result = runner.invoke(gen, [
-        '--db-url', 'postgresql://test:test@localhost/test',
-        '--dir', temp_output_dir,
-        '--schema', 'public',
-        '--schema', 'auth',
-        '--singular-names'
-    ])
+    result = runner.invoke(
+        gen,
+        [
+            '--db-url',
+            'postgresql://test:test@localhost/test',
+            '--dir',
+            temp_output_dir,
+            '--schema',
+            'public',
+            '--schema',
+            'auth',
+            '--singular-names',
+        ],
+    )
 
-    assert result.exit_code == 0, f"Command failed with output: {result.output}"
+    assert result.exit_code == 0, f'Command failed with output: {result.output}'
 
     # Verify that singular_names=True was passed
     mock_minimal_setup['factory'].return_value.get_file_writer.assert_called()
@@ -240,11 +264,7 @@ def test_singular_names_with_multiple_schemas(runner, temp_output_dir, mock_mini
 def test_singular_names_error_handling(runner, temp_output_dir):
     """Test error handling when using --singular-names with invalid configurations."""
     # Test with invalid database URL
-    result = runner.invoke(gen, [
-        '--db-url', 'invalid://url',
-        '--dir', temp_output_dir,
-        '--singular-names'
-    ])
+    result = runner.invoke(gen, ['--db-url', 'invalid://url', '--dir', temp_output_dir, '--singular-names'])
 
     # Should handle the error gracefully (exact exit code depends on error handling)
     # The important thing is that it doesn't crash due to the --singular-names flag

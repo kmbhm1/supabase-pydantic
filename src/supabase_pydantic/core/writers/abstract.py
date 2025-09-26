@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from pathlib import Path
 
+from inflection import singularize
+
 from supabase_pydantic.core.constants import BASE_CLASS_POSTFIX, WriterClassType
 from supabase_pydantic.core.writers.utils import generate_unique_filename
 from supabase_pydantic.db.database_type import DatabaseType
@@ -38,17 +40,25 @@ class AbstractClassWriter(ABC):
         table: TableInfo,
         class_type: WriterClassType = WriterClassType.BASE,
         null_defaults: bool = False,
+        singular_names: bool = False,
         database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
         self.table = table
         self.class_type = class_type
         self._null_defaults = null_defaults
-        self.name = to_pascal_case(self.table.name)
+        self.singular_names = singular_names
+        self.name = self._generate_class_name(self.table.name)
         self.database_type = database_type
 
-    @staticmethod
-    def _proper_name(name: str, use_base: bool = False) -> str:
-        result: str = to_pascal_case(name) + (BASE_CLASS_POSTFIX if use_base else '')
+    def _generate_class_name(self, table_name: str) -> str:
+        """Generate class name from table name, optionally singularizing it."""
+        name = singularize(table_name) if self.singular_names else table_name
+        return to_pascal_case(name)  # type: ignore
+
+    def _proper_name(self, name: str, use_base: bool = False) -> str:
+        """Generate proper class name, optionally singularizing it."""
+        processed_name = singularize(name) if self.singular_names else name
+        result: str = to_pascal_case(processed_name) + (BASE_CLASS_POSTFIX if use_base else '')
         return result
 
     def write_class(
@@ -129,11 +139,13 @@ class AbstractFileWriter(ABC):
         file_path: str,
         writer: Callable[..., AbstractClassWriter],
         add_null_parent_classes: bool = False,
+        singular_names: bool = False,
         database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
         self.tables = tables
         self.file_path = file_path
         self.add_null_parent_classes = add_null_parent_classes
+        self.singular_names = singular_names
         self.writer = writer
         self.database_type = database_type
         self.jstr = '\n\n\n'

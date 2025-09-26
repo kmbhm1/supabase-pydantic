@@ -27,9 +27,10 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         null_defaults: bool = False,
         generate_enums: bool = True,
         disable_model_prefix_protection: bool = False,
+        singular_names: bool = False,
         database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
-        super().__init__(table, class_type, null_defaults, database_type)
+        super().__init__(table, class_type, null_defaults, singular_names, database_type)
         self.generate_enums = generate_enums
         self.disable_model_prefix_protection = disable_model_prefix_protection
         self.separated_columns: SortedColumns = self.table.sort_and_separate_columns(
@@ -316,11 +317,10 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
         - ONE_TO_ONE: use foreign table name (e.g., author)
         - ONE_TO_MANY/MANY_TO_MANY: use pluralized foreign table name (e.g., posts)
         """
-        _n = AbstractClassWriter._proper_name
 
         def _col(x: ForeignKeyInfo) -> str:
             # Get the target table name in proper case for type hint
-            target_type = _n(x.foreign_table_name)
+            target_type = self._proper_name(x.foreign_table_name)
 
             # Base field name on the foreign table name, not the column name
             # This prevents naming conflicts and is more semantic
@@ -426,7 +426,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             ):
                 continue
 
-            target_type = _n(rel.related_table_name)
+            target_type = self._proper_name(rel.related_table_name)
             field_name = pluralize(rel.related_table_name.lower())  # Always pluralize for relationships
 
             # Skip if field name already used
@@ -440,7 +440,9 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
     def write_operational_class(self) -> str | None:
         """Method to generate operational class definitions."""
         # Create a base schema writer and get its name
-        base_writer = PydanticFastAPIClassWriter(self.table, WriterClassType.BASE, generate_enums=self.generate_enums)
+        base_writer = PydanticFastAPIClassWriter(
+            self.table, WriterClassType.BASE, generate_enums=self.generate_enums, singular_names=self.singular_names
+        )
         m = base_writer.write_name()
         op_class = [
             f'class {self.name}({m}):',
@@ -494,6 +496,7 @@ class PydanticFastAPIWriter(AbstractFileWriter):
         generate_crud_models: bool = True,
         generate_enums: bool = True,
         disable_model_prefix_protection: bool = False,
+        singular_names: bool = False,
         database_type: DatabaseType = DatabaseType.POSTGRES,
     ):
         # Developer's Note:
@@ -504,9 +507,10 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             writer,
             generate_enums=generate_enums,
             disable_model_prefix_protection=disable_model_prefix_protection,  # type: ignore
+            singular_names=singular_names,
         )
 
-        super().__init__(tables, file_path, writer_with_options, add_null_parent_classes, database_type)
+        super().__init__(tables, file_path, writer_with_options, add_null_parent_classes, singular_names, database_type)
         self.generate_crud_models = generate_crud_models
         self.generate_enums = generate_enums
         self.disable_model_prefix_protection = disable_model_prefix_protection
@@ -613,11 +617,17 @@ class PydanticFastAPIWriter(AbstractFileWriter):
             def _method(t: TableInfo) -> Any:
                 writer = None
                 if class_type == WriterClassType.PARENT:
-                    writer = self.writer(t, class_type, True, generate_enums=self.generate_enums)
+                    writer = self.writer(
+                        t, class_type, True, generate_enums=self.generate_enums, singular_names=self.singular_names
+                    )
                 elif class_type == WriterClassType.BASE_WITH_PARENT:
-                    writer = self.writer(t, class_type, False, generate_enums=self.generate_enums)
+                    writer = self.writer(
+                        t, class_type, False, generate_enums=self.generate_enums, singular_names=self.singular_names
+                    )
                 else:
-                    writer = self.writer(t, class_type, generate_enums=self.generate_enums)  # Pass class_type here
+                    writer = self.writer(
+                        t, class_type, generate_enums=self.generate_enums, singular_names=self.singular_names
+                    )
 
                 # print(f'\nTable: {t.name}')
                 # print(f'Class type: {class_type}')

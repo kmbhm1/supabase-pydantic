@@ -17,6 +17,7 @@ class FileWriterFactory:
         generate_crud_models: bool = True,
         generate_enums: bool = True,
         disable_model_prefix_protection: bool = False,
+        singular_names: bool = False,
         database_type: DatabaseType = DatabaseType.POSTGRES,
     ) -> AbstractFileWriter:
         """Get the file writer based on the provided parameters.
@@ -30,6 +31,7 @@ class FileWriterFactory:
             generate_crud_models (bool, optional): Generate CRUD models. (i.e., Insert, Update) Defaults to True.
             generate_enums (bool, optional): Generate Enum classes for enum columns. Defaults to True.
             disable_model_prefix_protection (bool, optional): Disable Pydantic's "model_" prefix protection. Defaults to False.
+            singular_names (bool, optional): Generate class names in singular form. Defaults to False.
             database_type (DatabaseType, optional): The database type. Defaults to DatabaseType.POSTGRES.
 
         Returns:
@@ -37,7 +39,13 @@ class FileWriterFactory:
         """  # noqa: E501
         match file_type, framework_type:
             case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI:
-                return SqlAlchemyFastAPIWriter(tables, file_path, database_type=database_type)
+                return SqlAlchemyFastAPIWriter(
+                    tables,
+                    file_path,
+                    add_null_parent_classes=add_null_parent_classes,
+                    singular_names=singular_names,
+                    database_type=database_type,
+                )
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI:
                 return PydanticFastAPIWriter(
                     tables,
@@ -46,6 +54,7 @@ class FileWriterFactory:
                     generate_crud_models=generate_crud_models,
                     generate_enums=generate_enums,
                     disable_model_prefix_protection=disable_model_prefix_protection,
+                    singular_names=singular_names,
                     database_type=database_type,
                 )
             case _:

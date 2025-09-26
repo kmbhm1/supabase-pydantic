@@ -539,6 +539,7 @@ def test_gen_with_disable_model_prefix_protection(
         generate_crud_models=True,
         generate_enums=True,
         disable_model_prefix_protection=True,
+        singular_names=False,
     )
 
 
@@ -611,6 +612,7 @@ def test_gen_with_null_parent_classes(
         generate_crud_models=True,
         generate_enums=True,
         disable_model_prefix_protection=False,
+        singular_names=False,
     )
 
 
@@ -642,6 +644,7 @@ def test_gen_with_no_crud_models(
         generate_crud_models=False,
         generate_enums=True,
         disable_model_prefix_protection=False,
+        singular_names=False,
     )
 
 
@@ -673,6 +676,39 @@ def test_gen_with_no_enums(
         generate_crud_models=True,
         generate_enums=False,
         disable_model_prefix_protection=False,
+        singular_names=False,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.cli
+def test_gen_with_singular_names(
+    runner,
+    mock_setup_database_connection,
+    mock_construct_tables,
+    mock_get_working_directories,
+    mock_get_standard_jobs,
+    mock_file_writer_factory,
+):
+    """Test gen command with singular_names flag."""
+    # Run the command
+    result = runner.invoke(gen, ['--db-url', 'postgresql://user:pass@localhost/testdb', '--singular-names'])
+
+    # Check that the command was successful
+    assert result.exit_code == 0
+
+    # Verify file writer factory was called with singular_names=True
+    mock_file_writer_factory.get_file_writer.assert_called_with(
+        ANY,
+        ANY,
+        ANY,
+        ANY,
+        add_null_parent_classes=False,
+        database_type=DatabaseType.POSTGRES,
+        generate_crud_models=True,
+        generate_enums=True,
+        disable_model_prefix_protection=False,
+        singular_names=True,
     )
 
 

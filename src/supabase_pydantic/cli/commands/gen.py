@@ -182,6 +182,13 @@ def _resolve_level(log_level: str | None, debug: bool, verbose: int, quiet: int)
     help='Disable Pydantic\'s "model_" prefix protection to allow fields with "model_" prefix without aliasing.',
 )
 @click.option(
+    '--singular-names',
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help='Generate class names in singular form (e.g., "Product" instead of "Products" for table "products").',
+)
+@click.option(
     '--log-level',
     type=click.Choice(['critical', 'error', 'warning', 'info', 'debug', 'trace'], case_sensitive=False),
     default=None,
@@ -238,6 +245,7 @@ def gen(
     no_crud_models: bool = False,
     no_enums: bool = False,
     disable_model_prefix_protection: bool = False,
+    singular_names: bool = False,
     # NEW / UPDATED:
     log_level: str | None = None,
     verbose: int = 0,
@@ -434,6 +442,7 @@ def gen(
                 generate_crud_models=not no_crud_models,
                 generate_enums=not no_enums,
                 disable_model_prefix_protection=disable_model_prefix_protection,
+                singular_names=singular_names,
                 database_type=detected_db_type,
             ).save(overwrite)
             paths += [p, vf] if vf is not None else [p]

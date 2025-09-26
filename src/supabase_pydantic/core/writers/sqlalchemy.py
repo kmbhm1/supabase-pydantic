@@ -462,7 +462,10 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
             attr = 'write_class' if is_base else 'write_operational_class'
 
             def _method(t: TableInfo) -> Any:
-                return getattr(self.writer(t, database_type=self.database_type), attr)
+                writer_instance = self.writer(
+                    t, database_type=self.database_type, singular_names=self.singular_names
+                )
+                return getattr(writer_instance, attr)
 
             if 'add_fk' in kwargs:
                 classes = [_method(t)(add_fk=kwargs['add_fk']) for t in self.tables]
@@ -569,7 +572,12 @@ class SqlAlchemyFastAPIWriter(AbstractFileWriter):
         classes = []
         for table in self.tables:
             # Create writer with the specified class type
-            writer = self.writer(table, class_type=class_type, database_type=self.database_type)
+            writer = self.writer(
+                table,
+                class_type=class_type,
+                database_type=self.database_type,
+                singular_names=self.singular_names,
+            )
             class_def = writer.write_class()
             if class_def:
                 classes.append(class_def)

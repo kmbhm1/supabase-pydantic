@@ -40,7 +40,11 @@ class FileWriterFactory:
         match file_type, framework_type:
             case OrmType.SQLALCHEMY, FrameWorkType.FASTAPI:
                 return SqlAlchemyFastAPIWriter(
-                    tables, file_path, singular_names=singular_names, database_type=database_type
+                    tables,
+                    file_path,
+                    add_null_parent_classes=add_null_parent_classes,
+                    singular_names=singular_names,
+                    database_type=database_type,
                 )
             case OrmType.PYDANTIC, FrameWorkType.FASTAPI:
                 return PydanticFastAPIWriter(

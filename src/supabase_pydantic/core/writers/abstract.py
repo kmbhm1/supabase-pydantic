@@ -53,7 +53,7 @@ class AbstractClassWriter(ABC):
     def _generate_class_name(self, table_name: str) -> str:
         """Generate class name from table name, optionally singularizing it."""
         name = singularize(table_name) if self.singular_names else table_name
-        return to_pascal_case(name)
+        return to_pascal_case(name)  # type: ignore
 
     def _proper_name(self, name: str, use_base: bool = False) -> str:
         """Generate proper class name, optionally singularizing it."""

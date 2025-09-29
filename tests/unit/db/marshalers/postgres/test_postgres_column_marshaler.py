@@ -104,8 +104,8 @@ def test_get_alias_returns_empty_string_for_none(marshaler):
         ('float', 'float', 'Decimal'),
         ('numeric', 'numeric', 'Decimal'),
         ('boolean', 'boolean', 'bool'),
-        ('json', 'json', 'dict | Json'),
-        ('jsonb', 'jsonb', 'dict | Json'),
+        ('json', 'json', 'dict | list[dict] | list[Any] | Json'),
+        ('jsonb', 'jsonb', 'dict | list[dict] | list[Any] | Json'),
         ('uuid', 'uuid', 'UUID4'),
         # Add more PostgreSQL types as needed
     ],

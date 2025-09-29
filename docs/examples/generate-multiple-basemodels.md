@@ -66,7 +66,7 @@ An example of the generated BaseModel file for the `auth` schema can be found he
         created_at: datetime.datetime | None = Field(default=None)
         instance_id: UUID4 | None = Field(default=None)
         ip_address: str
-        payload: dict | Json | None = Field(default=None)
+        payload: dict | list[dict] | list[Any] | Json | None = Field(default=None)
 
 
     class FlowStateBaseSchema(CustomModel):
@@ -98,7 +98,7 @@ An example of the generated BaseModel file for the `auth` schema can be found he
         # Columns
         created_at: datetime.datetime | None = Field(default=None)
         email: str | None = Field(default=None)
-        identity_data: dict | Json
+        identity_data: dict | list[dict] | list[Any] | Json
         last_sign_in_at: datetime.datetime | None = Field(default=None)
         provider: str
         provider_id: str
@@ -203,7 +203,7 @@ An example of the generated BaseModel file for the `auth` schema can be found he
         id: UUID4
 
         # Columns
-        attribute_mapping: dict | Json | None = Field(default=None)
+        attribute_mapping: dict | list[dict] | list[Any] | Json | None = Field(default=None)
         created_at: datetime.datetime | None = Field(default=None)
         entity_id: str
         metadata_url: str | None = Field(default=None)
@@ -313,8 +313,8 @@ An example of the generated BaseModel file for the `auth` schema can be found he
         phone_change_sent_at: datetime.datetime | None = Field(default=None)
         phone_change_token: str | None = Field(default=None)
         phone_confirmed_at: datetime.datetime | None = Field(default=None)
-        raw_app_meta_data: dict | Json | None = Field(default=None)
-        raw_user_meta_data: dict | Json | None = Field(default=None)
+        raw_app_meta_data: dict | list[dict] | list[Any] | Json | None = Field(default=None)
+        raw_user_meta_data: dict | list[dict] | list[Any] | Json | None = Field(default=None)
         reauthentication_sent_at: datetime.datetime | None = Field(default=None)
         reauthentication_token: str | None = Field(default=None)
         recovery_sent_at: datetime.datetime | None = Field(default=None)

@@ -113,14 +113,14 @@ class ProductsInsert(CustomModelInsert):
     created_at: datetime | None = Field(default=None)
     created_by: UUID4 | None = Field(default=None)
     description: str | None = Field(default=None)
-    dimensions: dict | Json | None = Field(default=None)
+    dimensions: dict | list[dict] | list[Any] | Json | None = Field(default=None)
     inventory_status: str | None = Field(default=None)
     published_at: datetime | None = Field(default=None)
     status: str | None = Field(default=None)
     stock_quantity: int | None = Field(default=None)
     tags: list[str] | None = Field(default=None)
     weight_grams: int | None = Field(default=None)
-    attributes: dict | Json | None = Field(default=None)
+    attributes: dict | list[dict] | list[Any] | Json | None = Field(default=None)
 
 
 class ProductsUpdate(CustomModelUpdate):
@@ -140,7 +140,7 @@ class ProductsUpdate(CustomModelUpdate):
     created_at: datetime | None = Field(default=None)
     created_by: UUID4 | None = Field(default=None)
     description: str | None = Field(default=None)
-    dimensions: dict | Json | None = Field(default=None)
+    dimensions: dict | list[dict] | list[Any] | Json | None = Field(default=None)
     inventory_status: str | None = Field(default=None)
     name: str | None = Field(default=None)
     price: Decimal | None = Field(default=None)
@@ -150,7 +150,7 @@ class ProductsUpdate(CustomModelUpdate):
     stock_quantity: int | None = Field(default=None)
     tags: List[str] | None = Field(default=None)
     weight_grams: int | None = Field(default=None)
-    attributes: dict | Json | None = Field(default=None)
+    attributes: dict | list[dict] | list[Any] | Json | None = Field(default=None)
 ```
 
 ### Key Features Illustrated
@@ -173,7 +173,7 @@ class ProductsUpdate(CustomModelUpdate):
 
 4. **Type Safety and Validation**:
     - Foreign keys use `UUID4` type for proper validation
-    - Complex types are properly mapped (`jsonb` → `dict | Json`, `text[]` → `list[str]`)
+    - Complex types are properly mapped (`jsonb` → `dict | list[dict] | list[Any] | Json`, `text[]` → `list[str]`)
     - All fields in Update model are optional with `| None`
     - Maintains type consistency with database constraints
 

@@ -35,7 +35,8 @@ MYSQL_PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     # Other types
     'enum': ('str', None),  # MySQL native enum
     'set': ('set[str]', 'from typing import Set'),
-    'json': ('dict | Json', 'from pydantic import Json'),
+    'json': ('dict | list[dict] | list[Any] | Json', 'from typing import Any\nfrom pydantic import Json'),
+    'jsonb': ('dict | list[dict] | list[Any] | Json', 'from typing import Any\nfrom pydantic import Json'),
     'boolean': ('bool', None),
     'bool': ('bool', None),
 }
@@ -116,7 +117,14 @@ MYSQL_SQLALCHEMY_V2_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     # Other types
     'enum': ('Enum,str', 'from sqlalchemy import Enum'),
     'set': ('String,set[str]', 'from sqlalchemy import String\nfrom typing import Set'),
-    'json': ('JSON,dict | Json', 'from sqlalchemy import JSON\nfrom pydantic import Json'),
+    'json': (
+        'JSON,dict | list[dict] | list[Any] | Json',
+        'from sqlalchemy import JSON\nfrom typing import Any\nfrom pydantic import Json',
+    ),
+    'jsonb': (
+        'JSONB,dict | list[dict] | list[Any] | Json',
+        'from sqlalchemy.dialects.postgresql import JSONB\nfrom typing import Any\nfrom pydantic import Json',
+    ),
     'boolean': ('Boolean,bool', 'from sqlalchemy import Boolean'),
     'bool': ('Boolean,bool', 'from sqlalchemy import Boolean'),
 }

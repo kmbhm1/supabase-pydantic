@@ -114,8 +114,8 @@ PYDANTIC_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     # XML type
     'xml': ('str', None),
     # JSON types
-    'json': ('dict | Json', 'from pydantic import Json'),
-    'jsonb': ('dict | Json', 'from pydantic import Json'),
+    'json': ('dict | list[dict] | list[Any] | Json', 'from typing import Any\nfrom pydantic import Json'),
+    'jsonb': ('dict | list[dict] | list[Any] | Json', 'from typing import Any\nfrom pydantic import Json'),
     # Array type
     'ARRAY': ('list', None),  # Generic list; specify further based on the array's element type
 }
@@ -292,7 +292,13 @@ SQLALCHEMY_V2_TYPE_MAP: dict[str, tuple[str, str | None]] = {
     'tsquery': ('TSQUERY,str', 'from sqlalchemy.dialects.postgresql import TSQUERY'),
     'uuid': ('UUID,UUID4', 'from sqlalchemy.dialects.postgresql import UUID\nfrom pydantic import UUID4'),
     'xml': ('Text,str', 'from sqlalchemy import Text'),  # XML handled as Text for simplicity
-    'json': ('JSON,dict | Json', 'from sqlalchemy import JSON\nfrom pydantic import Json'),
-    'jsonb': ('JSONB,dict | Json', 'from sqlalchemy.dialects.postgresql import JSONB\nfrom pydantic import Json'),
+    'json': (
+        'JSON,dict | list[dict] | list[Any] | Json',
+        'from sqlalchemy import JSON\nfrom typing import Any\nfrom pydantic import Json',
+    ),
+    'jsonb': (
+        'JSONB,dict | list[dict] | list[Any] | Json',
+        'from sqlalchemy.dialects.postgresql import JSONB\nfrom typing import Any\nfrom pydantic import Json',
+    ),
     'ARRAY': ('ARRAY,list', 'from sqlalchemy.dialects.postgresql import ARRAY'),  # Generic ARRAY; specify further
 }

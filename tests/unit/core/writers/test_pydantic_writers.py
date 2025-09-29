@@ -454,10 +454,10 @@ def test_PydanticFastAPIWriter_write(fastapi_file_writer):
         'from __future__ import annotations\n'
         'from pydantic import BaseModel\n'
         'from pydantic import Field\n'
-        'from pydantic import Json\n'
         'from pydantic import UUID4\n'
         'from pydantic.types import StringConstraints\n'
-        'from typing import Any\n\n\n'
+        'from typing import Any\nfrom typing import Any\n'
+        'from pydantic import Json\n\n\n'
         # Custom Classes
         '# CUSTOM CLASSES\n'
         '# Note: These are custom model classes for defining common features among\n'
@@ -587,10 +587,9 @@ def test_PydanticFastAPIWriter_write_imports(fastapi_file_writer):
         'from __future__ import annotations\n'
         'from pydantic import BaseModel\n'
         'from pydantic import Field\n'
-        'from pydantic import Json\n'
         'from pydantic import UUID4\n'
         'from pydantic.types import StringConstraints\n'
-        'from typing import Any'
+        'from typing import Any\nfrom typing import Any\nfrom pydantic import Json'
     )
     assert fastapi_file_writer.write_imports() == expected_imports
 

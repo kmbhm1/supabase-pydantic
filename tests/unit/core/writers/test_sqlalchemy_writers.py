@@ -267,7 +267,7 @@ def test_SqlAlchemyFastAPIClassWriter_write_column(fastapi_class_writer):
                 datatype='dict',
             )
         )
-        == 'data_only: Mapped[dict | Json] = mapped_column(JSONB)'
+        == 'data_only: Mapped[dict | list[dict] | list[Any] | Json] = mapped_column(JSONB)'
         and fastapi_class_writer.write_column(
             ColumnInfo(
                 name='data_only',

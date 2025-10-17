@@ -3,7 +3,7 @@ import re
 from functools import partial
 from typing import Any
 
-from inflection import pluralize
+from inflection import pluralize, singularize
 
 from supabase_pydantic.core.constants import CUSTOM_MODEL_NAME, WriterClassType
 from supabase_pydantic.core.writers.abstract import AbstractClassWriter, AbstractFileWriter
@@ -344,11 +344,15 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             # Example: if we're generating File model and see project_id -> project.id,
             # then we're the source because we have the foreign key.
             table_name = self.table.name.lower()
-            we_have_foreign_key = x.column_name.endswith('_id')
+            # Check if this is a real foreign key or a reverse relationship
+            # For a real foreign key: we have a column that references another table
+            # For a reverse relationship: another table has a column that references us
+            # We can detect this by checking if we have a column that is actually a foreign key to the target table
+            we_have_foreign_key = any(col.name == x.column_name and col.is_foreign_key for col in self.table.columns)
 
             logger.debug('  Current context:')
             logger.debug(f'    Table being generated: {table_name}')
-            logger.debug(f'    We have foreign key: {we_have_foreign_key} (column ends with _id)')
+            logger.debug(f'    We have foreign key: {we_have_foreign_key} (table has column {x.column_name})')
 
             # Check if this is a self-referential relationship
             is_self_ref = x.foreign_table_name.lower() == table_name
@@ -365,7 +369,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
             if x.relation_type == RelationType.ONE_TO_ONE:
                 # ONE_TO_ONE is symmetric, so it's the same from both sides
                 type_hint = target_type
-                field_name = base_field_name
+                field_name = singularize(base_field_name)  # Use singular for single relationships
                 logger.debug(f'  Using ONE_TO_ONE: {field_name}: {type_hint}')
             elif x.relation_type == RelationType.MANY_TO_ONE:
                 if we_have_foreign_key:
@@ -373,7 +377,7 @@ class PydanticFastAPIClassWriter(AbstractClassWriter):
                     # e.g., File has project_id pointing to Project
                     # So we reference a single instance
                     type_hint = target_type
-                    field_name = base_field_name
+                    field_name = singularize(base_field_name)  # Use singular for single relationships
                     logger.debug(f'  Using MANY_TO_ONE (we have the foreign key): {field_name}: {type_hint}')
                 else:
                     # Another table has a foreign key pointing to us

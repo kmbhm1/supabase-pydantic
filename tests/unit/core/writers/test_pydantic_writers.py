@@ -745,7 +745,9 @@ def test_relationship_type_edge_cases(relationship_test_tables):
         columns=[
             ColumnInfo(name='id', post_gres_datatype='integer', is_nullable=False, primary=True, datatype='int'),
             ColumnInfo(name='name', post_gres_datatype='varchar', is_nullable=False, datatype='str'),
-            ColumnInfo(name='manager_id', post_gres_datatype='integer', is_nullable=True, datatype='int'),
+            ColumnInfo(
+                name='manager_id', post_gres_datatype='integer', is_nullable=True, datatype='int', is_foreign_key=True
+            ),
         ],
         foreign_keys=[
             ForeignKeyInfo(

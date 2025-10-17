@@ -111,9 +111,9 @@ jobs:
       #----------------------------------------------
       - name: Python Semantic Release (Version)
         id: release
-        uses: python-semantic-release/python-semantic-release@v8.3.0
+        uses: python-semantic-release/python-semantic-release@v9.8.5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
 
       #----------------------------------------------
       #   Publish to PyPI & GitHub Release
@@ -129,5 +129,5 @@ jobs:
         uses: python-semantic-release/upload-to-gh-release@v9.8.5
         if: steps.release.outputs.released == 'true'
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
           tag: ${{ steps.release.outputs.tag }}

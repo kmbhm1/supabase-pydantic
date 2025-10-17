@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.26.1 (2025-09-29)
+
+### Bug Fixes
+
+- Extend JSON field types to support list[dict] and list[Any] variants ([#115](https://github.com/kmbhm1/supabase-pydantic/pull/115))
+
+## v0.26.0 (2025-09-26)
+
+### Features
+
+- Add ability to singularize class names ([#113](https://github.com/kmbhm1/supabase-pydantic/pull/113))
+
+## v0.25.7 (2025-09-24)
+
+### Bug Fixes
+
+- Modify enum type generation and views in schema marshaling to be namespace independent ([#111](https://github.com/kmbhm1/supabase-pydantic/pull/111))
+
 ## v0.25.6 (2025-09-18)
 
 ### Documentation

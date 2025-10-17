@@ -243,6 +243,7 @@ prerelease = false
 [tool.semantic_release.changelog]
 changelog_file = "CHANGELOG.md"
 exclude_commit_patterns = []
+mode = "update"
 
 [tool.semantic_release.changelog.environment]
 block_start_string = "{%"

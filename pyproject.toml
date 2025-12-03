@@ -72,6 +72,7 @@ pytest-mock = "^3.14.0"
 types-toml = "^0.10.8.20240310"
 networkx = "^3.3"
 matplotlib = "^3.9.1.post1"
+fonttools = ">=4.60.2,<5.0.0"
 mkdocs = "^1.6.0"
 mkdocs-material = "^9.5.30"
 mkdocstrings = { extras = ["python"], version = "^0.25.1" }

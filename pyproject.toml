@@ -43,7 +43,7 @@ sb-pydantic = 'supabase_pydantic.cli:cli'
 supabase-pydantic = 'supabase_pydantic.cli:cli'
 
 [tool.poetry.dependencies]
-python = ">=3.10,<=3.14"
+python = ">=3.10,<=3.13"
 psycopg2-binary = "^2.9.9"
 pydantic = "^2.6.3"
 types-psycopg2 = "^2.9.21.20240417"

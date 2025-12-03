@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v0.26.4 (2025-12-03)
+
+### Fix
+
+* fix: ci build step (#121)
+
+* fix: ci build step
+
+* fix: python version for pkg and tox ([`ac35aba`](https://github.com/kmbhm1/supabase-pydantic/commit/ac35abaf540cd698678bb8b0789605fa62c6e3b1))
+
 ## v0.26.3 (2025-12-03)
 
 ### Fix

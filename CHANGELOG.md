@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.26.5 (2025-12-03)
+
+### Fix
+
+* fix: add tests for mysql constants (#122) ([`3ab5ca2`](https://github.com/kmbhm1/supabase-pydantic/commit/3ab5ca26056287ad54f61dd760663ff91cdd7166))
+
 ## v0.26.4 (2025-12-03)
 
 ### Fix

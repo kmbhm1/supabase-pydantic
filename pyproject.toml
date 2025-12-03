@@ -43,7 +43,7 @@ sb-pydantic = 'supabase_pydantic.cli:cli'
 supabase-pydantic = 'supabase_pydantic.cli:cli'
 
 [tool.poetry.dependencies]
-python = ">=3.10,<=3.13"
+python = ">=3.10,<3.14"
 psycopg2-binary = "^2.9.9"
 pydantic = "^2.6.3"
 types-psycopg2 = "^2.9.21.20240417"
@@ -295,7 +295,7 @@ upload_to_vcs_release = true
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py310, py311, py312, py313, py314, lint, mypy
+envlist = py310, py311, py312, py313, lint, mypy
 isolated_build = True
 skipsdist = false
 

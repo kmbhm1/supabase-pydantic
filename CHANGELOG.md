@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.26.3 (2025-12-03)
+
+### Fix
+
+* fix: dependabot alert (#120) ([`42c8e26`](https://github.com/kmbhm1/supabase-pydantic/commit/42c8e260d93f5fc8b4b15e25d3f01023c0bfff42))
+
 ## v0.26.2 (2025-10-17)
 
 ### Fix

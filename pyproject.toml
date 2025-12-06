@@ -54,7 +54,7 @@ toml = "^0.10.2"
 click-option-group = "^0.5.6"
 inflection = "^0.5.1"
 requests = ">=2.32.4"
-urllib3 = "^2.5.0"
+urllib3 = "^2.6.0"
 loguru = "^0.7.2"
 mysql-connector-python = ">=8.0.32,<9.4.0"
 

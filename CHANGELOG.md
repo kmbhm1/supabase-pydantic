@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.26.6 (2025-12-06)
+
+### Fix
+
+* fix: urllib3 sec vulnerability (#123) ([`093b0a1`](https://github.com/kmbhm1/supabase-pydantic/commit/093b0a194b2cc3eedcdf5a24f4e1bafec452ee54))
+
 ## v0.26.5 (2025-12-03)
 
 ### Fix

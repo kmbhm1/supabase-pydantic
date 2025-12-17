@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.26.7 (2025-12-17)
+
+### Fix
+
+* fix: dependabot alerts filelock and pymdown-extensions (#124) ([`2487235`](https://github.com/kmbhm1/supabase-pydantic/commit/24872359fbaf8b9f9b5860f1b51b3ede198ae280))
+
 ## v0.26.6 (2025-12-06)
 
 ### Fix

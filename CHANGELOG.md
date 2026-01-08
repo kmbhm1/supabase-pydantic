@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## v0.26.8 (2026-01-08)
+
+### Chore
+
+* chore(deps): bump urllib3 from 2.6.0 to 2.6.3 (#125)
+
+Bumps [urllib3](https://github.com/urllib3/urllib3) from 2.6.0 to 2.6.3.
+- [Release notes](https://github.com/urllib3/urllib3/releases)
+- [Changelog](https://github.com/urllib3/urllib3/blob/main/CHANGES.rst)
+- [Commits](https://github.com/urllib3/urllib3/compare/2.6.0...2.6.3)
+
+---
+updated-dependencies:
+- dependency-name: urllib3
+  dependency-version: 2.6.3
+  dependency-type: direct:production
+...
+
+Signed-off-by: dependabot[bot] &lt;support@github.com&gt;
+Co-authored-by: dependabot[bot] &lt;49699333+dependabot[bot]@users.noreply.github.com&gt; ([`ddc3ef3`](https://github.com/kmbhm1/supabase-pydantic/commit/ddc3ef35171f73b01a93cbdae2f23123662015ff))
+
 ## v0.26.7 (2025-12-17)
 
 ### Fix

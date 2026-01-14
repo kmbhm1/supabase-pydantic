@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "supabase-pydantic"
-version = "0.26.6"
+version = "0.26.8"
 description = "A Pydantic(+) model generator for Supabase"
 authors = ["K Boehm <kmbhm1@gmail.com>"]
 license = "MIT"
@@ -78,7 +78,7 @@ mkdocs-material = "^9.5.30"
 mkdocstrings = { extras = ["python"], version = "^0.25.1" }
 mkdocs-redirects = "^1.2.1"
 mkdocs-click = "^0.8.1"
-pymdown-extensions = "^10.8.1"
+pymdown-extensions = "^10.16.1"
 ruff = ">=0.4.1"
 jinja2 = "^3.1.6"
 types-pyyaml = "^6.0.12.20250809"

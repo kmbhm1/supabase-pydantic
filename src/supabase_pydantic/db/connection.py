@@ -58,7 +58,7 @@ def create_connection_from_db_url(db_url: str) -> Any:
     assert database is not None, f'Invalid database URL dbname: {db_url}'
     assert host is not None, f'Invalid database URL host: {db_url}'
 
-    logger.info(f'Connecting to database: {database} on host: {host} with user: {username} and port: {port}')
+    logger.info('Connecting to database using provided configuration.')
 
     return create_connection(database, username, password, host, port)
 

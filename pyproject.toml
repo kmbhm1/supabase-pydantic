@@ -63,7 +63,7 @@ sqlalchemy = { extras = ["mypy"], version = "^2.0.31" }
 python-semantic-release = "^9.8.5"
 pre-commit = "^3.7.1"
 commitizen = "^3.28.0"
-pytest = "^8.2.2"
+pytest = ">=8.2.2,<10.0.0"
 tox = "^4.11.3"
 mypy = "^1.11.0"
 pytest-mypy = "^0.10.3"

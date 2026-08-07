@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## v0.26.24 (2026-08-07)
+
+### Chore
+
+* chore(deps-dev): patch 26 dependabot alerts (#141)
+
+All 26 open Dependabot alerts on this repo are dev-scope transitive or
+direct dev dependencies in poetry.lock, across three packages:
+
+- GitPython 3.1.50 -&gt; 3.1.58 (14 GHSAs, 11 high): argument-injection /
+  unsafe-option-guard bypasses enabling arbitrary file read, overwrite,
+  env-var exfiltration and command execution. Pulled in by
+  python-semantic-release. Highest patched version required was 3.1.57.
+- pillow 12.2.0 -&gt; 12.3.0 (14 GHSAs, 11 high): heap OOB writes in
+  ImageCmsTransform.apply / Image.paste / ImageFilter.RankFilter,
+  decompression-bomb bypasses in the font and PDF paths, and a
+  WindowsViewer command injection. Pulled in by matplotlib.
+- pymdown-extensions 10.21.3 -&gt; 11.0.1: path traversal in the b64
+  extension. The fix only exists in 11.x, so the direct dev constraint
+  moves to ^11.0.1; mkdocs-material 9.5.50 capped it at &lt;11.0, so it
+  moves to 9.7.7, which dropped the upper bound.
+
+No runtime dependency changed, so installed users are unaffected. Docs
+still build under `mkdocs build --strict` on the new pymdown-extensions
+major, and the full gate (ruff, mypy, pytest 566 passed / 91.59% cov,
+vulture) is clean.
+
+Co-authored-by: Claude Opus 5 (1M context) &lt;noreply@anthropic.com&gt; ([`0582e5e`](https://github.com/kmbhm1/supabase-pydantic/commit/0582e5e80ce38c0403266e9555cddbe7f21dc502))
+
 ## v0.26.23 (2026-05-20)
 
 ### Chore

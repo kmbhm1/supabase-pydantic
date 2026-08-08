@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## v0.26.25 (2026-08-08)
+
+### Documentation
+
+* docs: point users to castiron, the successor (#142)
+
+supabase-pydantic&#39;s README and docs contained zero mentions of castiron, so
+its users had no way to learn the successor exists. This adds the pointer and
+states the project&#39;s status plainly.
+
+- README: a maintenance-mode notice under the intro — fixes and dependency
+  updates continue, nothing is being removed, and no end-of-life date has been
+  set; new feature work has moved to castiron.
+- New docs page (getting-started/castiron.md) with a shipped-vs-not capability
+  table, the OpenAPI source&#39;s blind spots, and an explicit &#34;there is no
+  automated migration&#34; section.
+- Welcome page: a status admonition linking that page.
+- mkdocs nav: one entry for the new page.
+
+Deliberately conservative about castiron: it is 0.1.0 and pre-alpha, with one
+command, one source (OpenAPI/PostgREST) and one emitter (Pydantic v2). It does
+not connect to a live database, emit SQLAlchemy models, read MySQL, or generate
+seed data — all of which supabase-pydantic does today. The &#34;should you move
+yet?&#34; section leads with &#34;stay&#34;. No EOL or deprecation date is announced,
+because none has been decided.
+
+Also drops two forward-looking clauses (&#34;more updates are coming!&#34;,
+&#34;more models &amp; database support to come&#34;) that the new notice contradicts.
+
+Prose only: no code, no CHANGELOG.md, no version change. @kmbhm1 ([`74d5bf8`](https://github.com/kmbhm1/supabase-pydantic/commit/74d5bf8288eb08cd3011680a27fe7d6715558033))
+
 ## v0.26.24 (2026-08-07)
 
 ### Chore

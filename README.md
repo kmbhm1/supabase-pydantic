@@ -11,7 +11,13 @@
 
 A project for generating Pydantic and SQLAlchemy models from Supabase and MySQL databases. This tool bridges the gap between your database schema and your Python code, providing type-safe models for FastAPI and other frameworks.
 
-Currently, this is ideal for integrating [FastAPI](https://fastapi.tiangolo.com/) with [supabase-py](https://supabase.com/docs/reference/python/introduction) as a primary use-case, but more updates are coming! This project is inspired by the TS [type generating](https://supabase.com/docs/guides/api/rest/generating-types) capabilities of supabase cli. Its aim is to provide a similar experience for Python developers.
+Currently, this is ideal for integrating [FastAPI](https://fastapi.tiangolo.com/) with [supabase-py](https://supabase.com/docs/reference/python/introduction) as a primary use-case. This project is inspired by the TS [type generating](https://supabase.com/docs/guides/api/rest/generating-types) capabilities of supabase cli. Its aim is to provide a similar experience for Python developers.
+
+> **Project status (August 2026): maintenance mode.** supabase-pydantic continues to receive bug fixes and dependency updates; nothing is being removed, and no end-of-life date has been set. New feature work has moved to [**castiron**](https://github.com/kmbhm1/castiron), its successor, which carries this project's schema-fidelity engine onto a source-agnostic architecture.
+>
+> castiron is **0.1.0 and pre-alpha**: today it reads the OpenAPI document a Supabase/PostgREST project publishes — no database connection, no driver — and emits Pydantic v2 models. It does **not** yet connect to a live database, emit SQLAlchemy models, read MySQL, or generate seed data, all of which supabase-pydantic does today. If you rely on those, stay here for now.
+>
+> Install with `pip install cast-iron` (the distribution is hyphenated; the command and the import package are `castiron`). [Docs](https://kmbhm1.github.io/castiron/) · [Repo](https://github.com/kmbhm1/castiron) · [What this means for supabase-pydantic users](https://kmbhm1.github.io/supabase-pydantic/getting-started/castiron/)
 
 > **📣 NEW (Aug 2025)**: MySQL support! Generate models directly from MySQL databases with the `--db-type mysql` flag. [See the docs](https://kmbhm1.github.io/supabase-pydantic/examples/mysql-support/)
 >

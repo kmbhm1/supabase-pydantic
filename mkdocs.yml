@@ -47,6 +47,7 @@ theme:
 nav:
   - Getting Started:
     - Welcome: getting-started/welcome.md
+    - Project Status and castiron: getting-started/castiron.md
     - Help with sb-pydantic: getting-started/getting-help.md
     - getting-started/installation.md
     - getting-started/contributing.md

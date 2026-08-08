@@ -7,7 +7,15 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/supabase-pydantic)
 
 
-Supabase Pydantic is a Python library that **generates** Pydantic models for Supabase - more models & database support to come :wink:.  It is designed to enhance the utility of Supabase as an entity for rapid prototyping and development. 
+!!! info "Project status (August 2026)"
+    supabase-pydantic is in **maintenance mode**: bug fixes and dependency updates
+    continue, nothing is being removed, and no end-of-life date has been set. New feature
+    work has moved to [castiron](https://github.com/kmbhm1/castiron), its successor, which
+    is `0.1.0` and pre-alpha. See
+    [Project status and castiron](castiron.md) for what castiron does today and whether it
+    is a fit for you yet.
+
+Supabase Pydantic is a Python library that **generates** Pydantic models for Supabase.  It is designed to enhance the utility of Supabase as an entity for rapid prototyping and development. 
 
 ``` bash title="A First Example" hl_lines="1"
 $ sb-pydantic gen --type pydantic --framework fastapi --local

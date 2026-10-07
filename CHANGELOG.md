@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## v0.26.26 (2026-10-07)
+
+### Chore
+
+* chore(deps-dev): bump gitpython from 3.1.58 to 3.1.62 (#143)
+
+Bumps [gitpython](https://github.com/gitpython-developers/GitPython) from 3.1.58 to 3.1.62.
+- [Release notes](https://github.com/gitpython-developers/GitPython/releases)
+- [Changelog](https://github.com/gitpython-developers/GitPython/blob/main/CHANGES)
+- [Commits](https://github.com/gitpython-developers/GitPython/compare/3.1.58...3.1.62)
+
+---
+updated-dependencies:
+- dependency-name: gitpython
+  dependency-version: 3.1.62
+  dependency-type: indirect
+...
+
+Signed-off-by: dependabot[bot] &lt;support@github.com&gt;
+Co-authored-by: dependabot[bot] &lt;49699333+dependabot[bot]@users.noreply.github.com&gt; ([`4bc66fa`](https://github.com/kmbhm1/supabase-pydantic/commit/4bc66fa68f32fddd189b1669c1eb29724e8d661d))
+
 ## v0.26.25 (2026-08-08)
 
 ### Documentation

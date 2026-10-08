@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## v0.26.28 (2026-10-08)
+
+### Chore
+
+* chore(deps-dev): bump virtualenv from 20.36.1 to 21.7.13 (#145)
+
+Bumps [virtualenv](https://github.com/pypa/virtualenv) from 20.36.1 to 21.7.13.
+- [Release notes](https://github.com/pypa/virtualenv/releases)
+- [Changelog](https://github.com/pypa/virtualenv/blob/main/docs/changelog.rst)
+- [Commits](https://github.com/pypa/virtualenv/compare/20.36.1...21.7.13)
+
+---
+updated-dependencies:
+- dependency-name: virtualenv
+  dependency-version: 21.7.13
+  dependency-type: indirect
+...
+
+Signed-off-by: dependabot[bot] &lt;support@github.com&gt;
+Co-authored-by: dependabot[bot] &lt;49699333+dependabot[bot]@users.noreply.github.com&gt; ([`9746afc`](https://github.com/kmbhm1/supabase-pydantic/commit/9746afc32cd27d9b15248f61f791e8200b6ea996))
+
 ## v0.26.27 (2026-10-07)
 
 ### Chore

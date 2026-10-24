@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.26.29 (2026-10-24)
+
+### Chore
+
+* chore(deps): fix open Dependabot alerts (#146) ([`aabe173`](https://github.com/kmbhm1/supabase-pydantic/commit/aabe17370e63200591c57b13cafbf0dc0a1fef2f))
+
 ## v0.26.28 (2026-10-08)
 
 ### Chore
